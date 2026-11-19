@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 1.7
+- List view, and Small / Medium / Large covers.
+- Notes per game (note button next to Play), pin games to the top, slowly moving banner.
+
 WHAT'S NEW IN 1.6
 - Game settings: apps that open with a game (Discord, OBS...) and close after it, and a daily limit reminder.
 - Settings: break reminder. Stats: your recent sessions.

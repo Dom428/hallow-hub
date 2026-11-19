@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("1.6.0.0")]
-[assembly: AssemblyFileVersion("1.6.0.0")]
+[assembly: AssemblyVersion("1.7.0.0")]
+[assembly: AssemblyFileVersion("1.7.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "1.6";
+        public const string Version = "1.7";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -94,10 +94,10 @@ namespace HallowHub
         List<string> presets;   // null = mixer not running
 
         // controls
-        Border heroBorder; WrapPanel heroPills; StackPanel playOn; GradientStop heroTint;
+        Button notesBtn; Border heroBorder; WrapPanel heroPills; StackPanel playOn; GradientStop heroTint;
         Grid heroGrid; Image heroImg, heroLogo; TextBlock heroName, heroStats; Button playBtn; ToggleButton favBtn;
         ComboBox presetBox, sortBox; CheckBox sessionBox; TextBlock sessionNote, countText, statusText, searchHint;
-        StackPanel contRow; FrameworkElement contLabel, libLabel;
+        StackPanel contRow; FrameworkElement contLabel, libLabel; ComboBox sizeBox;
         WrapPanel grid; StackPanel chips; TextBox search; Border settingsPanel; ToggleButton gearBtn; ScrollViewer gridScroll;
         CheckBox startupBox; TextBlock linkInfo;
         readonly Dictionary<string, Border> cards = new Dictionary<string, Border>();
@@ -207,7 +207,7 @@ namespace HallowHub
             heroGrid = new Grid();
             hero.SizeChanged += (s, e) => heroGrid.Clip = new RectangleGeometry(new Rect(0, 0, hero.ActualWidth, hero.ActualHeight), 18, 18);
             heroImg = new Image { Stretch = Stretch.UniformToFill, VerticalAlignment = VerticalAlignment.Center };
-            heroGrid.Children.Add(heroImg);
+            heroGrid.Children.Add(heroImg); StartBannerMotion();
             var fadeL = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 0) };
             heroTint = new GradientStop(Color.FromArgb(240, 0x12, 0x0F, 0x18), 0); fadeL.GradientStops.Add(heroTint); fadeL.GradientStops.Add(new GradientStop(Color.FromArgb(150, 0x12, 0x0F, 0x18), 0.5)); fadeL.GradientStops.Add(new GradientStop(Color.FromArgb(40, 0x12, 0x0F, 0x18), 1));
             heroGrid.Children.Add(new Rectangle { Fill = fadeL });
@@ -233,6 +233,9 @@ namespace HallowHub
             var gset = new Button { Content = "Game settings", Tag = "icon", Width = 42, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(8, 0, 0, 0), ToolTip = "Launch options, run as admin, collections" };
             gset.Click += (s, e) => GameSettings(sel);
             actions.Children.Add(gset);
+            notesBtn = new Button { Content = "Notes", Tag = "icon", Width = 42, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(8, 0, 0, 0), ToolTip = "Notes" };
+            notesBtn.Click += (s, e) => ShowNotes(notesBtn);
+            actions.Children.Add(notesBtn);
             info.Children.Add(actions);
             playOn = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
             info.Children.Add(playOn);
@@ -276,6 +279,18 @@ namespace HallowHub
                 sortBox.Items.Add(new ComboBoxItem { Content = o.Item2, Tag = o.Item1 });
             sortBox.SelectionChanged += (s, e) => { if (loading) return; var it = sortBox.SelectedItem as ComboBoxItem; if (it != null) { S.Sort = (string)it.Tag; S.Save(); RebuildGrid(); } };
             DockPanel.SetDock(sortBox, Dock.Right); bar.Children.Add(sortBox);
+            var viewBar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
+            sizeBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 96, Margin = new Thickness(0, 0, 8, 0), ToolTip = "Cover size" };
+            foreach (var o in new[] { Tuple.Create(0.8, "Small"), Tuple.Create(1.0, "Medium"), Tuple.Create(1.25, "Large") }) sizeBox.Items.Add(new ComboBoxItem { Content = o.Item2, Tag = o.Item1 });
+            sizeBox.SelectedItem = sizeBox.Items.Cast<ComboBoxItem>().OrderBy(i => Math.Abs((double)i.Tag - S.CardScale)).First();
+            sizeBox.SelectionChanged += (s, e) => { var it = sizeBox.SelectedItem as ComboBoxItem; if (it == null || loading) return; S.CardScale = (double)it.Tag; S.Save(); RebuildGrid(); };
+            var gridV = new ToggleButton { Content = "Grid view", Tag = "icon", Width = 34, Height = 30, Padding = new Thickness(0), Style = (Style)FindResource("Chip"), Margin = new Thickness(0, 0, 4, 0), ToolTip = "Covers", IsChecked = S.View != "list" };
+            var listV = new ToggleButton { Content = "List view", Tag = "icon", Width = 34, Height = 30, Padding = new Thickness(0), Style = (Style)FindResource("Chip"), ToolTip = "List", IsChecked = S.View == "list" };
+            gridV.Click += (s, e) => { S.View = "grid"; S.Save(); gridV.IsChecked = true; listV.IsChecked = false; sizeBox.Visibility = Visibility.Visible; RebuildGrid(); };
+            listV.Click += (s, e) => { S.View = "list"; S.Save(); gridV.IsChecked = false; listV.IsChecked = true; sizeBox.Visibility = Visibility.Collapsed; RebuildGrid(); };
+            sizeBox.Visibility = S.View == "list" ? Visibility.Collapsed : Visibility.Visible;
+            viewBar.Children.Add(sizeBox); viewBar.Children.Add(gridV); viewBar.Children.Add(listV);
+            DockPanel.SetDock(viewBar, Dock.Right); bar.Children.Add(viewBar);
             countText = new TextBlock { Foreground = (Brush)FindResource("Muted"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 14, 0) };
             DockPanel.SetDock(countText, Dock.Right); bar.Children.Add(countText);
             chips = new StackPanel { Orientation = Orientation.Horizontal };
@@ -415,6 +430,7 @@ namespace HallowHub
             sw("Keep running in the tray when I close the window (so playtime keeps counting)", S.TrayOnClose, v => S.TrayOnClose = v);
             startupBox = sw("Start with Windows (in the tray)", StartsWithWindows(), v => SetStartWithWindows(v));
             sw("Show hidden games", S.ShowHidden, v => { S.ShowHidden = v; RebuildGrid(); });
+            sw("Moving banner (the art drifts slowly)", !S.StillBanner, v => { S.StillBanner = !v; if (v) StartBannerMotion(); else StopBannerMotion(); });
             var br = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
             var brBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 150 };
             foreach (var m in new[] { 0, 60, 90, 120, 180 }) brBox.Items.Add(new ComboBoxItem { Content = m == 0 ? "Off" : "After " + HubSettings.Duration(m).Replace("h 00m", "h"), Tag = m });
@@ -531,7 +547,8 @@ namespace HallowHub
             RebuildChips(); RebuildGrid(); ShowHero(); UpdateStatus();
         }
 
-        IEnumerable<Game> Sorted(IEnumerable<Game> list)
+        IEnumerable<Game> Sorted(IEnumerable<Game> list) { return SortedInner(list).OrderByDescending(g => S.For(g.Id).Pinned); }   // stable: pins first, rest as sorted
+        IEnumerable<Game> SortedInner(IEnumerable<Game> list)
         {
             if (S.Sort == "played") return list.OrderByDescending(g => Total(g)).ThenBy(g => g.Name);
             if (S.Sort == "name") return list.OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase);
@@ -583,7 +600,7 @@ namespace HallowHub
             if (grid == null) return;
             grid.Children.Clear(); cards.Clear();
             var list = Visible();
-            foreach (var g in list) { var c = Card(g); cards[g.Id] = c; grid.Children.Add(c); }
+            foreach (var g in list) { var c = CardFor(g); cards[g.Id] = c; grid.Children.Add(c); }
             if (list.Count == 0)
                 grid.Children.Add(new TextBlock { Text = games.Count == 0 ? "No games found yet. Click Add game to add one by its .exe." : "No games match.", Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(10, 20, 0, 0), FontSize = 14 });
             countText.Text = list.Count == 1 ? "1 game" : list.Count + " games";
@@ -619,11 +636,11 @@ namespace HallowHub
         Border Card(Game g)
         {
             var d = S.For(g.Id);
-            var card = new Border { Width = 160, Height = 240, Margin = new Thickness(7), CornerRadius = new CornerRadius(14), BorderThickness = new Thickness(2),
+            var card = new Border { Width = 160 * K, Height = 240 * K, Margin = new Thickness(7), CornerRadius = new CornerRadius(14), BorderThickness = new Thickness(2),
                 BorderBrush = Brushes.Transparent, Background = (Brush)FindResource("Panel"), Cursor = Cursors.Hand, Tag = g,
                 RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1, 1), ToolTip = g.Name };
-            var inner = new Grid { Clip = new RectangleGeometry(new Rect(0, 0, 156, 236), 12, 12) };
-            var cover = Img(g.Cover, 320);
+            var inner = new Grid { Clip = new RectangleGeometry(new Rect(0, 0, 160 * K - 4, 240 * K - 4), 12, 12) };
+            var cover = Img(g.Cover, K > 1.1 ? 420 : 320);
             if (cover != null) inner.Children.Add(new Image { Source = cover, Stretch = Stretch.UniformToFill });
             else
             {
@@ -648,6 +665,11 @@ namespace HallowHub
             var badge = Icons.Make(srcIcon, 12, new SolidColorBrush(Color.FromArgb(200, 0xEC, 0xE8, 0xF4)));
             badge.HorizontalAlignment = HorizontalAlignment.Right; badge.VerticalAlignment = VerticalAlignment.Bottom; badge.Margin = new Thickness(0, 0, 11, 11);
             inner.Children.Add(badge);
+            if (d.Pinned)
+            {
+                inner.Children.Add(new Border { Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Background = new SolidColorBrush(Color.FromArgb(200, 0x16, 0x12, 0x1C)),
+                    HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 8, d.Favorite ? 38 : 8, 0), Child = Icons.Make("thumbtack", 12, B("#F07820")), ToolTip = "Pinned" });
+            }
             if (d.Favorite)
             {
                 var star = new Border { Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Background = new SolidColorBrush(Color.FromArgb(200, 0x16, 0x12, 0x1C)),
@@ -740,6 +762,7 @@ namespace HallowHub
                     () => { S.For(g.Id).PlayOn = a.Id; S.Save(); Play(g); if (g == sel) ShowHero(); });
             }
             item(S.For(g.Id).Favorite ? "Remove from favorites" : "Add to favorites", "star", () => { var d = S.For(g.Id); d.Favorite = !d.Favorite; S.Save(); RefreshCard(g); if (g == sel) ShowHero(); });
+            item(S.For(g.Id).Pinned ? "Unpin" : "Pin to the top", "thumbtack", () => { var d = S.For(g.Id); d.Pinned = !d.Pinned; S.Save(); RebuildGrid(); Status(d.Pinned ? g.Name + " is pinned to the top." : g.Name + " is unpinned."); });
             item("Game settings and collections...", "sliders", () => { Select(g); GameSettings(g); });
             item("Open folder", "folder-open", () => OpenFolder(g));
             item("Create desktop shortcut", "arrow-up-right-from-square", () => Shortcut(g));
@@ -753,7 +776,7 @@ namespace HallowHub
         {
             Border old; if (g == null || !cards.TryGetValue(g.Id, out old)) return;
             int i = grid.Children.IndexOf(old); if (i < 0) return;
-            var c = Card(g); cards[g.Id] = c; grid.Children.RemoveAt(i); grid.Children.Insert(i, c);
+            var c = CardFor(g); cards[g.Id] = c; grid.Children.RemoveAt(i); grid.Children.Insert(i, c);
         }
 
         void Select(Game g)
@@ -824,6 +847,9 @@ namespace HallowHub
                 heroBorder.Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = ac, BlurRadius = 34, ShadowDepth = 0, Opacity = 0.35 };
                 heroTint.Color = Color.FromArgb(240, (byte)(0x12 + (ac.R - 0x12) * 0.14), (byte)(0x0F + (ac.G - 0x0F) * 0.14), (byte)(0x18 + (ac.B - 0x18) * 0.14));
                 favBtn.IsChecked = d.Favorite;
+                var nt = (d.Notes ?? "").Trim();
+                notesBtn.ToolTip = nt.Length == 0 ? "Notes (keybinds, loadouts, codes)" : (nt.Length > 400 ? nt.Substring(0, 400) + "..." : nt);
+                notesBtn.BorderBrush = nt.Length > 0 ? B("#F07820") : null; if (nt.Length == 0) notesBtn.ClearValue(BorderBrushProperty);
                 var r = RunningOf(g);
                 if (r != null)
                 {
@@ -958,7 +984,7 @@ namespace HallowHub
             var list = Visible(); if (list.Count == 0) return;
             int i = sel == null ? -1 : list.IndexOf(sel);
             if (i < 0) { Select(list[0]); Reveal(list[0]); return; }
-            int cols = Math.Max(1, (int)((grid.ActualWidth + 1) / 174));
+            int cols = S.View == "list" ? 1 : Math.Max(1, (int)((grid.ActualWidth + 1) / (160 * K + 14)));
             int j = Math.Max(0, Math.Min(list.Count - 1, i + dx + dy * cols));
             if (j != i) { Select(list[j]); Reveal(list[j]); }
         }
@@ -1200,6 +1226,7 @@ namespace HallowHub
             FillStats(); statsPanel.Visibility = Visibility.Visible;
             Snap.Save(this, System.IO.Path.Combine(dir, "stats.png"), 1180, 780);
             statsPanel.Visibility = Visibility.Collapsed;
+            S.View = "list"; RebuildGrid(); Snap.Save(this, System.IO.Path.Combine(dir, "list.png"), 1180, 900); S.View = "grid"; S.CardScale = 0.8; RebuildGrid(); Snap.Save(this, System.IO.Path.Combine(dir, "small.png"), 1180, 900); S.CardScale = 1; RebuildGrid();
             FillStorage(); storagePanel.Visibility = Visibility.Visible; Snap.Save(this, System.IO.Path.Combine(dir, "storage.png"), 1180, 900); storagePanel.Visibility = Visibility.Collapsed;
             try { var gw = new GameSettingsWindow(df ?? games[0], S.For((df ?? games[0]).Id), S, false); Snap.Save(gw, System.IO.Path.Combine(dir, "gamesettings.png"), 480, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "gs.err.txt"), ex.ToString()); }
             Surprise(); Snap.Save(this, System.IO.Path.Combine(dir, "surprise.png"), 1180, 780);

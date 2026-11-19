@@ -13,6 +13,7 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("1.7", new[] { "Cover size (Small / Medium / Large) and a list view", "Notes per game, pin games to the top, and a slowly moving banner" }),
             Tuple.Create("1.6", new[] { "Game settings: apps that open with a game (Discord, OBS...) and close after, and a daily limit", "Settings: break reminder; Stats: your recent sessions" }),
             Tuple.Create("1.5", new[] { "Finds EA app, Ubisoft Connect, GOG, Riot and Xbox games too", "Game settings > Look: your own name, cover and banner for any game" }),
             Tuple.Create("1.4", new[] { "Storage page (drive icon): what each drive holds and what you could free up", "Uninstall through the game's own launcher; Biggest first; Needs update and Not played lately filters" }),

@@ -9,14 +9,9 @@
 | **1.4** | Storage page with drive bars, clean-up suggestions, uninstall through the launcher, Biggest first, Needs update / Not played lately filters |
 | **1.5** | EA app, Ubisoft Connect, GOG, Riot and Xbox games; your own name, cover and banner per game |
 | **1.6** | Apps that open and close with a game, break reminder, daily limit per game, session history |
+| **1.7** | List view, cover size, moving banner, notes per game, pins |
 
 ## Next
-
-### 1.7 - Look and feel
-- Cover size slider and a compact list view
-- Slow-moving banner art
-- Notes per game (keybinds, loadouts, codes)
-- Pin games to the top
 
 ### 1.8 - Share
 - Discord post when you start a game (opt-in, uses Hallow Toolkit's webhook)

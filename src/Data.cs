@@ -49,7 +49,9 @@ namespace HallowHub
         [DataMember] public int DailyLimit;                                // v1.6: minutes a day (0 = no limit)
         [DataMember] public List<string> SessionLog = new List<string>(); // v1.6: "start (o)|minutes", newest last, up to 40
         [DataMember] public string LimitTold = "";                         // v1.6: the day the limit reminder was shown
-        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; OpenWith = new List<string>(); SessionLog = new List<string>(); LimitTold = ""; }
+        [DataMember] public bool Pinned;                                   // v1.7: always at the top of the library
+        [DataMember] public string Notes = "";                             // v1.7: your notes (keybinds, loadouts, codes)
+        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; OpenWith = new List<string>(); SessionLog = new List<string>(); LimitTold = ""; Notes = ""; }
 
         public DateTime? Last { get { DateTime d; return DateTime.TryParse(LastPlayed, null, System.Globalization.DateTimeStyles.RoundtripKind, out d) ? d : (DateTime?)null; } }
         public void AddMinutes(double m, DateTime when)
@@ -94,10 +96,13 @@ namespace HallowHub
         [DataMember] public string LastSeenVersion = "";
         [DataMember] public string LastUpdateCheck = "";
         [DataMember] public int BreakMinutes;   // v1.6: remind me to take a break after this long in one go (0 = off)
+        [DataMember] public string View = "grid";      // v1.7: grid or list
+        [DataMember] public double CardScale = 1;      // v1.7: cover size (0.8 small, 1 medium, 1.25 large)
+        [DataMember] public bool StillBanner;          // v1.7: turn off the slow banner movement
         [DataMember] public List<string> Collections = new List<string>();   // v1.2: your own groups, in your order
         [OnDeserializing] void D(StreamingContext c)
         {
-            Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>();
+            Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1;
         }
 
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }
