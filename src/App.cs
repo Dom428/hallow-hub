@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyVersion("1.3.0.0")]
+[assembly: AssemblyFileVersion("1.3.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "1.2";
+        public const string Version = "1.3";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -43,14 +43,31 @@ namespace HallowHub
                 var sa = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; LoadTheme(sa);
                 new HubWindow(true).SnapAll(args[si + 1]); return;
             }
+            int pi = Array.IndexOf(args, "--play"); string play = pi >= 0 && pi + 1 < args.Length ? args[pi + 1] : null;
             bool created;
             var mutex = new Mutex(true, @"Local\HallowHub", out created);
             var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\HallowHubShow");
-            if (!created) { showEvent.Set(); return; }
+            var playEvent = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\HallowHubPlay");
+            if (!created)
+            {
+                if (play != null) { try { Directory.CreateDirectory(HubSettings.Dir); File.WriteAllText(System.IO.Path.Combine(HubSettings.Dir, "play.txt"), play); playEvent.Set(); } catch { } }
+                else showEvent.Set();
+                return;
+            }
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; LoadTheme(app);
-            var w = new HubWindow(args.Contains("--tray"));
+            var w = new HubWindow(args.Contains("--tray") || play != null);
+            if (play != null) w.Dispatcher.BeginInvoke(new Action(() => w.PlayByKey(play)), DispatcherPriority.ApplicationIdle);
             var t = new Thread(() => { while (showEvent.WaitOne()) w.Dispatcher.BeginInvoke(new Action(w.ShowFromTray)); }) { IsBackground = true };
             t.Start();
+            var t2 = new Thread(() =>
+            {
+                while (playEvent.WaitOne())
+                {
+                    string key = null; try { var f = System.IO.Path.Combine(HubSettings.Dir, "play.txt"); key = File.ReadAllText(f).Trim(); File.Delete(f); } catch { }
+                    if (!string.IsNullOrEmpty(key)) w.Dispatcher.BeginInvoke(new Action(() => w.PlayByKey(key)));
+                }
+            }) { IsBackground = true };
+            t2.Start();
             app.Run();
             GC.KeepAlive(mutex);
         }
@@ -123,6 +140,12 @@ namespace HallowHub
                 slow.Start();
                 Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); }), DispatcherPriority.ApplicationIdle);
                 if (!startHidden) Show();
+                StartWatching();
+                DateTime lastCheck;
+                if (!DateTime.TryParse(S.LastUpdateCheck, out lastCheck) || (DateTime.Now - lastCheck).TotalHours > 20) CheckForUpdate(false);
+                if (string.IsNullOrEmpty(S.LastSeenVersion)) { S.LastSeenVersion = Program.Version; S.Save(); }
+                else if (!startHidden) Dispatcher.BeginInvoke(new Action(ShowWhatsNew), DispatcherPriority.ApplicationIdle);
+                IsVisibleChanged += (s, e) => { if (IsVisible) Dispatcher.BeginInvoke(new Action(ShowWhatsNew), DispatcherPriority.ApplicationIdle); };
             }
             else CheckLinks();
         }
@@ -148,6 +171,8 @@ namespace HallowHub
             title.Children.Add(new TextBlock { Text = " HUB", FontSize = 22, FontWeight = FontWeights.Light, VerticalAlignment = VerticalAlignment.Center });
             DockPanel.SetDock(title, Dock.Left); head.Children.Add(title);
             var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            updateBtn = new Button { Style = (Style)FindResource("Accent"), Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed };
+            updateBtn.Click += (s, e) => InstallUpdate(); right.Children.Add(updateBtn);
             var add = new Button { Content = "Add game", Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Add any game or app by its .exe" };
             add.Click += (s, e) => AddGame(); right.Children.Add(add);
             var refresh = new Button { Content = "Refresh", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Look for newly installed games" };
@@ -384,6 +409,8 @@ namespace HallowHub
             sw("Keep running in the tray when I close the window (so playtime keeps counting)", S.TrayOnClose, v => S.TrayOnClose = v);
             startupBox = sw("Start with Windows (in the tray)", StartsWithWindows(), v => SetStartWithWindows(v));
             sw("Show hidden games", S.ShowHidden, v => { S.ShowHidden = v; RebuildGrid(); });
+            var upd = new Button { Content = "Check for updates", Style = (Style)FindResource("Btn"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
+            upd.Click += (s, e) => CheckForUpdate(true); sp.Children.Add(upd);
             linkInfo = new TextBlock { Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0), FontSize = 11.5, LineHeight = 18 };
             sp.Children.Add(linkInfo);
             sp.Children.Add(new TextBlock { Text = "Playtime counts for any game running from its install folder, however you start it (Steam, Battle.net, a shortcut).",
@@ -592,7 +619,7 @@ namespace HallowHub
             if (!IsRunning(g) && (g.NeedsUpdate || g.Updating))
             {
                 var up = new Border { CornerRadius = new CornerRadius(9), Background = B(g.Updating ? "#5AB4F0" : "#F0BE5A"), Padding = new Thickness(8, 2, 8, 3), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(8, 8, 0, 0),
-                    Child = new TextBlock { Text = g.Updating ? "UPDATING" : "UPDATE", FontSize = 10, FontWeight = FontWeights.Bold, Foreground = B("#241A04") }, ToolTip = g.Updating ? "Steam is updating it" : "Steam has an update waiting - it downloads when you press Play" };
+                    Child = new TextBlock { Text = g.Updating ? (g.Progress >= 0 ? "UPDATING " + (int)(g.Progress * 100) + "%" : "UPDATING") : "UPDATE", FontSize = 10, FontWeight = FontWeights.Bold, Foreground = B("#241A04") }, ToolTip = g.Updating ? "Steam is updating it" : "Steam has an update waiting - it downloads when you press Play" };
                 inner.Children.Add(up);
             }
             if (IsRunning(g))
@@ -677,6 +704,7 @@ namespace HallowHub
             item(S.For(g.Id).Favorite ? "Remove from favorites" : "Add to favorites", "star", () => { var d = S.For(g.Id); d.Favorite = !d.Favorite; S.Save(); RefreshCard(g); if (g == sel) ShowHero(); });
             item("Game settings and collections...", "sliders", () => { Select(g); GameSettings(g); });
             item("Open folder", "folder-open", () => OpenFolder(g));
+            item("Create desktop shortcut", "arrow-up-right-from-square", () => Shortcut(g));
             if (g.Source == "steam") item("Steam store page", "arrow-up-right-from-square", () => OpenUrl("steam://store/" + g.Id.Substring(6)));
             item(S.For(g.Id).Hidden ? "Unhide" : "Hide from the library", S.For(g.Id).Hidden ? "eye" : "eye-slash", () => { var d = S.For(g.Id); d.Hidden = !d.Hidden; S.Save(); RebuildGrid(); Status(d.Hidden ? g.Name + " is hidden. Settings > Show hidden games brings it back." : g.Name + " is back in the library."); });
             if (g.Source == "custom") item("Remove from Hallow Hub", "trash-can", () => { S.Custom.RemoveAll(x => x.Id == g.Id); S.Save(); Rescan(); Status(g.Name + " removed (its playtime is kept)."); });
@@ -732,7 +760,7 @@ namespace HallowHub
                 };
                 var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : "gamepad";
                 pill(srcIcon, g.SourceName + (g.Alts.Count > 0 ? " + " + string.Join(" + ", g.Alts.Select(a => a.SourceName)) : ""), "#ECE8F4");
-                if (g.Updating) pill("arrows-rotate", "Updating", "#8FCBF5");
+                if (g.Updating) pill("arrows-rotate", g.Progress >= 0 ? "Updating " + (int)(g.Progress * 100) + "%" : "Updating", "#8FCBF5");
                 else if (g.NeedsUpdate) pill("arrows-rotate", "Update waiting", "#F0BE5A");
                 var sz = Size(g.SizeBytes); if (sz != null) pill(null, sz + (g.Drive != null ? " on " + g.Drive : ""), "#CFC8DC");
                 foreach (var tg in d.Tags) pill("tag", tg, "#C9B2F5");
@@ -945,6 +973,101 @@ namespace HallowHub
             if ((b & Pad.LB) != 0) NextFilter(-1);
             if ((b & Pad.RB) != 0) NextFilter(1);
             if ((b & Pad.Start) != 0) statsBtn.IsChecked = statsBtn.IsChecked != true;
+        }
+
+        // ---- v1.3: --play "<name or id>" (shortcuts, Stream Deck)
+        public void PlayByKey(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return;
+            var n = Library.Norm(key);
+            var g = games.FirstOrDefault(x => string.Equals(x.Id, key, StringComparison.OrdinalIgnoreCase))
+                ?? games.FirstOrDefault(x => Library.Norm(x.Name) == n)
+                ?? games.FirstOrDefault(x => n.Length >= 3 && Library.Norm(x.Name).Contains(n));
+            if (g == null) { Status("No game called \"" + key + "\" in your library."); if (tray != null) tray.ShowBalloonTip(3000, "Hallow Hub", "No game called \"" + key + "\" in your library.", WF.ToolTipIcon.None); return; }
+            Select(g); Play(g);
+        }
+        // a desktop shortcut that starts the game through Hub (so its preset and game session apply)
+        void Shortcut(Game g)
+        {
+            try
+            {
+                var name = new string(g.Name.Where(c => System.IO.Path.GetInvalidFileNameChars().Contains(c) == false).ToArray()).Trim();
+                var lnk = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), name + ".lnk");
+                var icon = (g.Source == "steam" ? Library.SteamIcon(g.Id.Substring(6)) : null) ?? g.IconExe ?? Assembly.GetExecutingAssembly().Location;
+                var t = Type.GetTypeFromProgID("WScript.Shell"); var sh = Activator.CreateInstance(t);
+                var sc = t.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, sh, new object[] { lnk }); var st = sc.GetType();
+                Action<string, object> set = (prop, v) => st.InvokeMember(prop, BindingFlags.SetProperty, null, sc, new[] { v });
+                set("TargetPath", Assembly.GetExecutingAssembly().Location);
+                set("Arguments", "--play \"" + g.Id + "\"");
+                set("WorkingDirectory", System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+                set("IconLocation", icon + ",0");
+                set("Description", "Play " + g.Name + " with Hallow Hub");
+                st.InvokeMember("Save", BindingFlags.InvokeMethod, null, sc, null);
+                Marshal.FinalReleaseComObject(sc); Marshal.FinalReleaseComObject(sh);
+                Status("Shortcut \"" + name + "\" is on your desktop - it starts the game through Hub.");
+            }
+            catch (Exception ex) { Status("Couldn't make the shortcut: " + ex.Message); }
+        }
+
+        // ---- v1.3: notice installs, uninstalls and Steam updates without a Refresh
+        readonly List<FileSystemWatcher> watchers = new List<FileSystemWatcher>(); DispatcherTimer rescanSoon;
+        void StartWatching()
+        {
+            rescanSoon = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            rescanSoon.Tick += (s, e) => { rescanSoon.Stop(); var before = games.Count; Rescan(); if (games.Count != before) Status(games.Count > before ? "New game found - your library is up to date." : "A game was uninstalled - your library is up to date."); };
+            var dirs = Library.SteamLibraries().Select(l => Tuple.Create(System.IO.Path.Combine(l, "steamapps"), "appmanifest_*.acf")).ToList();
+            dirs.Add(Tuple.Create(Library.EpicManifests, "*.item"));
+            foreach (var d in dirs)
+            {
+                if (!Directory.Exists(d.Item1)) continue;
+                try
+                {
+                    var w = new FileSystemWatcher(d.Item1, d.Item2) { NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size };
+                    FileSystemEventHandler h = (o, e) => Dispatcher.BeginInvoke(new Action(() => { rescanSoon.Stop(); rescanSoon.Start(); }));
+                    w.Changed += h; w.Created += h; w.Deleted += h; w.Renamed += (o, e) => h(o, e);
+                    w.EnableRaisingEvents = true; watchers.Add(w);
+                }
+                catch { }
+            }
+        }
+
+        // ---- v1.3: updates from GitHub
+        Button updateBtn; GhRelease pending;
+        void CheckForUpdate(bool manual)
+        {
+            if (manual) Status("Checking GitHub for a newer Hallow Hub...");
+            new Thread(() =>
+            {
+                var r = Updater.Latest();
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    S.LastUpdateCheck = DateTime.Now.ToString("o"); S.Save();
+                    if (r == null) { if (manual) Status("Couldn't reach GitHub - try again later."); return; }
+                    if (!Updater.IsNewer(r)) { if (manual) Status("You have the newest version (v" + Program.Version + ")."); return; }
+                    pending = r; updateBtn.Content = "Update to v" + r.Version.ToString(2); updateBtn.Visibility = Visibility.Visible;
+                    updateBtn.ToolTip = (r.Notes ?? "").Length > 600 ? r.Notes.Substring(0, 600) + "..." : r.Notes;
+                    Status("Hallow Hub v" + r.Version.ToString(2) + " is out - click Update at the top (your playtime and settings are kept).");
+                }));
+            }) { IsBackground = true }.Start();
+        }
+        void InstallUpdate()
+        {
+            if (pending == null) return;
+            if (MessageBox.Show(this, "Install Hallow Hub v" + pending.Version.ToString(2) + " now?\n\nIt downloads from GitHub, checks the file, and reopens by itself. Your playtime and settings are kept.", "Update Hallow Hub", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            updateBtn.IsEnabled = false; updateBtn.Content = "Updating...";
+            var r = pending; S.Save();
+            new Thread(() =>
+            {
+                var err = Updater.Install(r);
+                Dispatcher.BeginInvoke(new Action(() => { if (err != null) { Status(err); updateBtn.IsEnabled = true; updateBtn.Content = "Update to v" + r.Version.ToString(2); } else Status("Installing the update - Hallow Hub reopens in a few seconds."); }));
+            }) { IsBackground = true }.Start();
+        }
+        void ShowWhatsNew()
+        {
+            if (S.LastSeenVersion == Program.Version || !IsVisible || Snap.On) return;
+            var items = WhatsNew.Since(S.LastSeenVersion);
+            S.LastSeenVersion = Program.Version; S.Save();
+            if (items.Count > 0) new WhatsNewWindow(items) { Owner = this }.Show();
         }
 
         void AddGame()

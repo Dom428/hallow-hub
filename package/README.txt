@@ -6,6 +6,13 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 1.3
+- Updates itself from GitHub (asks first) and shows What's new after an update.
+- New installs, uninstalls and finished Steam updates show up by themselves.
+- Steam download progress on the cover (UPDATING 42%).
+- Right-click a game > Create desktop shortcut - starts it through Hub with your preset and session.
+  Also: HallowHub.exe --play "Delta Force" (Stream Deck).
+
 WHAT'S NEW IN 1.2
 - Game settings (sliders button): launch options, run as administrator, collections.
 - Collections: your own groups like "With friends" - they show up as filters.

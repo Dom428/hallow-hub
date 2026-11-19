@@ -1,4 +1,4 @@
-// Hallow Hub - finds installed games: Steam, Battle.net, Epic Games, plus games you add yourself.
+﻿// Hallow Hub - finds installed games: Steam, Battle.net, Epic Games, plus games you add yourself.
 // Only reads launcher files and the registry; artwork comes from Steam's own on-disk cache (nothing is downloaded).
 using System;
 using System.Collections.Generic;
@@ -41,16 +41,38 @@ namespace HallowHub
                 return string.IsNullOrEmpty(p) ? null : p.Replace('/', '\\');
             }
         }
+        // every Steam library folder (C:\Program Files (x86)\Steam, G:\SteamLibrary, ...)
+        public static List<string> SteamLibraries()
+        {
+            var steam = SteamPath(); var libs = new List<string>(); if (steam == null || !Directory.Exists(steam)) return libs;
+            libs.Add(steam);
+            var vdf = Path.Combine(steam, @"steamapps\libraryfolders.vdf");
+            try
+            {
+                if (File.Exists(vdf))
+                    foreach (Match m in Regex.Matches(File.ReadAllText(vdf, Encoding.UTF8), "\"path\"\\s+\"([^\"]+)\""))
+                        libs.Add(m.Groups[1].Value.Replace(@"\\", @"\"));
+            }
+            catch { }
+            return libs.Distinct(StringComparer.OrdinalIgnoreCase).Where(Directory.Exists).ToList();
+        }
+        public static string EpicManifests { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), @"Epic\EpicGamesLauncher\Data\Manifests"); } }
+        // the icon Steam made for a game (used for desktop shortcuts)
+        public static string SteamIcon(string appid)
+        {
+            foreach (var root in new[] { @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App " + appid, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Steam App " + appid })
+                using (var k = Registry.LocalMachine.OpenSubKey(root))
+                {
+                    var ic = k == null ? null : k.GetValue("DisplayIcon") as string;
+                    if (!string.IsNullOrEmpty(ic) && File.Exists(ic.Trim('"'))) return ic.Trim('"');
+                }
+            return null;
+        }
         static IEnumerable<Game> Steam()
         {
-            var steam = SteamPath(); if (steam == null || !Directory.Exists(steam)) yield break;
-            var libs = new List<string> { steam };
-            var vdf = Path.Combine(steam, @"steamapps\libraryfolders.vdf");
-            if (File.Exists(vdf))
-                foreach (Match m in Regex.Matches(File.ReadAllText(vdf, Encoding.UTF8), "\"path\"\\s+\"([^\"]+)\""))
-                    libs.Add(m.Groups[1].Value.Replace(@"\\", @"\"));
             var seen = new HashSet<string>();
-            foreach (var lib in libs.Distinct(StringComparer.OrdinalIgnoreCase))
+            var steam = SteamPath();
+            foreach (var lib in SteamLibraries())
             {
                 var apps = Path.Combine(lib, "steamapps"); if (!Directory.Exists(apps)) continue;
                 foreach (var acf in Directory.GetFiles(apps, "appmanifest_*.acf"))
@@ -63,6 +85,9 @@ namespace HallowHub
                     long size; long.TryParse(Field(t, "SizeOnDisk") ?? "0", out size); g.SizeBytes = size;
                     int flags; int.TryParse(Field(t, "StateFlags") ?? "4", out flags);
                     g.Updating = (flags & 1024) != 0; g.NeedsUpdate = !g.Updating && (flags & 2) != 0;
+                    long todo, done;
+                    if (long.TryParse(Field(t, "BytesToDownload") ?? "0", out todo) && todo > 0 && long.TryParse(Field(t, "BytesDownloaded") ?? "0", out done))
+                    { g.Progress = Math.Min(1.0, done / (double)todo); if (done < todo) { g.Updating = true; g.NeedsUpdate = false; } }
                     g.Drive = Path.GetPathRoot(lib).TrimEnd('\\');
                     try { g.UpdatedAt = File.GetLastWriteTime(acf); } catch { }
                     var cache = Path.Combine(steam, @"appcache\librarycache", id);

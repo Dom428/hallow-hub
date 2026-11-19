@@ -22,7 +22,7 @@ namespace HallowHub
         // v1.1
         public DateTime UpdatedAt;              // when the install last changed (picks the main copy of a duplicate)
         public long SizeBytes; public string Drive;
-        public bool NeedsUpdate, Updating;
+        public bool NeedsUpdate, Updating; public double Progress = -1;   // Steam download, 0..1
         public double SteamMinutes, Steam2Weeks; public DateTime? SteamLast;
         public List<Game> Alts = new List<Game>();   // the same game from another store (merged into one card)
         public Game Parent;                          // set on an alt: the card it belongs to
@@ -86,10 +86,11 @@ namespace HallowHub
         [DataMember] public bool ShowHidden;
         [DataMember] public double WinW = -1, WinH = -1;
         [DataMember] public string LastSeenVersion = "";
+        [DataMember] public string LastUpdateCheck = "";
         [DataMember] public List<string> Collections = new List<string>();   // v1.2: your own groups, in your order
         [OnDeserializing] void D(StreamingContext c)
         {
-            Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; Collections = new List<string>();
+            Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>();
         }
 
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }
