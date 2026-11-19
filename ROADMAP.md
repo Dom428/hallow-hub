@@ -23,6 +23,32 @@
 
 ## Next
 
+### 2.8 - Game details
+- Description, genres, features (co-op, controller...), developer, publisher, release date, Metacritic and screenshots for Steam games, from Steam's public store data - fetched when you open a game (and slowly while Hub is idle), cached for a month
+- Filter by genre and feature, together with the other filters
+
+### 2.9 - Emulators and ROMs
+- Your own emulator profiles (exe + arguments with {rom}) and ROM folders Hub scans; ROMs become games with playtime, collections and everything else
+
+### 2.10 - Play status, ratings and a better search
+- Play status per game (Playing, Beaten, Completed, On hold, Abandoned, Plan to play) and your own rating, both as filters and sorts
+- Search that also looks at genres, features, developer, notes and collections, with genre: / dev: / status: words
+### Gaps vs Playnite / GOG Galaxy
+What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
+- Game details (descriptions, genres, tags, developer, release date, screenshots) and filtering by them - **buildable** (Steam's public store data, no key) - 2.8
+- Emulators and ROM scanning (Playnite, LaunchBox) - **buildable** (local only) - 2.9
+- Play status (beaten, completed, abandoned, backlog) and your own ratings (Playnite, Galaxy) - **buildable** - 2.10
+- Search across tags, genres, developer and notes (Playnite) - **buildable** - 2.10
+- Achievements (Galaxy, Playnite add-ons) - **not now**: Steam's no-key source only works for public profiles and gives one game per request; every other store needs a sign-in or key
+- Friends, chat and activity feeds (Galaxy) - **not buildable**: needs each store's sign-in, and Hub won't hold your passwords
+- Owned-but-not-installed games from every store (Galaxy, Playnite) - **not buildable** without store sign-ins or API keys (Steam's owned-games list needs a Web API key)
+- Consoles and other launchers through integrations (PlayStation, Xbox cloud, Amazon, itch.io, Humble - Galaxy, Playnite) - **mostly not buildable**: sign-ins; itch.io / Amazon local installs could be added later
+- Import from Playnite or GOG Galaxy - **not buildable here**: Playnite keeps its library in a LiteDB database and Galaxy in SQLite - both binary formats Hub can't read without bundling a third-party library (and neither is installed on this PC to test)
+- Installing and updating games for stores other than Steam (Galaxy for GOG) - **not buildable**: the store's own client does it
+- Add-ons, scripting and custom themes (Playnite, LaunchBox) - **not planned**: Hub stays one small app; it has the Hallow accent and cover size / list view
+- Cloud sync of the library between PCs (Galaxy) - **partly done**: 2.7 library backup moves it by zip; no cloud without an account
+- Videos, 3D boxes and arcade cabinets (LaunchBox Big Box) - **not planned**: needs large media downloads
+- HowLongToBeat times (Playnite add-on) - **not buildable**: no public API
 ### Fixes from real use
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
 
