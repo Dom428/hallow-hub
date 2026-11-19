@@ -15,7 +15,7 @@ namespace HallowHub
 {
     public partial class HubWindow
     {
-        Border storagePanel; ToggleButton storageBtn; StackPanel storageBody; bool sizing, sized;
+        Border storagePanel; ToggleButton storageBtn; StackPanel storageBody; bool sizing, sized; Action afterSizing;
 
         // v2.1: folder sizes measured by Hub, kept across rescans (a rescan makes new Game objects)
         static readonly Dictionary<string, long> dirSizes = new Dictionary<string, long>();
@@ -82,26 +82,13 @@ namespace HallowHub
                 new Thread(() =>
                 {
                     foreach (var c in todo) { var sz = Library.DirSize(c.InstallDir); c.SizeBytes = sz; lock (dirSizes) dirSizes[c.InstallDir.ToLowerInvariant()] = sz; }
-                    Dispatcher.BeginInvoke(new Action(() => { sizing = false; sized = true; if (storagePanel.Visibility == Visibility.Visible) FillStorage(); RebuildGrid(); }));
+                    Dispatcher.BeginInvoke(new Action(() => { sizing = false; sized = true; if (storagePanel.Visibility == Visibility.Visible) FillStorage(); RebuildGrid(); if (afterSizing != null) afterSizing(); }));
                 }) { IsBackground = true, Priority = ThreadPriority.BelowNormal }.Start();
             }
             if (sizing) storageBody.Children.Add(new TextBlock { Text = "Measuring games that their launcher doesn't size...", Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(0, 0, 0, 10), FontSize = 11.5 });
 
             // ---- clean-up suggestions: older duplicate copies, and games not played for a while
-            var tips = new List<Tuple<Game, string>>();
-            foreach (var g in games.Where(x => x.Alts.Count > 0))
-                foreach (var a in new[] { g }.Concat(g.Alts))
-                {
-                    if (a == PlayCopy(g) || tracker.Now.ContainsKey(a.Id)) continue;
-                    var al = CopyLast(a);
-                    tips.Add(Tuple.Create(a, "a second copy of " + g.Name + (a.Drive != null ? " on " + a.Drive : "") + " - " + (al == null ? "not played here that Hub knows of" : "last played here " + AgoLow(al)) + "; you play the " + PlayCopy(g).SourceName + " one"));
-                }
-            foreach (var g in games.Where(Stale))
-            {
-                var last = LastOf(g);
-                tips.Add(Tuple.Create(PlayCopy(g), last == null ? "no playtime recorded" : "last played " + HubSettings.Ago(last).ToLowerInvariant()));
-            }
-            tips = tips.Where(t => t.Item1.SizeBytes >= (256L << 20)).OrderByDescending(t => t.Item1.SizeBytes).ToList();
+            var tips = CleanupTips();
             if (tips.Count > 0)
             {
                 var box = new Border { Background = B("#2A2333"), CornerRadius = new CornerRadius(12), Padding = new Thickness(16, 12, 16, 8), Margin = new Thickness(0, 0, 0, 18),
@@ -181,17 +168,46 @@ namespace HallowHub
         DateTime? RowLast(Game c) { var m = Main(c); return m.Alts.Count > 0 ? CopyLast(c) : LastOf(m); }
         static string AgoLow(DateTime? d) { var s = HubSettings.Ago(d); return char.IsDigit(s[0]) ? s : s.ToLowerInvariant(); }
 
-        // uninstalling always goes through the game's own launcher, which asks again before it deletes anything
-        void Uninstall(Game c)
+        // clean-up suggestions: a second copy you don't play, and games not played for a while (biggest first, 256 MB and up)
+        List<Tuple<Game, string>> CleanupTips()
         {
-            var main = Main(c);
-            string how = c.Source == "steam" ? "Steam opens its own uninstall box - confirm there to remove it." :
+            var tips = new List<Tuple<Game, string>>();
+            foreach (var g in games.Where(x => x.Alts.Count > 0))
+                foreach (var a in new[] { g }.Concat(g.Alts))
+                {
+                    if (a == PlayCopy(g) || tracker.Now.ContainsKey(a.Id)) continue;
+                    var al = CopyLast(a);
+                    tips.Add(Tuple.Create(a, "a second copy of " + g.Name + (a.Drive != null ? " on " + a.Drive : "") + " - " + (al == null ? "not played here that Hub knows of" : "last played here " + AgoLow(al)) + "; you play the " + PlayCopy(g).SourceName + " one"));
+                }
+            foreach (var g in games.Where(Stale))
+            {
+                var last = LastOf(g);
+                tips.Add(Tuple.Create(PlayCopy(g), last == null ? "no playtime recorded" : "last played " + HubSettings.Ago(last).ToLowerInvariant()));
+            }
+            return tips.Where(t => t.Item1.SizeBytes >= (256L << 20)).OrderByDescending(t => t.Item1.SizeBytes).ToList();
+        }
+
+        // uninstalling always goes through the game's own launcher, which asks again before it deletes anything
+        static string UninstallHow(Game c)
+        {
+            return c.Source == "steam" ? "Steam opens its own uninstall box - confirm there to remove it." :
                 c.Source == "battlenet" ? "Battle.net's uninstaller opens - follow it to remove this copy." :
                 c.Source == "epic" ? "Epic Games doesn't let other apps uninstall. Hub opens your Epic library so you can do it there." :
                 "Hub only removes it from your library and opens its folder - delete the folder yourself if you want the space back.";
-            var r = MessageBox.Show(this, "Uninstall " + main.Name + (main.Alts.Count > 0 ? " (" + c.SourceName + " copy)" : "") + (c.SizeBytes > 0 ? " - " + Size(c.SizeBytes) : "") + "?\n\n" + how + "\n\nYour playtime in Hub is kept.",
+        }
+        string UninstallTitle(Game c) { var main = Main(c); return main.Name + (main.Alts.Count > 0 ? " (" + c.SourceName + " copy)" : "") + (c.SizeBytes > 0 ? " - " + Size(c.SizeBytes) : ""); }
+        void Uninstall(Game c)
+        {
+            var main = Main(c);
+            var r = MessageBox.Show(this, "Uninstall " + UninstallTitle(c) + "?\n\n" + UninstallHow(c) + "\n\nYour playtime in Hub is kept.",
                 "Uninstall " + main.Name, MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (r != MessageBoxResult.Yes) return;
+            StartUninstall(c);
+        }
+        // after you said yes (here, or in Big Picture): hand it to the launcher
+        void StartUninstall(Game c)
+        {
+            var main = Main(c);
             try
             {
                 if (c.Source == "steam") Process.Start(new ProcessStartInfo("steam://uninstall/" + c.Id.Substring(6)) { UseShellExecute = true });

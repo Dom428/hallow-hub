@@ -1,4 +1,4 @@
-// Hallow Hub - Font Awesome icons (path data in Icons.g.cs). Buttons get their icon from their label,
+﻿// Hallow Hub - Font Awesome icons (path data in Icons.g.cs). Buttons get their icon from their label,
 // so a label that changes ("Mute" -> "Muted") changes its icon too.
 using System;
 using System.Collections.Generic;
@@ -26,7 +26,7 @@ namespace HallowHub
         };
         // label starts with -> icon
         static readonly string[][] Prefixes = {
-            new[] { "Playing", "circle-play" }, new[] { "Update to v", "download" }, new[] { "Updating", "spinner" }, new[] { "Starting", "hourglass-half" },
+            new[] { "Playing", "circle-play" }, new[] { "Update to v", "download" }, new[] { "Updating", "spinner" }, new[] { "Starting", "hourglass-half" }, new[] { "Hidden (", "eye-slash" },
         };
         public static string ForLabel(string label)
         {

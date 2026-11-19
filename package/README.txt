@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.3
+- Filters next to the sort: store, size, last played and playtime, all together. Hide games with the eye button; the Hidden filter brings them back.
+- Big Picture: collections as filters (LB / RB) and Storage with the controller (Menu).
+
 WHAT'S NEW IN 2.2
 - Hallow family on every game page: Saves (Hallow Vault), Clips (Hallow Clips) and Overlay on/off (Hallow Overlay) - only for the apps you have.
 - Break reminders and the daily limit show on Hallow Overlay when it's running.

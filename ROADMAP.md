@@ -15,13 +15,9 @@
 | **2.0** | Big Picture full-screen controller mode, quick launcher from the tray icon |
 | **2.1** | Play on picks the copy you actually play (Steam and Battle.net last played), clean-up offer for an unused second copy |
 | **2.2** | Hallow family cards on every game page: Saves (Vault), Clips, Overlay on/off; Hub pipe (ping, status) and status.json; reminders on Overlay |
+| **2.3** | Hide and unhide games, combined filters (store, size, last played, playtime), Big Picture collections and Storage with the controller |
 
 ## Next
-
-### 2.3 - Library extras
-- Hide games (tools, test servers, redistributables) without uninstalling
-- Sort and filter by store, size, last played and playtime together
-- Big Picture: collections and the Storage page with the controller
 
 ### Fixes from real use
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)

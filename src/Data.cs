@@ -104,9 +104,13 @@ namespace HallowHub
         [DataMember] public bool WeeklyRecap = true;              // v1.8: a recap of last week on Mondays
         [DataMember] public string LastRecap = "";
         [DataMember] public List<string> Collections = new List<string>();   // v1.2: your own groups, in your order
+        // v2.3: filters that combine with the chips and the sort ("" = any)
+        [DataMember] public List<string> FStores = new List<string>();      // only these stores (empty = all)
+        [DataMember] public string FSize = "", FLast = "", FTime = "";     // size: small/mid/big; last played: week/month/old/never; playtime: new/some/lots
         [OnDeserializing] void D(StreamingContext c)
         {
             Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1; WeeklyRecap = true; LastRecap = "";
+            FStores = new List<string>(); FSize = ""; FLast = ""; FTime = "";
         }
 
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }

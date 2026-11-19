@@ -48,7 +48,8 @@ namespace HallowHub
             DockPanel.SetDock(brand, Dock.Left); top.Children.Add(brand);
             var clock = new TextBlock { FontSize = 24, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
             DockPanel.SetDock(clock, Dock.Right); top.Children.Add(clock);
-            var filterText = new TextBlock { FontSize = 15, Foreground = B("#CFC8DC"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            // v2.3: the filters as chips - All, Favorites, each store and your collections (LB / RB)
+            var filterText = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             top.Children.Add(filterText);
             Grid.SetRow(top, 0); layout.Children.Add(top);
             // the selected game
@@ -65,11 +66,12 @@ namespace HallowHub
             strip.Children.Add(row);
             Grid.SetRow(strip, 2); layout.Children.Add(strip);
             var help = new TextBlock { FontSize = 14, Foreground = B("#8F88A0"), HorizontalAlignment = HorizontalAlignment.Center,
-                Text = "A / Enter  play     X  surprise me     Y  favorite     LB / RB  filter     B / Esc  back to the desktop view" };
+                Text = "A / Enter  play     X  surprise me     Y  favorite     LB / RB  filters and collections     Menu / S  storage     B / Esc  back to the desktop view" };
             Grid.SetRow(help, 3); layout.Children.Add(help);
             root.Children.Add(layout);
+            root.Children.Add(BuildBigStorage());   // v2.3: Storage with the controller (Menu)
             var close = new Button { Content = "x", Tag = "icon", Width = 40, Height = 36, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 14, 14, 0), ToolTip = "Close Big Picture (Esc)" };
-            close.Click += (s, e) => big.Close();
+            close.Click += (s, e) => { if (BsOpen) BsHide(); else big.Close(); };
             root.Children.Add(close);
             big.Content = root;
 
@@ -91,11 +93,24 @@ namespace HallowHub
                 b.MouseLeftButtonDown += (s, e) => { if (e.ClickCount == 2) Play(gg); };
                 return b;
             };
-            Action fill = () =>
+            Action fill = null; fill = () =>
             {
                 row.Children.Clear(); tiles.Clear();
                 foreach (var g in list) { var t = tile(g); tiles.Add(t); row.Children.Add(t); }
-                filterText.Text = (S.Filter == "all" ? "All games" : S.Filter == "fav" ? "Favorites" : S.Filter == "upd" ? "Needs update" : S.Filter == "stale" ? "Not played lately" : S.Filter.StartsWith("col:") ? S.Filter.Substring(4) : list.Count > 0 ? list[0].SourceName : S.Filter) + "   ·   " + list.Count + " games";
+                filterText.Children.Clear();
+                filterText.Children.Add(PadLetter("LB"));
+                foreach (var k in BigFilters())
+                {
+                    var on = k == S.Filter; var sp = new StackPanel { Orientation = Orientation.Horizontal };
+                    if (k.StartsWith("col:")) { var ti = Icons.Make("tag", 13, on ? B("#1A0E04") : B("#C9B2F5")); ti.Margin = new Thickness(0, 0, 8, 0); sp.Children.Add(ti); }
+                    sp.Children.Add(new TextBlock { Text = BigFilterName(k), FontSize = 16, FontWeight = on ? FontWeights.Bold : FontWeights.Normal, Foreground = on ? B("#1A0E04") : B("#CFC8DC") });
+                    var kk = k;
+                    var chip = new Border { Child = sp, CornerRadius = new CornerRadius(16), Padding = new Thickness(14, 5, 14, 6), Margin = new Thickness(0, 0, 8, 0), Background = on ? B("#F07820") : new SolidColorBrush(Color.FromArgb(150, 0x2A, 0x23, 0x33)), Cursor = Cursors.Hand };
+                    chip.MouseLeftButtonUp += (s, e) => { S.Filter = kk; S.Save(); RebuildChips(); RebuildGrid(); list = Visible(); fill(); go(0, false); };
+                    filterText.Children.Add(chip);
+                }
+                filterText.Children.Add(PadLetter("RB"));
+                filterText.Children.Add(new TextBlock { Text = list.Count + " games", FontSize = 15, Foreground = B("#8F88A0"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(14, 0, 0, 0) });
             };
             go = (i, animate) =>
             {
@@ -130,9 +145,7 @@ namespace HallowHub
             };
             Action<int> filter = step =>
             {
-                var keys = new List<string> { "all", "fav" };
-                foreach (var src in games.Select(x => x.Source).Distinct()) keys.Add(src);
-                foreach (var c in S.Collections) keys.Add("col:" + c);
+                var keys = BigFilters();
                 int i = keys.IndexOf(S.Filter); i = ((i < 0 ? 0 : i) + step + keys.Count) % keys.Count;
                 S.Filter = keys[i]; S.Save(); RebuildChips(); RebuildGrid();
                 list = Visible(); fill(); go(0, false);
@@ -142,12 +155,14 @@ namespace HallowHub
 
             big.PreviewKeyDown += (s, e) =>
             {
+                if (BsOpen) { if (BsKey(e.Key)) e.Handled = true; return; }
                 switch (e.Key)
                 {
                     case Key.Left: go(index - 1, true); e.Handled = true; break;
                     case Key.Right: go(index + 1, true); e.Handled = true; break;
                     case Key.Enter: if (list.Count > 0) Play(list[index]); e.Handled = true; break;
                     case Key.Escape: case Key.F11: big.Close(); e.Handled = true; break;
+                    case Key.S: BsShow(); e.Handled = true; break;
                 }
             };
             var pad2 = new Pad();
@@ -158,6 +173,8 @@ namespace HallowHub
                 if (!big.IsActive) return;
                 ushort b; try { b = pad2.Poll(); } catch { return; }
                 if (b == 0) return;
+                if (BsOpen) { BsPad(b); return; }
+                if ((b & Pad.Start) != 0) { BsShow(); return; }
                 if ((b & Pad.Left) != 0) go(index - 1, true);
                 if ((b & Pad.Right) != 0) go(index + 1, true);
                 if ((b & Pad.A) != 0 && list.Count > 0) Play(list[index]);
@@ -169,11 +186,38 @@ namespace HallowHub
             };
             big.Loaded += (s, e) => { fill(); go(index, false); timer.Start(); };
             big.SizeChanged += (s, e) => go(index, false);
-            big.Closed += (s, e) => { timer.Stop(); big = null; ShowFromTray(); };
+            big.Closed += (s, e) => { timer.Stop(); big = null; bsView = null; afterSizing = null; ShowFromTray(); };
             big.SourceInitialized += (s, e) => { int dark = 1; DwmSetWindowAttribute(new WindowInteropHelper(big).Handle, 20, ref dark, 4); };
             big.WindowState = WindowState.Maximized;
+            // snapshots: 1 = a collection, 2 = Storage, 3 = its "are you sure?" box
+            bigSnapStep = step =>
+            {
+                if (step == 1) { var col = BigFilters().FirstOrDefault(x => x.StartsWith("col:")); if (col != null) { S.Filter = col; list = Visible(); fill(); go(0, false); } }
+                if (step == 2) BsShow();
+                if (step == 3) { BsFocus(0); BsAskNow(); }
+            };
             if (Snap.On) { big.Width = 1600; big.Height = 900; fill(); go(index, false); return; }
             Hide(); big.Show(); big.Activate();
+        }
+
+        Action<int> bigSnapStep;
+        // the filters Big Picture cycles through with LB / RB
+        List<string> BigFilters()
+        {
+            var keys = new List<string> { "all", "fav" };
+            foreach (var src in new[] { "steam", "battlenet", "epic", "ea", "ubisoft", "gog", "riot", "xbox", "custom" }) if (games.Any(x => x.Source == src)) keys.Add(src);
+            foreach (var c in S.Collections) if (games.Any(g => S.For(g.Id).Tags.Contains(c))) keys.Add("col:" + c);
+            return keys;
+        }
+        string BigFilterName(string k)
+        {
+            if (k == "all") return "All games"; if (k == "fav") return "Favorites"; if (k.StartsWith("col:")) return k.Substring(4);
+            var g = AllCopies().FirstOrDefault(x => x.Source == k); return g != null ? g.SourceName : k;
+        }
+        Border PadLetter(string text)
+        {
+            return new Border { CornerRadius = new CornerRadius(6), BorderBrush = B("#8F88A0"), BorderThickness = new Thickness(1.5), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center,
+                Child = new TextBlock { Text = text, FontSize = 12, FontWeight = FontWeights.Bold, Foreground = B("#8F88A0") } };
         }
 
         // ---- quick launcher: click the tray icon for your recent games, right next to the clock
