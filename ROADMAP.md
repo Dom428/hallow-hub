@@ -10,13 +10,9 @@
 | **1.5** | EA app, Ubisoft Connect, GOG, Riot and Xbox games; your own name, cover and banner per game |
 | **1.6** | Apps that open and close with a game, break reminder, daily limit per game, session history |
 | **1.7** | List view, cover size, moving banner, notes per game, pins |
+| **1.8** | Weekly recap, play streaks, export to CSV, opt-in Discord posts (through Hallow Toolkit's link) |
 
 ## Next
-
-### 1.8 - Share
-- Discord post when you start a game (opt-in, uses Hallow Toolkit's webhook)
-- Weekly recap ("12h this week, mostly Delta Force"), play streaks
-- Export your playtime to a spreadsheet (CSV)
 
 ### 1.9 - Phone and PC health
 - Start a game from your phone (Hallow Toolkit's dashboard)

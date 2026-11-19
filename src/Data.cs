@@ -65,7 +65,7 @@ namespace HallowHub
                 { Days[i] = key + "=" + (v + m).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture); found = true; }
             }
             if (!found) Days.Add(key + "=" + m.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
-            var cutoff = when.Date.AddDays(-13).ToString("yyyy-MM-dd");
+            var cutoff = when.Date.AddDays(-400).ToString("yyyy-MM-dd");
             Days.RemoveAll(d => string.CompareOrdinal(d.Split('=')[0], cutoff) < 0);
         }
         public double MinutesOn(DateTime day)
@@ -99,10 +99,13 @@ namespace HallowHub
         [DataMember] public string View = "grid";      // v1.7: grid or list
         [DataMember] public double CardScale = 1;      // v1.7: cover size (0.8 small, 1 medium, 1.25 large)
         [DataMember] public bool StillBanner;          // v1.7: turn off the slow banner movement
+        [DataMember] public bool DiscordOnStart, DiscordRecap;   // v1.8: post to Discord (through Hallow Toolkit's link) - both off unless you turn them on
+        [DataMember] public bool WeeklyRecap = true;              // v1.8: a recap of last week on Mondays
+        [DataMember] public string LastRecap = "";
         [DataMember] public List<string> Collections = new List<string>();   // v1.2: your own groups, in your order
         [OnDeserializing] void D(StreamingContext c)
         {
-            Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1;
+            Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1; WeeklyRecap = true; LastRecap = "";
         }
 
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }

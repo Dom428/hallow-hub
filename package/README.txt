@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 1.8
+- Weekly recap on Mondays, play streaks, and Stats > Export to a spreadsheet.
+- Opt-in: post to Discord when you start a game (Settings; uses Hallow Toolkit's Discord link).
+
 WHAT'S NEW IN 1.7
 - List view, and Small / Medium / Large covers.
 - Notes per game (note button next to Play), pin games to the top, slowly moving banner.

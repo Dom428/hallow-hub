@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("1.7.0.0")]
-[assembly: AssemblyFileVersion("1.7.0.0")]
+[assembly: AssemblyVersion("1.8.0.0")]
+[assembly: AssemblyFileVersion("1.8.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "1.7";
+        public const string Version = "1.8";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -136,7 +136,7 @@ namespace HallowHub
                 PreviewKeyDown += OnKey;
                 var padTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) }; padTimer.Tick += (s, e) => { try { TickPad(); } catch { } }; padTimer.Start();
                 slow = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-                slow.Tick += (s, e) => { CheckLinks(); if (sel != null && IsRunning(sel)) ShowHero(); };
+                slow.Tick += (s, e) => { CheckLinks(); CheckRecap(); if (sel != null && IsRunning(sel)) ShowHero(); };
                 slow.Start();
                 Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); }), DispatcherPriority.ApplicationIdle);
                 if (!startHidden) Show();
@@ -331,6 +331,9 @@ namespace HallowHub
             close.Click += (s, e) => statsBtn.IsChecked = false;
             DockPanel.SetDock(close, Dock.Right); sh.Children.Add(close);
             var ci = Icons.Make("chart-line", 16, B("#F07820")); ci.Margin = new Thickness(0, 0, 10, 0); DockPanel.SetDock(ci, Dock.Left); sh.Children.Add(ci);
+            var exp = new Button { Content = "Export", Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Save your playtime as a spreadsheet (CSV)" };
+            exp.Click += (s, e) => ExportCsv();
+            DockPanel.SetDock(exp, Dock.Right); sh.Children.Add(exp);
             sh.Children.Add(new TextBlock { Text = "Your playtime", FontWeight = FontWeights.Bold, FontSize = 17, VerticalAlignment = VerticalAlignment.Center });
             sp.Children.Add(sh);
             statsBody = new StackPanel(); sp.Children.Add(statsBody);
@@ -351,7 +354,8 @@ namespace HallowHub
                 if (sub != null) t.Children.Add(new TextBlock { Text = sub, Foreground = (Brush)FindResource("Muted"), FontSize = 10.5 });
                 tiles.Children.Add(new Border { Child = t, Background = B("#2A2333"), CornerRadius = new CornerRadius(12), Padding = new Thickness(14, 10, 14, 12), Margin = new Thickness(5, 0, 5, 0) });
             };
-            tile("Today", today, "#F07820", null); tile("This week", week, "#A98BE0", null);
+            var streak = Streak();
+            tile("Today", today, "#F07820", streak >= 2 ? "streak: " + streak + " days in a row" : null); tile("This week", week, "#A98BE0", null);
             tile("Last 2 weeks", two, "#6ED28C", "Steam + Hallow Hub"); tile("All time", all, "#5AB4F0", vis.Count(g => Total(g) >= 1) + " games played");
             statsBody.Children.Add(tiles);
             // 14-day chart (days are counted by Hallow Hub while it runs)
@@ -431,6 +435,10 @@ namespace HallowHub
             startupBox = sw("Start with Windows (in the tray)", StartsWithWindows(), v => SetStartWithWindows(v));
             sw("Show hidden games", S.ShowHidden, v => { S.ShowHidden = v; RebuildGrid(); });
             sw("Moving banner (the art drifts slowly)", !S.StillBanner, v => { S.StillBanner = !v; if (v) StartBannerMotion(); else StopBannerMotion(); });
+            sw("Weekly recap on Mondays (a pop-up with last week's playtime)", S.WeeklyRecap, v => S.WeeklyRecap = v);
+            var dc = Discord.Connected;
+            var d1 = sw("Post to Discord when I start a game" + (dc ? "" : "  (connect Discord in Hallow Toolkit first)"), S.DiscordOnStart && dc, v => S.DiscordOnStart = v); d1.IsEnabled = dc;
+            var d2 = sw("Post my weekly recap to Discord too", S.DiscordRecap && dc, v => S.DiscordRecap = v); d2.IsEnabled = dc;
             var br = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
             var brBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 150 };
             foreach (var m in new[] { 0, 60, 90, 120, 180 }) brBox.Items.Add(new ComboBoxItem { Content = m == 0 ? "Off" : "After " + HubSettings.Duration(m).Replace("h 00m", "h"), Tag = m });
@@ -936,7 +944,7 @@ namespace HallowHub
             var did = new List<string>();
             if (d.Preset != "" && Mixer.UsePreset(d.Preset)) did.Add("Hallow Mixer on \"" + d.Preset + "\"");
             if (d.GameSession && Toolkit.CanSession && sessionFor == null) { Toolkit.Session(true); sessionFor = g.Id; did.Add("game session on"); }
-            OpenCompanions(g);
+            OpenCompanions(g); ShareStart(g);
             Status(g.Name + " started" + (did.Count > 0 ? " - " + string.Join(", ", did) : "") + ".");
             RefreshCard(g); if (g == sel) ShowHero(); UpdateTrayMenu();
         }
