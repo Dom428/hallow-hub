@@ -20,12 +20,9 @@
 | **2.5** | Hallow accent from Hallow Toolkit (live), crash reports kept on this PC with a notice, lastCrash in status |
 | **2.6** | Steam news and patch notes on game pages (cached 6 h), playtime charts per week and month |
 | **2.7** | Library backup and import (one zip, no secrets), opt-in Steam wishlist sale alerts |
+| **2.8** | Game details from Steam (description, genres, features, developer, release, screenshots), genre and feature filters |
 
 ## Next
-
-### 2.8 - Game details
-- Description, genres, features (co-op, controller...), developer, publisher, release date, Metacritic and screenshots for Steam games, from Steam's public store data - fetched when you open a game (and slowly while Hub is idle), cached for a month
-- Filter by genre and feature, together with the other filters
 
 ### 2.9 - Emulators and ROMs
 - Your own emulator profiles (exe + arguments with {rom}) and ROM folders Hub scans; ROMs become games with playtime, collections and everything else

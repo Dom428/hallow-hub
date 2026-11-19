@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.7.0.0")]
-[assembly: AssemblyFileVersion("2.7.0.0")]
+[assembly: AssemblyVersion("2.8.0.0")]
+[assembly: AssemblyFileVersion("2.8.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.7";
+        public const string Version = "2.8";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -155,7 +155,7 @@ namespace HallowHub
                 PreviewKeyDown += OnKey;
                 var padTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) }; padTimer.Tick += (s, e) => { try { TickPad(); } catch { } }; padTimer.Start();
                 slow = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-                slow.Tick += (s, e) => { CheckLinks(); ShowFamily(false); WatchTheme(); CheckSales(false); CheckRecap(); RefreshPc(); WriteRecent(); if (sel != null && IsRunning(sel)) ShowHero(); };
+                slow.Tick += (s, e) => { CheckLinks(); ShowFamily(false); WatchTheme(); CheckSales(false); IdleMeta(); CheckRecap(); RefreshPc(); WriteRecent(); if (sel != null && IsRunning(sel)) ShowHero(); };
                 slow.Start();
                 Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); RefreshPc(); WriteRecent(); }), DispatcherPriority.ApplicationIdle);
                 IsVisibleChanged += (s, e) => { if (IsVisible) RefreshPc(); };
@@ -199,10 +199,10 @@ namespace HallowHub
             var refresh = new Button { Content = "Refresh", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Look for newly installed games" };
             refresh.Click += (s, e) => { Rescan(); Status("Library refreshed - " + games.Count + " games."); }; right.Children.Add(refresh);
             gearBtn = new ToggleButton { Content = "Settings", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), ToolTip = "Settings" };
-            gearBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
+            gearBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
             gearBtn.Unchecked += (s, e) => settingsPanel.Visibility = Visibility.Collapsed;
             statsBtn = new ToggleButton { Content = "Stats", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your playtime" };
-            statsBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
+            statsBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
             statsBtn.Unchecked += (s, e) => statsPanel.Visibility = Visibility.Collapsed;
             var bigBtn = new Button { Content = "Big Picture", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Big Picture: full screen for the couch (F11, or View on a controller)" };
             bigBtn.Click += (s, e) => OpenBigPicture();
@@ -215,7 +215,7 @@ namespace HallowHub
             right.Children.Add(wishBtn);
             right.Children.Add(statsBtn);
             storageBtn = new ToggleButton { Content = "Storage", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Storage: what's on each drive, and what you could free up" };
-            storageBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; statsBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
+            storageBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; statsBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
             storageBtn.Unchecked += (s, e) => storagePanel.Visibility = Visibility.Collapsed;
             right.Children.Add(storageBtn);
             right.Children.Add(gearBtn);
@@ -266,6 +266,9 @@ namespace HallowHub
             hideBtn = new Button { Content = "Hide", Tag = "icon", Width = 42, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(8, 0, 0, 0) };
             hideBtn.Click += (s, e) => ToggleHide(sel);
             actions.Children.Add(hideBtn);
+            aboutBtn = new Button { Content = "About", Tag = "icon", Width = 42, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
+            aboutBtn.Click += (s, e) => OpenAbout();   // v2.8
+            actions.Children.Add(aboutBtn);
             newsBtn = new Button { Content = "News", Tag = "icon", Width = 42, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
             newsBtn.Click += (s, e) => OpenNews();   // v2.6
             actions.Children.Add(newsBtn);
@@ -358,6 +361,7 @@ namespace HallowHub
             storagePanel = BuildStorage(); outer.Children.Add(storagePanel);
             newsPanel = BuildNews(); outer.Children.Add(newsPanel);
             wishPanel = BuildWishlist(); outer.Children.Add(wishPanel);
+            aboutPanel = BuildAbout(); outer.Children.Add(aboutPanel);
             return outer;
         }
 
@@ -1013,6 +1017,7 @@ namespace HallowHub
                 heroTint.Color = Color.FromArgb(240, (byte)(0x12 + (ac.R - 0x12) * 0.14), (byte)(0x0F + (ac.G - 0x0F) * 0.14), (byte)(0x18 + (ac.B - 0x18) * 0.14));
                 favBtn.IsChecked = d.Favorite;
                 ShowNewsButton(g); if (newsPanel.Visibility == Visibility.Visible) FillNews();
+                ShowAboutButton(g); if (aboutPanel.Visibility == Visibility.Visible) FillAbout();
                 hideBtn.Content = d.Hidden ? "Unhide" : "Hide"; hideBtn.ToolTip = d.Hidden ? "Bring it back to your library" : "Hide it from your library (tools, test servers...) - nothing is uninstalled";
                 var nt = (d.Notes ?? "").Trim();
                 notesBtn.ToolTip = nt.Length == 0 ? "Notes (keybinds, loadouts, codes)" : (nt.Length > 400 ? nt.Substring(0, 400) + "..." : nt);
@@ -1160,6 +1165,7 @@ namespace HallowHub
         {
             if (newsPanel.Visibility == Visibility.Visible) { newsPanel.Visibility = Visibility.Collapsed; return true; }
             if (wishPanel.Visibility == Visibility.Visible) { wishPanel.Visibility = Visibility.Collapsed; return true; }
+            if (aboutPanel.Visibility == Visibility.Visible) { aboutPanel.Visibility = Visibility.Collapsed; return true; }
             if (statsBtn.IsChecked == true) { statsBtn.IsChecked = false; return true; }
             if (storageBtn.IsChecked == true) { storageBtn.IsChecked = false; return true; }
             if (gearBtn.IsChecked == true) { gearBtn.IsChecked = false; return true; }
@@ -1462,6 +1468,20 @@ namespace HallowHub
                 }
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "sales.err.txt"), ex.ToString()); }
+            // v2.8: game details (from the test cache) and a genre filter
+            try
+            {
+                var lc = games.FirstOrDefault(x => x.Id == "steam:1966720");
+                if (lc != null)
+                {
+                    Select(lc); OpenAbout(); Snap.Save(this, System.IO.Path.Combine(dir, "about.png"), 1180, 900); aboutPanel.Visibility = Visibility.Collapsed;
+                    S.FTags = new List<string> { "Co-op" }; FillFilters(); var fpc2 = filterPop.Child; filterPop.Child = null;
+                    var fw2 = new Window { Background = (Brush)FindResource("Bg"), Foreground = Foreground, FontFamily = FontFamily, FontSize = FontSize, Content = fpc2 };
+                    Snap.Save(fw2, System.IO.Path.Combine(dir, "filters-genre.png"), 400, 0); fw2.Content = null; filterPop.Child = fpc2;
+                    RebuildGrid(); Snap.Save(this, System.IO.Path.Combine(dir, "filtered-genre.png"), 1180, 780); S.FTags.Clear(); RebuildGrid();
+                }
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "meta.err.txt"), ex.ToString()); }
             // v2.5: the accent switched live (the window rebuilds with the new theme)
             try { var was = HallowLook.UseShared; HallowLook.UseShared = !was; ApplyAccent(false); Snap.Save(this, System.IO.Path.Combine(dir, "accent-switched.png"), 1180, 780); HallowLook.UseShared = was; ApplyAccent(false); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "accent.err.txt"), ex.ToString()); }
         }

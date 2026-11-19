@@ -106,20 +106,21 @@ namespace HallowHub
         [DataMember] public List<string> Collections = new List<string>();   // v1.2: your own groups, in your order
         // v2.3: filters that combine with the chips and the sort ("" = any)
         [DataMember] public List<string> FStores = new List<string>();      // only these stores (empty = all)
-        [DataMember] public string FSize = "", FLast = "", FTime = "";
+        [DataMember] public string FSize = "", FLast = "", FTime = "";     // size: small/mid/big; last played: week/month/old/never; playtime: new/some/lots
         [DataMember] public bool UseHallowAccent = true;                 // v2.5: use the accent picked in Hallow Toolkit
-        [DataMember] public string LastCrashShown = "";
+        [DataMember] public string LastCrashShown = "";                    // v2.5: the crash report already told about
         // v2.7: sale alerts for your Steam wishlist (off unless you turn them on)
         [DataMember] public bool SaleAlerts;
         [DataMember] public string SteamProfile = "";                    // SteamID64 or profile link
         [DataMember] public Dictionary<string, double> SaleTargets = new Dictionary<string, double>();   // appid -> tell me below this price
         [DataMember] public string LastSaleCheck = "";
-        [DataMember] public List<string> SaleTold = new List<string>();   // "appid:final price" already told                 // v2.5: the crash report already told about
-        [DataMember] public bool OneIcon = true;                         // v2.4: One Hallow icon - the other Hallow apps use Hub's tray icon     // size: small/mid/big; last played: week/month/old/never; playtime: new/some/lots
+        [DataMember] public List<string> SaleTold = new List<string>();   // "appid:final price" already told
+        [DataMember] public List<string> FTags = new List<string>();     // v2.8: genres / features a game must have
+        [DataMember] public bool OneIcon = true;                         // v2.4: One Hallow icon - the other Hallow apps use Hub's tray icon
         [OnDeserializing] void D(StreamingContext c)
         {
             Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1; WeeklyRecap = true; LastRecap = "";
-            FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>();
+            FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>();
         }
 
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }
