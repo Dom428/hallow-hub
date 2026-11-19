@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.1
+- Games in two stores (like Overwatch) start the copy you actually play.
+- A copy you haven't played for a month is offered as a clean-up (uninstall through its launcher, which asks first).
+
 WHAT'S NEW IN 2.0
 - Big Picture (TV button, F11, or View on a controller): full screen, made for the couch.
 - Click the tray icon for a quick launcher with your recent games (double-click opens Hub).

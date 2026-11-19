@@ -17,6 +17,31 @@ namespace HallowHub
     {
         Border storagePanel; ToggleButton storageBtn; StackPanel storageBody; bool sizing, sized;
 
+        // v2.1: folder sizes measured by Hub, kept across rescans (a rescan makes new Game objects)
+        static readonly Dictionary<string, long> dirSizes = new Dictionary<string, long>();
+        bool sizingCopies;
+        void ApplyKnownSizes()
+        {
+            lock (dirSizes)
+                foreach (var c in AllCopies().Where(x => x.SizeBytes <= 0 && !string.IsNullOrEmpty(x.InstallDir)))
+                { long v; if (dirSizes.TryGetValue(c.InstallDir.ToLowerInvariant(), out v)) c.SizeBytes = v; }
+        }
+        // the copies of merged games get sized right away, so a copy you don't use can be offered for clean-up
+        void SizeMergedCopies()
+        {
+            var todo = games.Where(g => g.Alts.Count > 0).SelectMany(g => new[] { g }.Concat(g.Alts))
+                .Where(c => c.SizeBytes <= 0 && !string.IsNullOrEmpty(c.InstallDir) && Directory.Exists(c.InstallDir)).ToList();
+            if (todo.Count == 0 || sizingCopies) return;
+            Action<Game> measure = c => { var sz = Library.DirSize(c.InstallDir); c.SizeBytes = sz; lock (dirSizes) dirSizes[c.InstallDir.ToLowerInvariant()] = sz; };
+            if (Snap.On) { foreach (var c in todo) measure(c); return; }
+            sizingCopies = true;
+            new Thread(() =>
+            {
+                foreach (var c in todo) { try { measure(c); } catch { } }
+                Dispatcher.BeginInvoke(new Action(() => { sizingCopies = false; ApplyKnownSizes(); ShowHero(); }));
+            }) { IsBackground = true, Priority = ThreadPriority.BelowNormal }.Start();
+        }
+
         // not played for 60 days (or never, when it's on the PC)
         bool Stale(Game g)
         {
@@ -56,7 +81,7 @@ namespace HallowHub
                 var todo = copies.Where(c => c.SizeBytes <= 0).ToList();
                 new Thread(() =>
                 {
-                    foreach (var c in todo) { var sz = Library.DirSize(c.InstallDir); c.SizeBytes = sz; }
+                    foreach (var c in todo) { var sz = Library.DirSize(c.InstallDir); c.SizeBytes = sz; lock (dirSizes) dirSizes[c.InstallDir.ToLowerInvariant()] = sz; }
                     Dispatcher.BeginInvoke(new Action(() => { sizing = false; sized = true; if (storagePanel.Visibility == Visibility.Visible) FillStorage(); RebuildGrid(); }));
                 }) { IsBackground = true, Priority = ThreadPriority.BelowNormal }.Start();
             }
@@ -64,8 +89,13 @@ namespace HallowHub
 
             // ---- clean-up suggestions: older duplicate copies, and games not played for a while
             var tips = new List<Tuple<Game, string>>();
-            foreach (var g in games)
-                foreach (var a in g.Alts) if (a != PlayCopy(g)) tips.Add(Tuple.Create(a, "a second copy of " + g.Name + " - you play the " + PlayCopy(g).SourceName + " one"));
+            foreach (var g in games.Where(x => x.Alts.Count > 0))
+                foreach (var a in new[] { g }.Concat(g.Alts))
+                {
+                    if (a == PlayCopy(g) || tracker.Now.ContainsKey(a.Id)) continue;
+                    var al = CopyLast(a);
+                    tips.Add(Tuple.Create(a, "a second copy of " + g.Name + (a.Drive != null ? " on " + a.Drive : "") + " - " + (al == null ? "not played here that Hub knows of" : "last played here " + AgoLow(al)) + "; you play the " + PlayCopy(g).SourceName + " one"));
+                }
             foreach (var g in games.Where(Stale))
             {
                 var last = LastOf(g);
@@ -141,11 +171,15 @@ namespace HallowHub
             DockPanel.SetDock(th, Dock.Left); row.Children.Add(th);
             var txt = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
             txt.Children.Add(new TextBlock { Text = main.Name + (main.Alts.Count > 0 ? "  (" + c.SourceName + ")" : ""), TextTrimming = TextTrimming.CharacterEllipsis });
-            txt.Children.Add(new TextBlock { Text = why ?? ((c.NeedsUpdate ? "update waiting   ·   " : "") + (LastOf(main) == null ? "no playtime recorded" : "last played " + HubSettings.Ago(LastOf(main)).ToLowerInvariant())), Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis });
+            txt.Children.Add(new TextBlock { Text = why ?? ((c.NeedsUpdate ? "update waiting   ·   " : "") + (RowLast(c) == null ? "no playtime recorded" : "last played " + AgoLow(RowLast(c)))), Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis });
             row.Children.Add(txt);
             row.MouseLeftButtonUp += (s, e) => { if (e.OriginalSource is TextBlock || e.OriginalSource is Border) Select(main); };
             return row;
         }
+
+        // a merged game's copies each show their own last play
+        DateTime? RowLast(Game c) { var m = Main(c); return m.Alts.Count > 0 ? CopyLast(c) : LastOf(m); }
+        static string AgoLow(DateTime? d) { var s = HubSettings.Ago(d); return char.IsDigit(s[0]) ? s : s.ToLowerInvariant(); }
 
         // uninstalling always goes through the game's own launcher, which asks again before it deletes anything
         void Uninstall(Game c)

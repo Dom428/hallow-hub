@@ -134,7 +134,7 @@ namespace HallowHub
                 double v; long l;
                 if (double.TryParse(Vdf.Str(a, "Playtime"), out v)) g.SteamMinutes = v;
                 if (double.TryParse(Vdf.Str(a, "Playtime2wks"), out v)) g.Steam2Weeks = v;
-                if (long.TryParse(Vdf.Str(a, "LastPlayed"), out l) && l > 0) g.SteamLast = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(l);
+                if (long.TryParse(Vdf.Str(a, "LastPlayed"), out l) && l > 0) g.LauncherLast = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(l);
             }
         }
 
@@ -147,7 +147,9 @@ namespace HallowHub
             {
                 var all = grp.ToList();
                 if (all.Count == 1) { result.Add(all[0]); continue; }
-                var main = all.OrderByDescending(g => g.SteamLast ?? DateTime.MinValue).ThenByDescending(g => g.UpdatedAt).First();
+                // v2.1: the copy you actually play: the launcher's last-played first, then playtime; the install date only breaks ties
+                // (a launcher that patches in the background makes an unused copy look new)
+                var main = all.OrderByDescending(g => g.LauncherLast ?? DateTime.MinValue).ThenByDescending(g => g.SteamMinutes).ThenByDescending(g => g.UpdatedAt).First();
                 foreach (var g in all) if (g != main) { g.Parent = main; main.Alts.Add(g); }
                 result.Add(main);
             }
@@ -169,12 +171,38 @@ namespace HallowHub
                 var icon = e.Icon != null && File.Exists(e.Icon.Split(',')[0].Trim('"')) ? e.Icon.Split(',')[0].Trim('"') : null;
                 games.Add(new Game { Id = "bnet:" + e.Name, Name = Clean(e.Name), Source = "battlenet", InstallDir = e.Location.TrimEnd('\\'), Launch = icon ?? "", IconExe = icon, Uninstall = e.Uninstall });
             }
+            var played = BnetLastPlayed();
             foreach (var g in games)
             {
-                string code;
+                string code, key; DateTime when;
                 if (bnet != null && BnetCodes.TryGetValue(g.Name, out code)) { g.Launch = bnet; g.Args = "--exec=\"launch " + code + "\""; }
+                if (BnetCodes.TryGetValue(g.Name, out code) && BnetConfigKeys.TryGetValue(code, out key) && played.TryGetValue(key, out when)) g.LauncherLast = when;
                 if (!string.IsNullOrEmpty(g.Launch)) yield return g;
             }
+        }
+        // v2.1: Battle.net keeps when you last played each game in %APPDATA%\Battle.net\Battle.net.config (Games.<key>.LastPlayed, unix seconds)
+        static readonly Dictionary<string, string> BnetConfigKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
+            { "Pro", "prometheus" }, { "Fen", "fenris" }, { "D3", "diablo3" }, { "OSI", "osi" }, { "WoW", "wow" }, { "WTCG", "hs_beta" },
+            { "S2", "s2" }, { "S1", "s1" }, { "Hero", "heroes" }, { "W3", "w3" }, { "ANBS", "anbs" } };
+        static Dictionary<string, DateTime> BnetLastPlayed()
+        {
+            var r = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var f = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"Battle.net\Battle.net.config");
+                if (!File.Exists(f)) return r;
+                var cfg = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(f));
+                object o; if (!cfg.TryGetValue("Games", out o)) return r;
+                var gs = o as Dictionary<string, object>; if (gs == null) return r;
+                foreach (var kv in gs)
+                {
+                    var a = kv.Value as Dictionary<string, object>; object lp; long l;
+                    if (a != null && a.TryGetValue("LastPlayed", out lp) && lp != null && long.TryParse(lp.ToString(), out l) && l > 0)
+                        r[kv.Key] = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(l);
+                }
+            }
+            catch { }
+            return r;
         }
         class Entry { public string Name, Publisher, Location, Icon, Uninstall; }
         static IEnumerable<Entry> Uninstall()

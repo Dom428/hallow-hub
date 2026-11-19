@@ -13,12 +13,9 @@
 | **1.8** | Weekly recap, play streaks, export to CSV, opt-in Discord posts (through Hallow Toolkit's link) |
 | **1.9** | PC check next to Play (CPU, RAM, GPU temperature, free space); start recent games from the phone dashboard (Hallow Toolkit 5.3) |
 | **2.0** | Big Picture full-screen controller mode, quick launcher from the tray icon |
+| **2.1** | Play on picks the copy you actually play (Steam and Battle.net last played), clean-up offer for an unused second copy |
 
 ## Next
-
-### 2.1 - Fixes from real use
-- Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
-- The Overwatch merge: check Play on picks the copy you actually use, and offer the Battle.net copy (71 GB on C:, not played in a month) as a clean-up suggestion
 
 ### 2.2 - Hallow family on every game page
 - **Saves** (Hallow Vault): last backup time, Back up now, Restore a version
@@ -30,6 +27,9 @@
 - Hide games (tools, test servers, redistributables) without uninstalling
 - Sort and filter by store, size, last played and playtime together
 - Big Picture: collections and the Storage page with the controller
+
+### Fixes from real use
+- Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
 
 ### Later
 - Friends and achievements: need each store's sign-in or an API key, so only if it can be done without Hub holding your passwords

@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.0.0.0")]
-[assembly: AssemblyFileVersion("2.0.0.0")]
+[assembly: AssemblyVersion("2.1.0.0")]
+[assembly: AssemblyFileVersion("2.1.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.0";
+        public const string Version = "2.1";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -124,7 +124,7 @@ namespace HallowHub
             };
             SizeChanged += (s, e) => { if (WindowState == WindowState.Normal && IsLoaded) { S.WinW = ActualWidth; S.WinH = ActualHeight; } };
 
-            tracker.Started = g => OnStarted(Main(g)); tracker.Stopped = (g, since) => OnStopped(Main(g), since);
+            tracker.Started = g0 => { var m = Main(g0); if (m.Alts.Count > 0) { var dc = S.For(m.Id); dc.LastCopy = g0.Id; dc.LastCopyAt = DateTime.Now.ToString("o"); } OnStarted(m); }; tracker.Stopped = (g, since) => OnStopped(Main(g), since);
             tracker.Counted = (g0, m) => { var g = Main(g0); S.For(g.Id).AddMinutes(m, DateTime.Now); S.Save(); RefreshCard(g); if (sel == g) ShowHero(); UpdateStatus(); };
             Rescan();
             if (!Snap.On)
@@ -473,9 +473,31 @@ namespace HallowHub
         double Total(Game g) { return Math.Max(S.For(g.Id).Minutes, g.SteamMinutes); }
         DateTime? LastOf(Game g)
         {
-            var a = S.For(g.Id).Last; var b = g.SteamLast;
+            var a = S.For(g.Id).Last; var b = g.LauncherLast;
+            foreach (var x in g.Alts) if (x.LauncherLast != null && (b == null || x.LauncherLast > b)) b = x.LauncherLast;
             if (a != null) a = a.Value.ToUniversalTime();
             if (a == null) return b; if (b == null) return a; return a > b ? a : b;
+        }
+        // v2.1: when this copy of a merged game was last played (its launcher's record, or Hub seeing it run)
+        DateTime? CopyLast(Game c)
+        {
+            var d = S.For(Main(c).Id); DateTime? b = c.LauncherLast; DateTime h;
+            if (d.LastCopy == c.Id && DateTime.TryParse(d.LastCopyAt, null, System.Globalization.DateTimeStyles.RoundtripKind, out h)) { h = h.ToUniversalTime(); if (b == null || h > b) b = h; }
+            return b;
+        }
+        // a second copy you don't play: not the one Play starts, not running, and not played for 30 days
+        Game UnusedCopy(Game g)
+        {
+            if (g.Alts.Count == 0) return null;
+            var cur = PlayCopy(g);
+            return new[] { g }.Concat(g.Alts).Where(c => c != cur && !tracker.Now.ContainsKey(c.Id) && (c.SizeBytes <= 0 || c.SizeBytes >= (256L << 20)))
+                .Where(c => { var l = CopyLast(c); return l == null || (DateTime.UtcNow - l.Value).TotalDays > 30; }).OrderByDescending(c => c.SizeBytes).FirstOrDefault();
+        }
+        // the copy you actually use: the one played most recently, then the one with the most playtime
+        Game UsedCopy(Game g)
+        {
+            if (g.Alts.Count == 0) return g;
+            return new[] { g }.Concat(g.Alts).OrderByDescending(c => CopyLast(c) ?? DateTime.MinValue).ThenByDescending(c => c.SteamMinutes).ThenBy(c => c == g ? 0 : 1).First();
         }
         double Recent(Game g) { return Math.Max(S.For(g.Id).MinutesSince(DateTime.Today.AddDays(-13)), g.Steam2Weeks); }
         static Game Main(Game g) { return g.Parent ?? g; }
@@ -489,8 +511,9 @@ namespace HallowHub
         bool IsRunning(Game g) { return RunningOf(g) != null; }
         Game PlayCopy(Game g)
         {
-            var want = S.For(g.Id).PlayOn;
-            return string.IsNullOrEmpty(want) ? g : (g.Id == want ? g : g.Alts.FirstOrDefault(a => a.Id == want) ?? g);
+            var want = S.For(g.Id).PlayOn;   // you picked one (Play on) - otherwise the copy you actually use
+            var picked = string.IsNullOrEmpty(want) ? null : g.Id == want ? g : g.Alts.FirstOrDefault(a => a.Id == want);
+            return picked ?? UsedCopy(g);
         }
         // started straight from its .exe (so launch options and run-as-admin apply)
         static bool ExeLaunch(Game c) { return c != null && File.Exists(c.Launch) && string.IsNullOrEmpty(c.Args) && c.Source != "battlenet"; }
@@ -558,6 +581,7 @@ namespace HallowHub
                 var twin = AllCopies().FirstOrDefault(x => x.Source == "steam" && x.Cover != null && Library.Norm(x.Name) == Library.Norm(g.Name));
                 if (twin != null) { g.Cover = twin.Cover; g.Hero = twin.Hero; g.Logo = twin.Logo; g.Header = twin.Header; }
             }
+            ApplyKnownSizes(); SizeMergedCopies();
             if (sel != null) sel = games.FirstOrDefault(x => x.Id == sel.Id);
             if (sel == null) sel = games.FirstOrDefault(x => x.Id == S.Selected);
             if (sel == null) sel = Sorted(games.Where(x => !S.For(x.Id).Hidden)).FirstOrDefault();
@@ -853,10 +877,24 @@ namespace HallowHub
                     foreach (var copy in new[] { g }.Concat(g.Alts))
                     {
                         var cp = copy;
+                        var cl = CopyLast(copy);
                         var chip = new ToggleButton { Content = copy.SourceName, Style = (Style)FindResource("Chip"), Margin = new Thickness(0, 0, 6, 0), IsChecked = copy == cur, Padding = new Thickness(10, 4, 10, 4),
-                            ToolTip = (copy.Drive != null ? copy.Drive + "  " : "") + copy.InstallDir + (copy.UpdatedAt > DateTime.MinValue ? "\nUpdated " + copy.UpdatedAt.ToString("d MMM yyyy") : "") };
+                            ToolTip = (copy.Drive != null ? copy.Drive + "  " : "") + copy.InstallDir + "\nLast played on this copy: " + (cl == null ? "not that Hub knows" : AgoLow(cl)) +
+                                (copy.SizeBytes > 0 ? "\n" + Size(copy.SizeBytes) : "") + (copy.UpdatedAt > DateTime.MinValue ? "\nUpdated " + copy.UpdatedAt.ToString("d MMM yyyy") : "") };
                         chip.Click += (o, e2) => { S.For(g.Id).PlayOn = cp.Id; S.Save(); ShowHero(); Status("Play starts " + g.Name + " on " + cp.SourceName + "."); };
                         playOn.Children.Add(chip);
+                    }
+                    // v2.1: a copy you don't use (not played for a month) - offer to free its space, through its own launcher
+                    var spare = UnusedCopy(g);
+                    if (spare != null)
+                    {
+                        var spareSz = Size(spare.SizeBytes);
+                        var tip = new Button { Style = (Style)FindResource("Btn"), Padding = new Thickness(10, 4, 12, 4), Margin = new Thickness(8, 0, 0, 0),
+                            Content = Icons.WithText("broom", "Free " + (spareSz ?? "space") + ": " + spare.SourceName + " copy unused", 11, B("#F0BE5A")),
+                            ToolTip = "The " + spare.SourceName + " copy" + (spare.Drive != null ? " on " + spare.Drive : "") + " hasn't been played " + (CopyLast(spare) == null ? "that Hub knows of" : "since " + CopyLast(spare).Value.ToLocalTime().ToString("d MMM yyyy")) +
+                                " - you play the " + cur.SourceName + " one.\nClick to uninstall it through " + spare.SourceName + " (it asks first). Nothing is deleted by Hub." };
+                        tip.Click += (o, e2) => Uninstall(spare);
+                        playOn.Children.Add(tip);
                     }
                 }
                 var ac = Accent(g);

@@ -23,7 +23,7 @@ namespace HallowHub
         public DateTime UpdatedAt;              // when the install last changed (picks the main copy of a duplicate)
         public long SizeBytes; public string Drive; public string Uninstall;   // v1.4: the launcher's own uninstall command (Battle.net)
         public bool NeedsUpdate, Updating; public double Progress = -1;   // Steam download, 0..1
-        public double SteamMinutes, Steam2Weeks; public DateTime? SteamLast;
+        public double SteamMinutes, Steam2Weeks; public DateTime? LauncherLast;   // the launcher's own last-played (Steam; Battle.net since 2.1)
         public List<Game> Alts = new List<Game>();   // the same game from another store (merged into one card)
         public Game Parent;                          // set on an alt: the card it belongs to
         public string SourceName { get { return Source == "steam" ? "Steam" : Source == "battlenet" ? "Battle.net" : Source == "epic" ? "Epic Games" : Source == "ea" ? "EA app" : Source == "ubisoft" ? "Ubisoft Connect" : Source == "gog" ? "GOG" : Source == "riot" ? "Riot" : Source == "xbox" ? "Xbox" : "Added by you"; } }
@@ -51,7 +51,8 @@ namespace HallowHub
         [DataMember] public string LimitTold = "";                         // v1.6: the day the limit reminder was shown
         [DataMember] public bool Pinned;                                   // v1.7: always at the top of the library
         [DataMember] public string Notes = "";                             // v1.7: your notes (keybinds, loadouts, codes)
-        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; OpenWith = new List<string>(); SessionLog = new List<string>(); LimitTold = ""; Notes = ""; }
+        [DataMember] public string LastCopy = "", LastCopyAt = "";         // v2.1: which copy of a merged game Hub last saw running, and when
+        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; OpenWith = new List<string>(); SessionLog = new List<string>(); LimitTold = ""; Notes = ""; LastCopy = ""; LastCopyAt = ""; }
 
         public DateTime? Last { get { DateTime d; return DateTime.TryParse(LastPlayed, null, System.Globalization.DateTimeStyles.RoundtripKind, out d) ? d : (DateTime?)null; } }
         public void AddMinutes(double m, DateTime when)
