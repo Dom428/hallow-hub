@@ -21,7 +21,7 @@ namespace HallowHub
         public string Cover, Hero, Logo, Header, IconExe;
         // v1.1
         public DateTime UpdatedAt;              // when the install last changed (picks the main copy of a duplicate)
-        public long SizeBytes; public string Drive;
+        public long SizeBytes; public string Drive; public string Uninstall;   // v1.4: the launcher's own uninstall command (Battle.net)
         public bool NeedsUpdate, Updating; public double Progress = -1;   // Steam download, 0..1
         public double SteamMinutes, Steam2Weeks; public DateTime? SteamLast;
         public List<Game> Alts = new List<Game>();   // the same game from another store (merged into one card)

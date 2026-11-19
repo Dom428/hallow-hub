@@ -162,7 +162,7 @@ namespace HallowHub
                 if (e.Name == "Battle.net") { var exe = Path.Combine(e.Location ?? "", "Battle.net.exe"); if (File.Exists(exe)) bnet = exe; continue; }
                 if (string.IsNullOrEmpty(e.Location) || !Directory.Exists(e.Location)) continue;
                 var icon = e.Icon != null && File.Exists(e.Icon.Split(',')[0].Trim('"')) ? e.Icon.Split(',')[0].Trim('"') : null;
-                games.Add(new Game { Id = "bnet:" + e.Name, Name = Clean(e.Name), Source = "battlenet", InstallDir = e.Location.TrimEnd('\\'), Launch = icon ?? "", IconExe = icon });
+                games.Add(new Game { Id = "bnet:" + e.Name, Name = Clean(e.Name), Source = "battlenet", InstallDir = e.Location.TrimEnd('\\'), Launch = icon ?? "", IconExe = icon, Uninstall = e.Uninstall });
             }
             foreach (var g in games)
             {
@@ -171,7 +171,7 @@ namespace HallowHub
                 if (!string.IsNullOrEmpty(g.Launch)) yield return g;
             }
         }
-        class Entry { public string Name, Publisher, Location, Icon; }
+        class Entry { public string Name, Publisher, Location, Icon, Uninstall; }
         static IEnumerable<Entry> Uninstall()
         {
             var roots = new[] { Tuple.Create(Registry.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
@@ -186,7 +186,7 @@ namespace HallowHub
                         {
                             if (s == null) continue;
                             var name = s.GetValue("DisplayName") as string; if (string.IsNullOrEmpty(name)) continue;
-                            yield return new Entry { Name = name, Publisher = s.GetValue("Publisher") as string, Location = s.GetValue("InstallLocation") as string, Icon = s.GetValue("DisplayIcon") as string };
+                            yield return new Entry { Name = name, Publisher = s.GetValue("Publisher") as string, Location = s.GetValue("InstallLocation") as string, Icon = s.GetValue("DisplayIcon") as string, Uninstall = s.GetValue("UninstallString") as string };
                         }
                 }
         }
@@ -208,6 +208,24 @@ namespace HallowHub
                 yield return new Game { Id = "epic:" + app, Name = Clean(name), Source = "epic", InstallDir = loc.TrimEnd('\\'),
                     Launch = "com.epicgames.launcher://apps/" + Uri.EscapeDataString(app) + "?action=launch&silent=true", IconExe = full != null && File.Exists(full) ? full : null };
             }
+        }
+
+        // v1.4: size of a folder (skips links so nothing is counted twice; unreadable folders count as 0)
+        public static long DirSize(string dir)
+        {
+            long total = 0; var stack = new Stack<string>(); stack.Push(dir);
+            while (stack.Count > 0)
+            {
+                var d = stack.Pop();
+                try
+                {
+                    var di = new DirectoryInfo(d);
+                    foreach (var f in di.EnumerateFiles()) { try { total += f.Length; } catch { } }
+                    foreach (var sub in di.EnumerateDirectories()) if ((sub.Attributes & FileAttributes.ReparsePoint) == 0) stack.Push(sub.FullName);
+                }
+                catch { }
+            }
+            return total;
         }
 
         // ---- a game you add yourself (any .exe)

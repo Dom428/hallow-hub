@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("1.3.0.0")]
-[assembly: AssemblyFileVersion("1.3.0.0")]
+[assembly: AssemblyVersion("1.4.0.0")]
+[assembly: AssemblyFileVersion("1.4.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "1.3";
+        public const string Version = "1.4";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -78,7 +78,7 @@ namespace HallowHub
         }
     }
 
-    public class HubWindow : Window
+    public partial class HubWindow : Window
     {
         [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int val, int size);
         static Color C(string hex) { return (Color)ColorConverter.ConvertFromString(hex); }
@@ -178,15 +178,19 @@ namespace HallowHub
             var refresh = new Button { Content = "Refresh", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Look for newly installed games" };
             refresh.Click += (s, e) => { Rescan(); Status("Library refreshed - " + games.Count + " games."); }; right.Children.Add(refresh);
             gearBtn = new ToggleButton { Content = "Settings", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), ToolTip = "Settings" };
-            gearBtn.Checked += (s, e) => { if (statsBtn != null) statsBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
+            gearBtn.Checked += (s, e) => { if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
             gearBtn.Unchecked += (s, e) => settingsPanel.Visibility = Visibility.Collapsed;
             statsBtn = new ToggleButton { Content = "Stats", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your playtime" };
-            statsBtn.Checked += (s, e) => { gearBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
+            statsBtn.Checked += (s, e) => { gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
             statsBtn.Unchecked += (s, e) => statsPanel.Visibility = Visibility.Collapsed;
             var dice = new Button { Content = "Surprise me", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "What should I play? (Ctrl+R, or X on a controller)" };
             dice.Click += (s, e) => Surprise();
             right.Children.Add(dice);
             right.Children.Add(statsBtn);
+            storageBtn = new ToggleButton { Content = "Storage", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Storage: what's on each drive, and what you could free up" };
+            storageBtn.Checked += (s, e) => { gearBtn.IsChecked = false; statsBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
+            storageBtn.Unchecked += (s, e) => storagePanel.Visibility = Visibility.Collapsed;
+            right.Children.Add(storageBtn);
             right.Children.Add(gearBtn);
             DockPanel.SetDock(right, Dock.Right); head.Children.Add(right);
             var sg = new Grid { Width = 360, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
@@ -268,7 +272,7 @@ namespace HallowHub
             // ---- filters + sort
             var bar = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
             sortBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 170, VerticalAlignment = VerticalAlignment.Center };
-            foreach (var o in new[] { Tuple.Create("recent", "Recently played"), Tuple.Create("played", "Most played"), Tuple.Create("name", "A to Z") })
+            foreach (var o in new[] { Tuple.Create("recent", "Recently played"), Tuple.Create("played", "Most played"), Tuple.Create("name", "A to Z"), Tuple.Create("size", "Biggest first") })
                 sortBox.Items.Add(new ComboBoxItem { Content = o.Item2, Tag = o.Item1 });
             sortBox.SelectionChanged += (s, e) => { if (loading) return; var it = sortBox.SelectedItem as ComboBoxItem; if (it != null) { S.Sort = (string)it.Tag; S.Save(); RebuildGrid(); } };
             DockPanel.SetDock(sortBox, Dock.Right); bar.Children.Add(sortBox);
@@ -294,6 +298,7 @@ namespace HallowHub
             var outer = new Grid(); outer.Children.Add(root);
             settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
             statsPanel = BuildStats(); outer.Children.Add(statsPanel);
+            storagePanel = BuildStorage(); outer.Children.Add(storagePanel);
             return outer;
         }
 
@@ -500,6 +505,7 @@ namespace HallowHub
         {
             if (S.Sort == "played") return list.OrderByDescending(g => Total(g)).ThenBy(g => g.Name);
             if (S.Sort == "name") return list.OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase);
+            if (S.Sort == "size") return list.OrderByDescending(g => g.SizeBytes + g.Alts.Sum(a => a.SizeBytes)).ThenBy(g => g.Name);
             return list.OrderByDescending(g => LastOf(g) ?? DateTime.MinValue).ThenByDescending(g => Total(g)).ThenBy(g => g.Name);
         }
 
@@ -507,6 +513,8 @@ namespace HallowHub
         {
             chips.Children.Clear();
             var opts = new List<Tuple<string, string>> { Tuple.Create("all", "All"), Tuple.Create("fav", "Favorites") };
+            if (games.Any(g => g.NeedsUpdate || g.Updating)) opts.Add(Tuple.Create("upd", "Needs update"));
+            if (games.Any(Stale)) opts.Add(Tuple.Create("stale", "Not played lately"));
             foreach (var src in new[] { "steam", "battlenet", "epic", "custom" })
                 if (games.Any(g => g.Source == src)) opts.Add(Tuple.Create(src, games.First(g => g.Source == src).SourceName));
             foreach (var c in S.Collections) if (games.Any(g => S.For(g.Id).Tags.Contains(c))) opts.Add(Tuple.Create("col:" + c, c));
@@ -536,7 +544,7 @@ namespace HallowHub
             var q = (search == null ? "" : search.Text ?? "").Trim();
             return Sorted(games.Where(g =>
                 (S.ShowHidden || !S.For(g.Id).Hidden) &&
-                (S.Filter == "all" || (S.Filter == "fav" ? S.For(g.Id).Favorite : S.Filter.StartsWith("col:") ? S.For(g.Id).Tags.Contains(S.Filter.Substring(4)) : g.Source == S.Filter)) &&
+                (S.Filter == "all" || (S.Filter == "fav" ? S.For(g.Id).Favorite : S.Filter == "upd" ? (g.NeedsUpdate || g.Updating) : S.Filter == "stale" ? Stale(g) : S.Filter.StartsWith("col:") ? S.For(g.Id).Tags.Contains(S.Filter.Substring(4)) : g.Source == S.Filter)) &&
                 (q.Length == 0 || g.Name.IndexOf(q, StringComparison.CurrentCultureIgnoreCase) >= 0))).ToList();
         }
 
@@ -705,6 +713,7 @@ namespace HallowHub
             item("Game settings and collections...", "sliders", () => { Select(g); GameSettings(g); });
             item("Open folder", "folder-open", () => OpenFolder(g));
             item("Create desktop shortcut", "arrow-up-right-from-square", () => Shortcut(g));
+            foreach (var cp in new[] { g }.Concat(g.Alts)) { var c2 = cp; item(g.Alts.Count > 0 ? "Uninstall the " + c2.SourceName + " copy..." : "Uninstall...", "trash-can", () => Uninstall(c2)); }
             if (g.Source == "steam") item("Steam store page", "arrow-up-right-from-square", () => OpenUrl("steam://store/" + g.Id.Substring(6)));
             item(S.For(g.Id).Hidden ? "Unhide" : "Hide from the library", S.For(g.Id).Hidden ? "eye" : "eye-slash", () => { var d = S.For(g.Id); d.Hidden = !d.Hidden; S.Save(); RebuildGrid(); Status(d.Hidden ? g.Name + " is hidden. Settings > Show hidden games brings it back." : g.Name + " is back in the library."); });
             if (g.Source == "custom") item("Remove from Hallow Hub", "trash-can", () => { S.Custom.RemoveAll(x => x.Id == g.Id); S.Save(); Rescan(); Status(g.Name + " removed (its playtime is kept)."); });
@@ -924,6 +933,7 @@ namespace HallowHub
         bool Back()
         {
             if (statsBtn.IsChecked == true) { statsBtn.IsChecked = false; return true; }
+            if (storageBtn.IsChecked == true) { storageBtn.IsChecked = false; return true; }
             if (gearBtn.IsChecked == true) { gearBtn.IsChecked = false; return true; }
             if (search.Text.Length > 0) { search.Text = ""; return true; }
             return false;
@@ -1158,6 +1168,7 @@ namespace HallowHub
             FillStats(); statsPanel.Visibility = Visibility.Visible;
             Snap.Save(this, System.IO.Path.Combine(dir, "stats.png"), 1180, 780);
             statsPanel.Visibility = Visibility.Collapsed;
+            FillStorage(); storagePanel.Visibility = Visibility.Visible; Snap.Save(this, System.IO.Path.Combine(dir, "storage.png"), 1180, 900); storagePanel.Visibility = Visibility.Collapsed;
             try { var gw = new GameSettingsWindow(df ?? games[0], S.For((df ?? games[0]).Id), S, false); Snap.Save(gw, System.IO.Path.Combine(dir, "gamesettings.png"), 480, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "gs.err.txt"), ex.ToString()); }
             Surprise(); Snap.Save(this, System.IO.Path.Combine(dir, "surprise.png"), 1180, 780);
             var ow = games.FirstOrDefault(g => g.Alts.Count > 0); if (ow != null) { Select(ow); Snap.Save(this, System.IO.Path.Combine(dir, "merged.png"), 1180, 780); }

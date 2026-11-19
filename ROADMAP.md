@@ -6,14 +6,9 @@
 | **1.1** | Merged duplicates (Play on), Steam hours, update and size badges, Continue playing, colour glow, Stats |
 | **1.2** | Game settings (launch options, run as admin), collections, Surprise me, keyboard, Xbox controller |
 | **1.3** | Updates from GitHub and What's new, notices installs and updates by itself, Steam download progress, --play and desktop shortcuts |
+| **1.4** | Storage page with drive bars, clean-up suggestions, uninstall through the launcher, Biggest first, Needs update / Not played lately filters |
 
 ## Next
-
-### 1.4 - Storage
-- Storage view: every drive with a bar, the games on it and how big they are
-- Sort by size; filter "Needs update" and "Not played in 60 days"
-- Clean-up suggestions ("R.E.P.O. - 2 GB, not played for 2 months")
-- Uninstall through the game's own launcher
 
 ### 1.5 - More launchers
 - EA app, Ubisoft Connect, GOG Galaxy, Xbox / Microsoft Store, Riot (Valorant, League)

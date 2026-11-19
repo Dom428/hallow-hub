@@ -6,6 +6,11 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 1.4
+- Storage page (drive icon): each drive's games by size, and what you could free up.
+- Uninstall from Hub - always through Steam / Battle.net / Epic, which ask again first.
+- Sort by Biggest first; filters Needs update and Not played lately.
+
 WHAT'S NEW IN 1.3
 - Updates itself from GitHub (asks first) and shows What's new after an update.
 - New installs, uninstalls and finished Steam updates show up by themselves.
