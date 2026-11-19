@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("1.9.0.0")]
-[assembly: AssemblyFileVersion("1.9.0.0")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "1.9";
+        public const string Version = "2.0";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -184,6 +184,9 @@ namespace HallowHub
             statsBtn = new ToggleButton { Content = "Stats", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your playtime" };
             statsBtn.Checked += (s, e) => { gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
             statsBtn.Unchecked += (s, e) => statsPanel.Visibility = Visibility.Collapsed;
+            var bigBtn = new Button { Content = "Big Picture", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Big Picture: full screen for the couch (F11, or View on a controller)" };
+            bigBtn.Click += (s, e) => OpenBigPicture();
+            right.Children.Add(bigBtn);
             var dice = new Button { Content = "Surprise me", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "What should I play? (Ctrl+R, or X on a controller)" };
             dice.Click += (s, e) => Surprise();
             right.Children.Add(dice);
@@ -459,7 +462,7 @@ namespace HallowHub
             sp.Children.Add(linkInfo);
             sp.Children.Add(new TextBlock { Text = "Playtime counts for any game running from its install folder, however you start it (Steam, Battle.net, a shortcut).",
                 Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0), FontSize = 11.5 });
-            sp.Children.Add(new TextBlock { Text = "Keys: arrows move, Enter plays, Ctrl+F search, Ctrl+R surprise me, F5 refresh, Esc back.\nController: d-pad or stick, A play, X surprise me, Y favorite, LB/RB filters, B back, Start stats.",
+            sp.Children.Add(new TextBlock { Text = "Keys: arrows move, Enter plays, Ctrl+F search, Ctrl+R surprise me, F5 refresh, F11 Big Picture, Esc back.\nController: d-pad or stick, A play, X surprise me, Y favorite, LB/RB filters, B back, Start stats, View Big Picture.\nTray icon: click for the quick launcher, double-click to open Hub.",
                 Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0), FontSize = 11.5, LineHeight = 18 });
             sp.Children.Add(new TextBlock { Text = "Hallow Hub " + Program.Version + "  -  icons: Font Awesome Free (CC BY 4.0)", Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(0, 12, 0, 0), FontSize = 11 });
             b.Child = sp; return b;
@@ -1023,6 +1026,7 @@ namespace HallowHub
             bool typing = focus is TextBox, inCombo = focus is ComboBox || focus is ComboBoxItem;
             if (ctrl && e.Key == Key.F) { search.Focus(); search.SelectAll(); e.Handled = true; return; }
             if (ctrl && e.Key == Key.R) { Surprise(); e.Handled = true; return; }
+            if (e.Key == Key.F11) { OpenBigPicture(); e.Handled = true; return; }
             if (e.Key == Key.F5) { Rescan(); Status("Library refreshed - " + games.Count + " games."); e.Handled = true; return; }
             if (e.Key == Key.Escape) { if (Back()) { e.Handled = true; Keyboard.Focus(this); } return; }
             if (inCombo) return;
@@ -1055,6 +1059,7 @@ namespace HallowHub
             if ((b & Pad.LB) != 0) NextFilter(-1);
             if ((b & Pad.RB) != 0) NextFilter(1);
             if ((b & Pad.Start) != 0) statsBtn.IsChecked = statsBtn.IsChecked != true;
+            if ((b & Pad.Back) != 0) OpenBigPicture();
         }
 
         // ---- v1.3: --play "<name or id>" (shortcuts, Stream Deck)
@@ -1190,14 +1195,16 @@ namespace HallowHub
             tray = new WF.NotifyIcon { Text = "Hallow Hub", Visible = true };
             try { tray.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location); } catch { tray.Icon = System.Drawing.SystemIcons.Application; }
             var menu = new WF.ContextMenuStrip();
+            var bigItem = new WF.ToolStripMenuItem("Big Picture (full screen)"); bigItem.Click += (s, e) => Dispatcher.BeginInvoke(new Action(OpenBigPicture));
             var open = new WF.ToolStripMenuItem("Open Hallow Hub"); open.Font = new System.Drawing.Font(open.Font, System.Drawing.FontStyle.Bold);
             open.Click += (s, e) => ShowFromTray(); menu.Items.Add(open);
-            trayGames = new WF.ToolStripMenuItem("Play"); menu.Items.Add(trayGames);
+            trayGames = new WF.ToolStripMenuItem("Play"); menu.Items.Add(trayGames); menu.Items.Add(bigItem);
             menu.Items.Add(new WF.ToolStripSeparator());
             var quit = new WF.ToolStripMenuItem("Quit"); quit.Click += (s, e) => Quit(); menu.Items.Add(quit);
             menu.Opening += (s, e) => UpdateTrayMenu();
             tray.ContextMenuStrip = menu;
-            tray.MouseClick += (s, e) => { if (e.Button == WF.MouseButtons.Left) ShowFromTray(); };
+            tray.MouseClick += (s, e) => { if (e.Button == WF.MouseButtons.Left) Dispatcher.BeginInvoke(new Action(ShowQuick)); };   // v2.0: quick launcher
+            tray.MouseDoubleClick += (s, e) => { if (e.Button == WF.MouseButtons.Left) Dispatcher.BeginInvoke(new Action(() => { if (quick != null) quick.Close(); ShowFromTray(); })); };
             UpdateTrayMenu();
         }
         void UpdateTrayMenu()
@@ -1240,6 +1247,8 @@ namespace HallowHub
             FillStats(); statsPanel.Visibility = Visibility.Visible;
             Snap.Save(this, System.IO.Path.Combine(dir, "stats.png"), 1180, 780);
             statsPanel.Visibility = Visibility.Collapsed;
+            OpenBigPicture(); if (big != null) { Snap.Save(big, System.IO.Path.Combine(dir, "big.png"), 1600, 900); big = null; }
+            ShowQuick(); if (quick != null) { Snap.Save(quick, System.IO.Path.Combine(dir, "quick.png"), 370, 0); quick = null; }
             S.View = "list"; RebuildGrid(); Snap.Save(this, System.IO.Path.Combine(dir, "list.png"), 1180, 900); S.View = "grid"; S.CardScale = 0.8; RebuildGrid(); Snap.Save(this, System.IO.Path.Combine(dir, "small.png"), 1180, 900); S.CardScale = 1; RebuildGrid();
             FillStorage(); storagePanel.Visibility = Visibility.Visible; Snap.Save(this, System.IO.Path.Combine(dir, "storage.png"), 1180, 900); storagePanel.Visibility = Visibility.Collapsed;
             try { var gw = new GameSettingsWindow(df ?? games[0], S.For((df ?? games[0]).Id), S, false); Snap.Save(gw, System.IO.Path.Combine(dir, "gamesettings.png"), 480, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "gs.err.txt"), ex.ToString()); }

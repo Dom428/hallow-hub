@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.0
+- Big Picture (TV button, F11, or View on a controller): full screen, made for the couch.
+- Click the tray icon for a quick launcher with your recent games (double-click opens Hub).
+
 WHAT'S NEW IN 1.9
 - Your PC right now, next to Play: CPU, free RAM, GPU temperature, free space on the game's drive.
 - Start your recent games from your phone (Hallow Toolkit 5.3 dashboard).

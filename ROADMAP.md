@@ -12,9 +12,6 @@
 | **1.7** | List view, cover size, moving banner, notes per game, pins |
 | **1.8** | Weekly recap, play streaks, export to CSV, opt-in Discord posts (through Hallow Toolkit's link) |
 | **1.9** | PC check next to Play (CPU, RAM, GPU temperature, free space); start recent games from the phone dashboard (Hallow Toolkit 5.3) |
+| **2.0** | Big Picture full-screen controller mode, quick launcher from the tray icon |
 
 ## Next
-
-### 2.0 - Big Picture
-- Full-screen mode for the couch, made for a controller
-- Quick launcher pop-up from the tray icon
