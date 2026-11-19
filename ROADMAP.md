@@ -20,6 +20,18 @@
 
 ## Next
 
+### 2.5 - Hallow accent and crash reports
+- Use the accent colour picked in Hallow Toolkit (%APPDATA%\Hallow\theme.json), live; game glows keep their own colours
+- Crash reports kept on this PC, a notice after a crash (Show details / Open folder), lastCrash in the pipe status
+
+### 2.6 - News and charts
+- Patch notes and news on each Steam game's page (Steam's public news, cached 6 h, plain text, Read more in the browser)
+- Playtime charts: hours per week and per month from Hub's own sessions, top games
+
+### 2.7 - Library backup and sale alerts
+- Back up Hub's library data (collections, notes, pins, hidden, names and art, settings, sessions) to one zip and import it on another PC - never secrets
+- Opt-in sale alerts for your public Steam wishlist (discounts, or below a price you set)
+
 ### Fixes from real use
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
 
