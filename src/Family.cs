@@ -184,7 +184,7 @@ namespace HallowHub
     public class FamilyApp { public string App; public bool Running; public List<Dictionary<string, object>> Items = new List<Dictionary<string, object>>(); public bool Answered; }
     public static class FamilyTray
     {
-        public static readonly string[] Apps = { "Mixer", "Vault", "Overlay", "Clips", "Remote" };
+        public static readonly string[] Apps = { "Mixer", "Vault", "Overlay", "Clips", "Remote", "Keys" };   // v2.11: Hallow Keys
         // installed apps only; for the running ones, their menu items (asked in parallel, 300 ms each; an app that doesn't answer just gets Open / Exit)
         public static List<FamilyApp> Fetch()
         {

@@ -23,11 +23,9 @@
 | **2.8** | Game details from Steam (description, genres, features, developer, release, screenshots), genre and feature filters |
 | **2.9** | Emulator profiles and ROM folders - every ROM a game with playtime, collections and Big Picture |
 | **2.10** | Play status and your own rating (filters and sorts), search across genres, developer, notes, collections and status |
+| **2.11** | Hallow Keys in the Hallow icon (its submenu, Start when installed) |
 
 ## Next
-
-### 2.11 - Hallow Keys in the Hallow icon
-- Hallow Keys gets its submenu in Hub's tray menu like the other Hallow apps
 
 ### Gaps vs Playnite / GOG Galaxy
 What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):

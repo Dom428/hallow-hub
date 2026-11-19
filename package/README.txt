@@ -6,6 +6,9 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.11
+- Hallow Keys gets its own submenu in the Hallow icon.
+
 WHAT'S NEW IN 2.10
 - Play status (Playing, Beaten, Completed, On hold, Abandoned, Plan to play) and your own stars under Play - as filters and sorts.
 - Search finds genres, developers, notes and collections too (genre:, dev:, status:, col:, note:, store:).
