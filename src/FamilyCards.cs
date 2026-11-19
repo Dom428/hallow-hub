@@ -200,9 +200,10 @@ namespace HallowHub
                 var recent = games.Where(x => !S.For(x.Id).Hidden).OrderByDescending(x => LastOf(x) ?? DateTime.MinValue).ThenByDescending(x => Total(x)).Take(8)
                     .Select(x => new Dictionary<string, object> { { "id", x.Id }, { "name", x.Name }, { "playing", IsRunning(x) } }).ToList();
                 var js = new JavaScriptSerializer();
-                var key = js.Serialize(new object[] { running, playing, recent });   // what matters, without the time
+                var lastCrash = LastCrashIso();   // v2.5
+                var key = js.Serialize(new object[] { running, playing, recent, lastCrash });   // what matters, without the time
                 if (key == lastStatus) return;
-                var json = js.Serialize(new Dictionary<string, object> { { "app", "Hub" }, { "version", Program.Version }, { "updated", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") }, { "running", running }, { "playing", playing }, { "recent", recent } });
+                var json = js.Serialize(new Dictionary<string, object> { { "app", "Hub" }, { "version", Program.Version }, { "updated", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") }, { "running", running }, { "playing", playing }, { "recent", recent }, { "lastCrash", lastCrash } });
                 familyServer.StatusJson = json;
                 lastStatus = key;
                 Directory.CreateDirectory(HubSettings.Dir);

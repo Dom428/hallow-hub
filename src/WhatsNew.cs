@@ -13,6 +13,7 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("2.5", new[] { "Uses the Hallow accent colour you pick in Hallow Toolkit (Settings > Use the Hallow accent); game glows keep their own colours", "If Hub ever closes unexpectedly, it keeps a crash report on this PC and tells you once - nothing is sent anywhere" }),
             Tuple.Create("2.4", new[] { "One Hallow icon: Hub's tray icon hosts the whole Hallow family - right-click it for each app's menu (Open, its actions, Exit), or Start the ones that aren't running", "The other Hallow apps hide their own tray icons while it's on (Settings > One Hallow icon)" }),
             Tuple.Create("2.3", new[] { "Filters (next to the sort): store, size, last played and playtime, all together; hide games with the eye button - the Hidden filter brings them back", "Big Picture: your collections as filters (LB / RB), and Storage with the controller (Menu)" }),
             Tuple.Create("2.2", new[] { "Hallow family on every game page: Saves (Hallow Vault), Clips (Hallow Clips) and Overlay on/off (Hallow Overlay) - only for the apps you have", "Break reminders and the daily limit show on Hallow Overlay when it's running" }),
@@ -41,7 +42,7 @@ namespace HallowHub
 
     public class WhatsNewWindow : Window
     {
-        static SolidColorBrush B(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)); }
+        static SolidColorBrush B(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex))); }
         public WhatsNewWindow(List<Tuple<string, string[]>> items)
         {
             Title = "What's new in Hallow Hub"; Width = 560; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize;

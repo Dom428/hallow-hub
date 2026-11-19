@@ -17,12 +17,9 @@
 | **2.2** | Hallow family cards on every game page: Saves (Vault), Clips, Overlay on/off; Hub pipe (ping, status) and status.json; reminders on Overlay |
 | **2.3** | Hide and unhide games, combined filters (store, size, last played, playtime), Big Picture collections and Storage with the controller |
 | **2.4** | One Hallow icon: Hub hosts the family tray menu (tray-host, notify, per-app submenus, Start / Exit, Open Hallow Toolkit) |
+| **2.5** | Hallow accent from Hallow Toolkit (live), crash reports kept on this PC with a notice, lastCrash in status |
 
 ## Next
-
-### 2.5 - Hallow accent and crash reports
-- Use the accent colour picked in Hallow Toolkit (%APPDATA%\Hallow\theme.json), live; game glows keep their own colours
-- Crash reports kept on this PC, a notice after a crash (Show details / Open folder), lastCrash in the pipe status
 
 ### 2.6 - News and charts
 - Patch notes and news on each Steam game's page (Steam's public news, cached 6 h, plain text, Read more in the browser)

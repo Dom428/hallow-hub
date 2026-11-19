@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.4.0.0")]
-[assembly: AssemblyFileVersion("2.4.0.0")]
+[assembly: AssemblyVersion("2.5.0.0")]
+[assembly: AssemblyFileVersion("2.5.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.4";
+        public const string Version = "2.5";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -42,6 +42,7 @@ namespace HallowHub
             if (si >= 0 && si + 1 < args.Length)
             {
                 Snap.On = true; HubSettings.Frozen = true;
+                HallowLook.UseShared = HubSettings.Load().UseHallowAccent; HallowLook.Refresh();
                 var sa = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; LoadTheme(sa);
                 new HubWindow(true).SnapAll(args[si + 1]); return;
             }
@@ -56,7 +57,8 @@ namespace HallowHub
                 else showEvent.Set();
                 return;
             }
-            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; LoadTheme(app);
+            HallowLook.UseShared = HubSettings.Load().UseHallowAccent; HallowLook.Refresh();
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; Crash.Hook(app); LoadTheme(app);
             var w = new HubWindow(args.Contains("--tray") || play != null);
             if (play != null) w.Dispatcher.BeginInvoke(new Action(() => w.PlayByKey(play)), DispatcherPriority.ApplicationIdle);
             var t = new Thread(() => { while (showEvent.WaitOne()) w.Dispatcher.BeginInvoke(new Action(w.ShowFromTray)); }) { IsBackground = true };
@@ -85,17 +87,19 @@ namespace HallowHub
             try { Console.WriteLine(reply); Console.Out.Flush(); } catch { }
             return code;
         }
-        static void LoadTheme(Application app)
+        public static void LoadTheme(Application app)
         {
-            using (var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("HallowHub.Theme.xaml"))
-                app.Resources.MergedDictionaries.Add((ResourceDictionary)XamlReader.Load(s));
+            string xaml;
+            using (var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("HallowHub.Theme.xaml")) using (var r = new StreamReader(s)) xaml = r.ReadToEnd();
+            app.Resources.MergedDictionaries.Clear();
+            app.Resources.MergedDictionaries.Add((ResourceDictionary)XamlReader.Parse(HallowLook.Theme(xaml)));   // v2.5: with the Hallow accent
         }
     }
 
     public partial class HubWindow : Window
     {
         [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int val, int size);
-        static Color C(string hex) { return (Color)ColorConverter.ConvertFromString(hex); }
+        static Color C(string hex) { return (Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex)); }   // v2.5: Hub's orange follows the Hallow accent
         static SolidColorBrush B(string hex) { return new SolidColorBrush(C(hex)); }
         static readonly Dictionary<string, string> SourceColor = new Dictionary<string, string> {
             { "steam", "#5AB4F0" }, { "battlenet", "#4AA8FF" }, { "epic", "#ECE8F4" }, { "custom", "#A98BE0" }, { "ea", "#F05A5A" }, { "ubisoft", "#5A8CF0" }, { "gog", "#B48BF0" }, { "riot", "#F0505A" }, { "xbox", "#6ED28C" } };
@@ -150,17 +154,18 @@ namespace HallowHub
                 PreviewKeyDown += OnKey;
                 var padTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) }; padTimer.Tick += (s, e) => { try { TickPad(); } catch { } }; padTimer.Start();
                 slow = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-                slow.Tick += (s, e) => { CheckLinks(); ShowFamily(false); CheckRecap(); RefreshPc(); WriteRecent(); if (sel != null && IsRunning(sel)) ShowHero(); };
+                slow.Tick += (s, e) => { CheckLinks(); ShowFamily(false); WatchTheme(); CheckRecap(); RefreshPc(); WriteRecent(); if (sel != null && IsRunning(sel)) ShowHero(); };
                 slow.Start();
                 Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); RefreshPc(); WriteRecent(); }), DispatcherPriority.ApplicationIdle);
                 IsVisibleChanged += (s, e) => { if (IsVisible) RefreshPc(); };
                 if (!startHidden) Show();
-                StartWatching(); StartFamilyServer();
+                StartWatching(); StartFamilyServer(); WatchTheme();
                 DateTime lastCheck;
                 if (!DateTime.TryParse(S.LastUpdateCheck, out lastCheck) || (DateTime.Now - lastCheck).TotalHours > 20) CheckForUpdate(false);
                 if (string.IsNullOrEmpty(S.LastSeenVersion)) { S.LastSeenVersion = Program.Version; S.Save(); }
                 else if (!startHidden) Dispatcher.BeginInvoke(new Action(ShowWhatsNew), DispatcherPriority.ApplicationIdle);
-                IsVisibleChanged += (s, e) => { if (IsVisible) Dispatcher.BeginInvoke(new Action(ShowWhatsNew), DispatcherPriority.ApplicationIdle); };
+                IsVisibleChanged += (s, e) => { if (IsVisible) { Dispatcher.BeginInvoke(new Action(ShowWhatsNew), DispatcherPriority.ApplicationIdle); Dispatcher.BeginInvoke(new Action(ShowCrashNotice), DispatcherPriority.ApplicationIdle); } };
+                if (!startHidden) Dispatcher.BeginInvoke(new Action(ShowCrashNotice), DispatcherPriority.ApplicationIdle);
             }
             else { CheckLinks(); RefreshPc(); }
         }
@@ -465,6 +470,7 @@ namespace HallowHub
             startupBox = sw("Start with Windows (in the tray)", StartsWithWindows(), v => SetStartWithWindows(v));
             sw("Show hidden games", S.ShowHidden, v => { S.ShowHidden = v; RebuildGrid(); });
             sw("One Hallow icon: the other Hallow apps use this tray icon (their menus are in Hub's menu)", S.OneIcon, v => { S.OneIcon = v; Status(v ? "One Hallow icon is on - the other Hallow apps hide their own tray icons in a few seconds." : "One Hallow icon is off - every Hallow app shows its own tray icon again in a few seconds."); });
+            sw("Use the Hallow accent (the colour picked in Hallow Toolkit)", S.UseHallowAccent, v => { S.UseHallowAccent = v; HallowLook.UseShared = v; S.Save(); Dispatcher.BeginInvoke(new Action(() => ApplyAccent(false))); });
             sw("Moving banner (the art drifts slowly)", !S.StillBanner, v => { S.StillBanner = !v; if (v) StartBannerMotion(); else StopBannerMotion(); });
             sw("Weekly recap on Mondays (a pop-up with last week's playtime)", S.WeeklyRecap, v => S.WeeklyRecap = v);
             var dc = Discord.Connected;
@@ -1308,6 +1314,7 @@ namespace HallowHub
             Snap.Save(this, System.IO.Path.Combine(dir, "main.png"), 1180, 780);
             settingsPanel.Visibility = Visibility.Visible;
             Snap.Save(this, System.IO.Path.Combine(dir, "settings.png"), 1180, 780);
+            try { var cf = Crash.Newest(); if (cf != null) Snap.Save(new CrashWindow(cf), System.IO.Path.Combine(dir, "crash.png"), 460, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "crash.err.txt"), ex.ToString()); }
             try { File.WriteAllText(System.IO.Path.Combine(dir, "traymenu.txt"), FamilyMenuText()); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "traymenu.err.txt"), ex.ToString()); }
             settingsPanel.Visibility = Visibility.Collapsed;
             FillStats(); statsPanel.Visibility = Visibility.Visible;
@@ -1338,6 +1345,8 @@ namespace HallowHub
                 S.For(hid.Id).Hidden = false; S.Filter = "all"; RebuildChips(); RebuildGrid();
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "extras.err.txt"), ex.ToString()); }
+            // v2.5: the accent switched live (the window rebuilds with the new theme)
+            try { var was = HallowLook.UseShared; HallowLook.UseShared = !was; ApplyAccent(false); Snap.Save(this, System.IO.Path.Combine(dir, "accent-switched.png"), 1180, 780); HallowLook.UseShared = was; ApplyAccent(false); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "accent.err.txt"), ex.ToString()); }
         }
     }
 }
