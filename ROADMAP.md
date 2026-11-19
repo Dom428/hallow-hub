@@ -26,6 +26,9 @@
 
 ## Next
 
+### 2.11 - Hallow Keys in the Hallow icon
+- Hallow Keys gets its submenu in Hub's tray menu like the other Hallow apps
+
 ### Gaps vs Playnite / GOG Galaxy
 What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
 - Game details (descriptions, genres, tags, developer, release date, screenshots) and filtering by them - **buildable** (Steam's public store data, no key) - 2.8
