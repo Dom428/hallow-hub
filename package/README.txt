@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.2
+- Hallow family on every game page: Saves (Hallow Vault), Clips (Hallow Clips) and Overlay on/off (Hallow Overlay) - only for the apps you have.
+- Break reminders and the daily limit show on Hallow Overlay when it's running.
+
 WHAT'S NEW IN 2.1
 - Games in two stores (like Overwatch) start the copy you actually play.
 - A copy you haven't played for a month is offered as a clean-up (uninstall through its launcher, which asks first).

@@ -14,14 +14,9 @@
 | **1.9** | PC check next to Play (CPU, RAM, GPU temperature, free space); start recent games from the phone dashboard (Hallow Toolkit 5.3) |
 | **2.0** | Big Picture full-screen controller mode, quick launcher from the tray icon |
 | **2.1** | Play on picks the copy you actually play (Steam and Battle.net last played), clean-up offer for an unused second copy |
+| **2.2** | Hallow family cards on every game page: Saves (Vault), Clips, Overlay on/off; Hub pipe (ping, status) and status.json; reminders on Overlay |
 
 ## Next
-
-### 2.2 - Hallow family on every game page
-- **Saves** (Hallow Vault): last backup time, Back up now, Restore a version
-- **Clips** (Hallow Clips): this game's newest clips as thumbnails, open or show in folder
-- **Overlay** (Hallow Overlay): on/off per game
-- Each card only shows when that app is installed
 
 ### 2.3 - Library extras
 - Hide games (tools, test servers, redistributables) without uninstalling

@@ -25,17 +25,19 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.1.0.0")]
-[assembly: AssemblyFileVersion("2.1.0.0")]
+[assembly: AssemblyVersion("2.2.0.0")]
+[assembly: AssemblyFileVersion("2.2.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.1";
+        public const string Version = "2.2";
         [STAThread]
         public static void Main(string[] args)
         {
+            int ci = Array.IndexOf(args, "--cmd");   // v2.2: Hallow family link - send one line to the running Hub, print the reply
+            if (ci >= 0) { Environment.Exit(Cmd(ci + 1 < args.Length ? args[ci + 1] : "")); return; }
             int si = Array.IndexOf(args, "--snap");
             if (si >= 0 && si + 1 < args.Length)
             {
@@ -70,6 +72,18 @@ namespace HallowHub
             t2.Start();
             app.Run();
             GC.KeepAlive(mutex);
+        }
+        [DllImport("kernel32.dll")] static extern bool AttachConsole(int pid);
+        [DllImport("kernel32.dll")] static extern IntPtr GetStdHandle(int which);
+        // exit code 0 on ok, 1 on error, 2 when Hub isn't running; never opens a window
+        static int Cmd(string line)
+        {
+            var h = GetStdHandle(-11); if (h == IntPtr.Zero || h == new IntPtr(-1)) AttachConsole(-1);
+            string reply; int code;
+            if (!Family.Running("Hub")) { reply = "error Hallow Hub isn't running"; code = 2; }
+            else { reply = Family.Send("Hub", line) ?? "error no reply"; code = Family.Ok(reply) ? 0 : 1; }
+            try { Console.WriteLine(reply); Console.Out.Flush(); } catch { }
+            return code;
         }
         static void LoadTheme(Application app)
         {
@@ -136,12 +150,12 @@ namespace HallowHub
                 PreviewKeyDown += OnKey;
                 var padTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) }; padTimer.Tick += (s, e) => { try { TickPad(); } catch { } }; padTimer.Start();
                 slow = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-                slow.Tick += (s, e) => { CheckLinks(); CheckRecap(); RefreshPc(); WriteRecent(); if (sel != null && IsRunning(sel)) ShowHero(); };
+                slow.Tick += (s, e) => { CheckLinks(); ShowFamily(false); CheckRecap(); RefreshPc(); WriteRecent(); if (sel != null && IsRunning(sel)) ShowHero(); };
                 slow.Start();
                 Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); RefreshPc(); WriteRecent(); }), DispatcherPriority.ApplicationIdle);
                 IsVisibleChanged += (s, e) => { if (IsVisible) RefreshPc(); };
                 if (!startHidden) Show();
-                StartWatching();
+                StartWatching(); StartFamilyServer();
                 DateTime lastCheck;
                 if (!DateTime.TryParse(S.LastUpdateCheck, out lastCheck) || (DateTime.Now - lastCheck).TotalHours > 20) CheckForUpdate(false);
                 if (string.IsNullOrEmpty(S.LastSeenVersion)) { S.LastSeenVersion = Program.Version; S.Save(); }
@@ -161,7 +175,7 @@ namespace HallowHub
         UIElement Build()
         {
             var root = new Grid { Margin = new Thickness(22, 14, 22, 12) };
-            foreach (var h in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
+            foreach (var h in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
                 root.RowDefinitions.Add(new RowDefinition { Height = h });
 
             // ---- header: logo, search, buttons
@@ -280,6 +294,9 @@ namespace HallowHub
             heroGrid.Children.Add(opts);
             hero.Child = heroGrid;
             Grid.SetRow(hero, 1); root.Children.Add(hero);
+            // v2.2: Hallow family cards (Saves, Clips, Overlay) - only the apps you have
+            familyRow = new Grid { Margin = new Thickness(0, 0, 0, 14), Visibility = Visibility.Collapsed };
+            Grid.SetRow(familyRow, 2); root.Children.Add(familyRow);
 
             // ---- filters + sort
             var bar = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
@@ -304,7 +321,7 @@ namespace HallowHub
             DockPanel.SetDock(countText, Dock.Right); bar.Children.Add(countText);
             chips = new StackPanel { Orientation = Orientation.Horizontal };
             bar.Children.Add(chips);
-            Grid.SetRow(bar, 2); root.Children.Add(bar);
+            Grid.SetRow(bar, 3); root.Children.Add(bar);
 
             // ---- the library
             grid = new WrapPanel { Margin = new Thickness(-7, 0, -7, 0) };
@@ -314,10 +331,10 @@ namespace HallowHub
             libLabel = SectionLabel("LIBRARY", "table-cells-large");
             lib.Children.Add(contLabel); lib.Children.Add(contRow); lib.Children.Add(libLabel); lib.Children.Add(grid);
             gridScroll = new ScrollViewer { Content = lib, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-            Grid.SetRow(gridScroll, 3); root.Children.Add(gridScroll);
+            Grid.SetRow(gridScroll, 4); root.Children.Add(gridScroll);
 
             statusText = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, Margin = new Thickness(2, 10, 2, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-            Grid.SetRow(statusText, 4); root.Children.Add(statusText);
+            Grid.SetRow(statusText, 5); root.Children.Add(statusText);
 
             var outer = new Grid(); outer.Children.Add(root);
             settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
@@ -932,6 +949,7 @@ namespace HallowHub
                     Toolkit.Script == null ? "Needs Hallow Toolkit." : "Needs Hallow Toolkit 5.2 or newer.";
             }
             finally { loading = false; }
+            ShowFamily(false);
         }
 
         void CheckLinks()
@@ -1265,7 +1283,7 @@ namespace HallowHub
         }
         void Quit()
         {
-            exiting = true; S.Save();
+            exiting = true; S.Save(); WriteFamilyStatus(false);
             if (sessionFor != null) { Toolkit.Session(false); sessionFor = null; }
             if (tray != null) { tray.Visible = false; tray.Dispose(); }
             Application.Current.Shutdown();

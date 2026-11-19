@@ -1,4 +1,4 @@
-// Hallow Hub v1.9 - a quick PC check before you play (CPU, RAM, GPU, free space), and the recent-games list
+﻿// Hallow Hub v1.9 - a quick PC check before you play (CPU, RAM, GPU, free space), and the recent-games list
 // Hallow Toolkit's phone dashboard uses to start games.
 using System;
 using System.Collections.Generic;
@@ -92,6 +92,7 @@ namespace HallowHub
         void WriteRecent()
         {
             if (Snap.On) return;
+            WriteFamilyStatus(true);
             try
             {
                 var list = games.Where(x => !S.For(x.Id).Hidden).OrderByDescending(x => LastOf(x) ?? DateTime.MinValue).ThenByDescending(x => Total(x)).Take(8)

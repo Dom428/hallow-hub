@@ -1,4 +1,4 @@
-// Hallow Hub v1.6 - session helpers: apps that open with a game, a break reminder, a daily limit per game, and session history.
+﻿// Hallow Hub v1.6 - session helpers: apps that open with a game, a break reminder, a daily limit per game, and session history.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -89,12 +89,6 @@ namespace HallowHub
                 }
             }
         }
-        void Notify(string title, string text)
-        {
-            Status(title + " - " + text);
-            if (tray != null) tray.ShowBalloonTip(8000, title, text, WF.ToolTipIcon.None);
-        }
-
         // for the Stats page: the latest sessions across every game
         FrameworkElement RecentSessions()
         {
