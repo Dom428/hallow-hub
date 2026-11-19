@@ -44,7 +44,12 @@ namespace HallowHub
         [DataMember] public bool Admin;                              // v1.2: run as administrator (games started from an .exe)
         [DataMember] public List<string> Tags = new List<string>();   // v1.2: collections it's in
         [DataMember] public string CustomName = "", CustomCover = "", CustomHero = "";   // v1.5: your own name and pictures
-        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; }
+        [DataMember] public List<string> OpenWith = new List<string>();   // v1.6: apps to open with the game
+        [DataMember] public bool KeepOpen;                                 // v1.6: leave them open when the game closes
+        [DataMember] public int DailyLimit;                                // v1.6: minutes a day (0 = no limit)
+        [DataMember] public List<string> SessionLog = new List<string>(); // v1.6: "start (o)|minutes", newest last, up to 40
+        [DataMember] public string LimitTold = "";                         // v1.6: the day the limit reminder was shown
+        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; OpenWith = new List<string>(); SessionLog = new List<string>(); LimitTold = ""; }
 
         public DateTime? Last { get { DateTime d; return DateTime.TryParse(LastPlayed, null, System.Globalization.DateTimeStyles.RoundtripKind, out d) ? d : (DateTime?)null; } }
         public void AddMinutes(double m, DateTime when)
@@ -88,6 +93,7 @@ namespace HallowHub
         [DataMember] public double WinW = -1, WinH = -1;
         [DataMember] public string LastSeenVersion = "";
         [DataMember] public string LastUpdateCheck = "";
+        [DataMember] public int BreakMinutes;   // v1.6: remind me to take a break after this long in one go (0 = off)
         [DataMember] public List<string> Collections = new List<string>();   // v1.2: your own groups, in your order
         [OnDeserializing] void D(StreamingContext c)
         {

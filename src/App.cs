@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("1.5.0.0")]
-[assembly: AssemblyFileVersion("1.5.0.0")]
+[assembly: AssemblyVersion("1.6.0.0")]
+[assembly: AssemblyFileVersion("1.6.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "1.5";
+        public const string Version = "1.6";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -124,14 +124,14 @@ namespace HallowHub
             };
             SizeChanged += (s, e) => { if (WindowState == WindowState.Normal && IsLoaded) { S.WinW = ActualWidth; S.WinH = ActualHeight; } };
 
-            tracker.Started = g => OnStarted(Main(g)); tracker.Stopped = g => OnStopped(Main(g));
+            tracker.Started = g => OnStarted(Main(g)); tracker.Stopped = (g, since) => OnStopped(Main(g), since);
             tracker.Counted = (g0, m) => { var g = Main(g0); S.For(g.Id).AddMinutes(m, DateTime.Now); S.Save(); RefreshCard(g); if (sel == g) ShowHero(); UpdateStatus(); };
             Rescan();
             if (!Snap.On)
             {
                 SetupTray();
                 poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-                poll.Tick += (s, e) => { try { tracker.Poll(AllCopies().ToList()); } catch { } if (starting != null && (DateTime.Now - startingAt).TotalSeconds > 90) { starting = null; ShowHero(); } };
+                poll.Tick += (s, e) => { try { tracker.Poll(AllCopies().ToList()); CheckReminders(); } catch { } if (starting != null && (DateTime.Now - startingAt).TotalSeconds > 90) { starting = null; ShowHero(); } };
                 poll.Start();
                 PreviewKeyDown += OnKey;
                 var padTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) }; padTimer.Tick += (s, e) => { try { TickPad(); } catch { } }; padTimer.Start();
@@ -389,6 +389,7 @@ namespace HallowHub
             var a1 = top("MOST PLAYED", "trophy", Total); var a2 = top("LAST 2 WEEKS", "fire", Recent);
             Grid.SetColumn(a2, 2); two2.Children.Add(a1); two2.Children.Add(a2);
             statsBody.Children.Add(two2);
+            statsBody.Children.Add(RecentSessions());
         }
 
         Border BuildSettings()
@@ -414,6 +415,14 @@ namespace HallowHub
             sw("Keep running in the tray when I close the window (so playtime keeps counting)", S.TrayOnClose, v => S.TrayOnClose = v);
             startupBox = sw("Start with Windows (in the tray)", StartsWithWindows(), v => SetStartWithWindows(v));
             sw("Show hidden games", S.ShowHidden, v => { S.ShowHidden = v; RebuildGrid(); });
+            var br = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
+            var brBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 150 };
+            foreach (var m in new[] { 0, 60, 90, 120, 180 }) brBox.Items.Add(new ComboBoxItem { Content = m == 0 ? "Off" : "After " + HubSettings.Duration(m).Replace("h 00m", "h"), Tag = m });
+            brBox.SelectedItem = brBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == S.BreakMinutes) ?? brBox.Items[0];
+            brBox.SelectionChanged += (s, e) => { var it = brBox.SelectedItem as ComboBoxItem; if (it != null) { S.BreakMinutes = (int)it.Tag; S.Save(); } };
+            DockPanel.SetDock(brBox, Dock.Right); br.Children.Add(brBox);
+            br.Children.Add(new TextBlock { Text = "Break reminder", VerticalAlignment = VerticalAlignment.Center });
+            sp.Children.Add(br);
             var upd = new Button { Content = "Check for updates", Style = (Style)FindResource("Btn"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
             upd.Click += (s, e) => CheckForUpdate(true); sp.Children.Add(upd);
             linkInfo = new TextBlock { Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0), FontSize = 11.5, LineHeight = 18 };
@@ -901,12 +910,14 @@ namespace HallowHub
             var did = new List<string>();
             if (d.Preset != "" && Mixer.UsePreset(d.Preset)) did.Add("Hallow Mixer on \"" + d.Preset + "\"");
             if (d.GameSession && Toolkit.CanSession && sessionFor == null) { Toolkit.Session(true); sessionFor = g.Id; did.Add("game session on"); }
+            OpenCompanions(g);
             Status(g.Name + " started" + (did.Count > 0 ? " - " + string.Join(", ", did) : "") + ".");
             RefreshCard(g); if (g == sel) ShowHero(); UpdateTrayMenu();
         }
-        void OnStopped(Game g)
+        void OnStopped(Game g, DateTime since)
         {
-            var d = S.For(g.Id); d.LastPlayed = DateTime.Now.ToString("o"); S.Save();
+            var d = S.For(g.Id); d.LastPlayed = DateTime.Now.ToString("o"); LogSession(g, since); S.Save();
+            CloseCompanions(g);
             bool ended = false;
             if (sessionFor == g.Id) { Toolkit.Session(false); sessionFor = null; ended = true; }
             Status(g.Name + " closed" + (ended ? " - game session ended, everything is back" : "") + ". " + HubSettings.Duration(d.Minutes) + " played in total.");

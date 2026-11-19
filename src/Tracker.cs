@@ -1,4 +1,4 @@
-// Hallow Hub - notices when a game is running (any process started from the game's folder), however it was launched,
+﻿// Hallow Hub - notices when a game is running (any process started from the game's folder), however it was launched,
 // and counts its playtime. Reading a process's path needs no admin (PROCESS_QUERY_LIMITED_INFORMATION).
 using System;
 using System.Collections.Generic;
@@ -29,7 +29,7 @@ namespace HallowHub
 
         public class Running { public Game Game; public DateTime Since; public DateTime LastCount; public int Missed; public string Process; }
         public readonly Dictionary<string, Running> Now = new Dictionary<string, Running>();
-        public Action<Game> Started, Stopped;
+        public Action<Game> Started; public Action<Game, DateTime> Stopped;   // Stopped gets when the session began
         public Action<Game, double> Counted;   // minutes to add to a game's playtime
 
         // Call every few seconds with the current library.
@@ -69,7 +69,7 @@ namespace HallowHub
                 if (++r.Missed < 2) continue;   // gone twice in a row (games restart themselves when patching)
                 Now.Remove(id);
                 var mins = (now - r.LastCount).TotalMinutes; if (mins > 0 && Counted != null) Counted(r.Game, Math.Min(mins, 1.0));
-                if (Stopped != null) Stopped(r.Game);
+                if (Stopped != null) Stopped(r.Game, r.Since);
             }
         }
     }

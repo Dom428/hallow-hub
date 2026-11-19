@@ -8,13 +8,9 @@
 | **1.3** | Updates from GitHub and What's new, notices installs and updates by itself, Steam download progress, --play and desktop shortcuts |
 | **1.4** | Storage page with drive bars, clean-up suggestions, uninstall through the launcher, Biggest first, Needs update / Not played lately filters |
 | **1.5** | EA app, Ubisoft Connect, GOG, Riot and Xbox games; your own name, cover and banner per game |
+| **1.6** | Apps that open and close with a game, break reminder, daily limit per game, session history |
 
 ## Next
-
-### 1.6 - Session helpers
-- Open apps with a game (Discord, OBS, Medal) and close them after
-- Break reminder after a long session, and an optional daily limit per game
-- Session history: every session with its date and length
 
 ### 1.7 - Look and feel
 - Cover size slider and a compact list view

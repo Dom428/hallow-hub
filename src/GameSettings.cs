@@ -115,6 +115,51 @@ namespace HallowHub
             DockPanel.SetDock(addBtn, Dock.Right); newRow.Children.Add(addBtn); newRow.Children.Add(newName);
             sp.Children.Add(new TextBlock { Text = "New collection", Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, Margin = new Thickness(0, 0, 0, 4) });
             sp.Children.Add(newRow);
+            // v1.6: apps that open with this game, and a daily limit
+            sp.Children.Add(label("Open with this game", "rocket"));
+            var apps = new List<string>(d.OpenWith ?? new List<string>());
+            var appList = new StackPanel();
+            Action fillApps = null;
+            fillApps = () =>
+            {
+                appList.Children.Clear();
+                foreach (var a in apps.ToList())
+                {
+                    var exe = a; var row = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
+                    var rm = new Button { Content = "x", Tag = "icon", Width = 26, Height = 24, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), ToolTip = "Don't open it any more" };
+                    rm.Click += (o, e) => { apps.Remove(exe); fillApps(); };
+                    DockPanel.SetDock(rm, Dock.Right); row.Children.Add(rm);
+                    string nm; try { nm = System.Diagnostics.FileVersionInfo.GetVersionInfo(exe).FileDescription; } catch { nm = null; }
+                    if (string.IsNullOrWhiteSpace(nm)) nm = System.IO.Path.GetFileNameWithoutExtension(exe);
+                    row.Children.Add(new TextBlock { Text = nm.Trim(), VerticalAlignment = VerticalAlignment.Center, ToolTip = exe, TextTrimming = TextTrimming.CharacterEllipsis });
+                    appList.Children.Add(row);
+                }
+                if (apps.Count == 0) appList.Children.Add(new TextBlock { Text = "Nothing yet - for example Discord, OBS or Medal.", Foreground = (Brush)FindResource("Muted"), FontSize = 11.5 });
+            };
+            fillApps(); sp.Children.Add(appList);
+            var addApp = new Button { Content = "Add app...", Style = (Style)FindResource("Btn"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 6, 0, 6) };
+            addApp.Click += (o, e) =>
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Pick an app to open with " + g.Name, Filter = "Programs (*.exe)|*.exe" };
+                if (dlg.ShowDialog(this) == true && !apps.Contains(dlg.FileName, StringComparer.OrdinalIgnoreCase)) { apps.Add(dlg.FileName); fillApps(); }
+            };
+            sp.Children.Add(addApp);
+            var keep = new CheckBox { Content = new TextBlock { Text = "Leave them open when the game closes", TextWrapping = TextWrapping.Wrap }, Style = (Style)FindResource("Switch"), IsChecked = d.KeepOpen };
+            sp.Children.Add(keep);
+            sp.Children.Add(new TextBlock { Text = "Apps that were already running are never closed. Closing is like clicking X, so they can still ask to save.", Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(52, 0, 0, 14) });
+            var lim = new DockPanel { Margin = new Thickness(0, 0, 0, 16) };
+            var limBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 150 };
+            foreach (var m in new[] { 0, 30, 60, 90, 120, 180, 240 }) limBox.Items.Add(new ComboBoxItem { Content = m == 0 ? "No limit" : HubSettings.Duration(m).Replace("h 00m", "h") + " a day", Tag = m });
+            limBox.SelectedItem = limBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == d.DailyLimit) ?? limBox.Items[0];
+            DockPanel.SetDock(limBox, Dock.Right); lim.Children.Add(limBox);
+            lim.Children.Add(new TextBlock { Text = "Daily limit (a reminder, nothing is closed)", VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
+            sp.Children.Add(lim);
+            Closing += (o, e) =>
+            {
+                if (DialogResult != true) return;
+                d.OpenWith = apps; d.KeepOpen = keep.IsChecked == true;
+                var it = limBox.SelectedItem as ComboBoxItem; d.DailyLimit = it == null ? 0 : (int)it.Tag;
+            };
             // buttons
             var foot = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             var cancel = new Button { Content = "Cancel", Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), IsCancel = true };
@@ -128,7 +173,7 @@ namespace HallowHub
                 DialogResult = true;
             };
             foot.Children.Add(cancel); foot.Children.Add(save); sp.Children.Add(foot);
-            Content = sp;
+            Content = new ScrollViewer { Content = sp, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = SystemParameters.WorkArea.Height - 60 };
             Loaded += (o, e) => args.Focus();
         }
     }
