@@ -1,4 +1,4 @@
-// Hallow Hub - saved data: per-game playtime and choices, and the app's settings (%APPDATA%\HallowHub\hub.json).
+﻿// Hallow Hub - saved data: per-game playtime and choices, and the app's settings (%APPDATA%\HallowHub\hub.json).
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,7 +40,10 @@ namespace HallowHub
         [DataMember] public bool GameSession;    // Hallow Toolkit game session while it runs
         [DataMember] public List<string> Days = new List<string>();   // "yyyy-MM-dd=minutes" for the last 14 days
         [DataMember] public string PlayOn = "";  // v1.1: which copy to start when the game is in two stores (a Game.Id)
-        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; }
+        [DataMember] public string LaunchArgs = "";                  // v1.2: extra launch options
+        [DataMember] public bool Admin;                              // v1.2: run as administrator (games started from an .exe)
+        [DataMember] public List<string> Tags = new List<string>();   // v1.2: collections it's in
+        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); }
 
         public DateTime? Last { get { DateTime d; return DateTime.TryParse(LastPlayed, null, System.Globalization.DateTimeStyles.RoundtripKind, out d) ? d : (DateTime?)null; } }
         public void AddMinutes(double m, DateTime when)
@@ -83,9 +86,10 @@ namespace HallowHub
         [DataMember] public bool ShowHidden;
         [DataMember] public double WinW = -1, WinH = -1;
         [DataMember] public string LastSeenVersion = "";
+        [DataMember] public List<string> Collections = new List<string>();   // v1.2: your own groups, in your order
         [OnDeserializing] void D(StreamingContext c)
         {
-            Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = "";
+            Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; Collections = new List<string>();
         }
 
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }

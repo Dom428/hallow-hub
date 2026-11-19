@@ -8,6 +8,8 @@ All your games in one place - part of the Hallow family with [Hallow Mixer](http
 - **When a game starts:** switch Hallow Mixer to a preset you pick for that game, and/or turn on a Hallow Toolkit game session (Boost apps closed, High performance power). Everything goes back when the game closes.
 - **Your Steam hours** show straight away; **update and size badges**; the same game in two stores is **one card** with a Play on choice.
 - **Continue playing** row, a colour glow from each game's cover, and a **Stats** page (today, this week, 14-day chart, top games).
+- **Game settings:** launch options, run as admin, and **collections** (your own groups, shown as filters).
+- **Surprise me** picks something to play; **keyboard shortcuts** and **Xbox controller** support (only while Hub is in front).
 - Favorites, hide, search, sort by recent / most played / A to Z. Lives in the tray so playtime keeps counting.
 
 Built with the C# compiler that ships with Windows (.NET Framework 4.8): run `build.ps1`. No admin needed to install or run.

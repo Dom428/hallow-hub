@@ -6,6 +6,14 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 1.2
+- Game settings (sliders button): launch options, run as administrator, collections.
+- Collections: your own groups like "With friends" - they show up as filters.
+- Surprise me (dice button, Ctrl+R): picks something to play.
+- Keyboard: arrows move, Enter plays, Ctrl+F search, F5 refresh, Esc back.
+- Xbox controller: d-pad/stick, A play, X surprise, Y favorite, LB/RB filters, B back
+  (only while Hub is the window in front - never during a game).
+
 WHAT'S NEW IN 1.1
 - The same game in two stores (like Overwatch on Steam and Battle.net) is one card, with a
   "Play on" choice.

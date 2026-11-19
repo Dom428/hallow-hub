@@ -18,7 +18,7 @@ namespace HallowHub
 
         // exact label -> icon
         static readonly Dictionary<string, string> Labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
-            { "Play", "play" }, { "Add game", "plus" }, { "Refresh", "arrows-rotate" }, { "Settings", "gear" }, { "Stats", "chart-line" }, { "x", "xmark" }, { "+", "plus" },
+            { "Play", "play" }, { "Add game", "plus" }, { "Refresh", "arrows-rotate" }, { "Settings", "gear" }, { "Stats", "chart-line" }, { "Surprise me", "dice" }, { "Game settings", "sliders" }, { "Save", "check" }, { "Add", "plus" }, { "Shortcuts", "keyboard" }, { "x", "xmark" }, { "+", "plus" },
             { "Favorite", "star" }, { "Open folder", "folder-open" }, { "Hide", "eye-slash" }, { "Unhide", "eye" }, { "Remove", "trash-can" },
             { "All", "table-cells-large" }, { "Favorites", "star" }, { "Steam", "steam" }, { "Battle.net", "battle-net" }, { "Epic Games", "gamepad" }, { "Added by you", "windows" },
             { "OK", "check" }, { "Cancel", "xmark" }, { "Got it", "check" }, { "Store page", "arrow-up-right-from-square" },

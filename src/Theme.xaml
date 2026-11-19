@@ -246,6 +246,25 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <!-- Plain text field -->
+    <Style x:Key="Field" TargetType="TextBox">
+        <Setter Property="Foreground" Value="#ECE8F4"/>
+        <Setter Property="CaretBrush" Value="#F07820"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="b" Background="#1A1522" BorderBrush="#3A3248" BorderThickness="1" CornerRadius="8" Padding="10,0" Height="32">
+                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="b" Property="BorderBrush" Value="#F07820"/></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     <!-- Dark right-click menus -->
     <Style TargetType="ContextMenu">
         <Setter Property="Foreground" Value="#ECE8F4"/>
