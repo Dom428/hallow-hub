@@ -15,3 +15,6 @@
 | **2.0** | Big Picture full-screen controller mode, quick launcher from the tray icon |
 
 ## Next
+
+### Fixes from real use
+- Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
