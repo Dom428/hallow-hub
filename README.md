@@ -13,6 +13,7 @@ All your games in one place - part of the Hallow family with [Hallow Mixer](http
 - **Storage** page with clean-up suggestions; **session helpers** (apps that open with a game, break reminder, daily limit); **weekly recap**, streaks and CSV export; a **PC check** before you play.
 - **Big Picture** full-screen mode for the couch (filters and collections on LB / RB, and Storage with the controller), and a **quick launcher** from the tray icon. Updates itself from GitHub.
 - **Hallow family on every game page:** Saves (Hallow Vault: last backup, Back up now, Restore), Clips (Hallow Clips: this game's newest clips) and Overlay (Hallow Overlay on/off per game) - each only when that app is installed. Break reminders show on Hallow Overlay when it's running.
+- **One Hallow icon:** Hub's tray icon hosts the whole family - each Hallow app gets a submenu (its own actions, Open, Exit) and the others hide their own icons (Settings > One Hallow icon, on by default).
 - **Filters that combine** (store, size, last played, playtime) with the chips, search and sort; **hide** tools and test servers (the Hidden filter brings them back). Favorites, search, sort by recent / most played / A to Z / size / store. Lives in the tray so playtime keeps counting.
 
 Built with the C# compiler that ships with Windows (.NET Framework 4.8): run `build.ps1`. No admin needed to install or run.

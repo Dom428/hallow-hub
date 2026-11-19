@@ -13,6 +13,7 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("2.4", new[] { "One Hallow icon: Hub's tray icon hosts the whole Hallow family - right-click it for each app's menu (Open, its actions, Exit), or Start the ones that aren't running", "The other Hallow apps hide their own tray icons while it's on (Settings > One Hallow icon)" }),
             Tuple.Create("2.3", new[] { "Filters (next to the sort): store, size, last played and playtime, all together; hide games with the eye button - the Hidden filter brings them back", "Big Picture: your collections as filters (LB / RB), and Storage with the controller (Menu)" }),
             Tuple.Create("2.2", new[] { "Hallow family on every game page: Saves (Hallow Vault), Clips (Hallow Clips) and Overlay on/off (Hallow Overlay) - only for the apps you have", "Break reminders and the daily limit show on Hallow Overlay when it's running" }),
             Tuple.Create("2.1", new[] { "Games in two stores (like Overwatch) start the copy you actually play, using Steam's and Battle.net's own last-played", "A copy you haven't used for a month is offered as a clean-up (uninstall through its launcher, which asks first)" }),

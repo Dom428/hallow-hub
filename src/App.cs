@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.3.0.0")]
-[assembly: AssemblyFileVersion("2.3.0.0")]
+[assembly: AssemblyVersion("2.4.0.0")]
+[assembly: AssemblyFileVersion("2.4.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.3";
+        public const string Version = "2.4";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -464,6 +464,7 @@ namespace HallowHub
             sw("Keep running in the tray when I close the window (so playtime keeps counting)", S.TrayOnClose, v => S.TrayOnClose = v);
             startupBox = sw("Start with Windows (in the tray)", StartsWithWindows(), v => SetStartWithWindows(v));
             sw("Show hidden games", S.ShowHidden, v => { S.ShowHidden = v; RebuildGrid(); });
+            sw("One Hallow icon: the other Hallow apps use this tray icon (their menus are in Hub's menu)", S.OneIcon, v => { S.OneIcon = v; Status(v ? "One Hallow icon is on - the other Hallow apps hide their own tray icons in a few seconds." : "One Hallow icon is off - every Hallow app shows its own tray icon again in a few seconds."); });
             sw("Moving banner (the art drifts slowly)", !S.StillBanner, v => { S.StillBanner = !v; if (v) StartBannerMotion(); else StopBannerMotion(); });
             sw("Weekly recap on Mondays (a pop-up with last week's playtime)", S.WeeklyRecap, v => S.WeeklyRecap = v);
             var dc = Discord.Connected;
@@ -1253,7 +1254,7 @@ namespace HallowHub
         }
 
         // ================================================================ tray
-        WF.ToolStripMenuItem trayGames;
+        WF.ToolStripMenuItem trayGames, quitItem;
         void SetupTray()
         {
             tray = new WF.NotifyIcon { Text = "Hallow Hub", Visible = true };
@@ -1264,8 +1265,8 @@ namespace HallowHub
             open.Click += (s, e) => ShowFromTray(); menu.Items.Add(open);
             trayGames = new WF.ToolStripMenuItem("Play"); menu.Items.Add(trayGames); menu.Items.Add(bigItem);
             menu.Items.Add(new WF.ToolStripSeparator());
-            var quit = new WF.ToolStripMenuItem("Quit"); quit.Click += (s, e) => Quit(); menu.Items.Add(quit);
-            menu.Opening += (s, e) => UpdateTrayMenu();
+            var quit = quitItem = new WF.ToolStripMenuItem("Quit"); quit.Click += (s, e) => Quit(); menu.Items.Add(quit);
+            menu.Opening += (s, e) => { UpdateTrayMenu(); UpdateFamilyMenu(menu); };   // v2.4: the Hallow family's submenus
             tray.ContextMenuStrip = menu;
             tray.MouseClick += (s, e) => { if (e.Button == WF.MouseButtons.Left) Dispatcher.BeginInvoke(new Action(ShowQuick)); };   // v2.0: quick launcher
             tray.MouseDoubleClick += (s, e) => { if (e.Button == WF.MouseButtons.Left) Dispatcher.BeginInvoke(new Action(() => { if (quick != null) quick.Close(); ShowFromTray(); })); };
@@ -1307,6 +1308,7 @@ namespace HallowHub
             Snap.Save(this, System.IO.Path.Combine(dir, "main.png"), 1180, 780);
             settingsPanel.Visibility = Visibility.Visible;
             Snap.Save(this, System.IO.Path.Combine(dir, "settings.png"), 1180, 780);
+            try { File.WriteAllText(System.IO.Path.Combine(dir, "traymenu.txt"), FamilyMenuText()); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "traymenu.err.txt"), ex.ToString()); }
             settingsPanel.Visibility = Visibility.Collapsed;
             FillStats(); statsPanel.Visibility = Visibility.Visible;
             Snap.Save(this, System.IO.Path.Combine(dir, "stats.png"), 1180, 780);

@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.4
+- One Hallow icon: right-click Hub's tray icon for each Hallow app's menu (Open, its actions, Exit), or Start the ones that aren't running.
+- The other Hallow apps hide their own tray icons while it's on (Settings > One Hallow icon).
+
 WHAT'S NEW IN 2.3
 - Filters next to the sort: store, size, last played and playtime, all together. Hide games with the eye button; the Hidden filter brings them back.
 - Big Picture: collections as filters (LB / RB) and Storage with the controller (Menu).

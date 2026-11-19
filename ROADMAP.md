@@ -16,13 +16,9 @@
 | **2.1** | Play on picks the copy you actually play (Steam and Battle.net last played), clean-up offer for an unused second copy |
 | **2.2** | Hallow family cards on every game page: Saves (Vault), Clips, Overlay on/off; Hub pipe (ping, status) and status.json; reminders on Overlay |
 | **2.3** | Hide and unhide games, combined filters (store, size, last played, playtime), Big Picture collections and Storage with the controller |
+| **2.4** | One Hallow icon: Hub hosts the family tray menu (tray-host, notify, per-app submenus, Start / Exit, Open Hallow Toolkit) |
 
 ## Next
-
-### 2.4 - One Hallow icon
-- Hub hosts one tray icon for the whole Hallow family: the other apps hide theirs while Hub says so (pipe `tray-host`), their balloons go through Hub (`notify`)
-- Hub's tray menu: a submenu per Hallow app (its own items, Open, Exit), Start for the ones not running, Open Hallow Toolkit
-- A "One Hallow icon" setting (on by default)
 
 ### Fixes from real use
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)

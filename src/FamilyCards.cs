@@ -190,7 +190,7 @@ namespace HallowHub
 
         // ---- Hub's side of the link: its pipe (ping, status) and %APPDATA%\HallowHub\status.json
         string lastStatus;
-        void StartFamilyServer() { if (Snap.On) return; WriteFamilyStatus(true); familyServer.Start(); }
+        void StartFamilyServer() { if (Snap.On) return; WriteFamilyStatus(true); familyServer.Extra = FamilyCommand; familyServer.Start(); }
         void WriteFamilyStatus(bool running)
         {
             if (Snap.On) return;
