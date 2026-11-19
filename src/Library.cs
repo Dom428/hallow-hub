@@ -17,7 +17,8 @@ namespace HallowHub
         static readonly Regex NotAGame = new Regex(@"Redistributable|Steamworks|Proton|SteamVR|Steam Linux Runtime|Wallpaper Engine|Soundtrack|Dedicated Server|\bSDK\b", RegexOptions.IgnoreCase);
         static readonly HashSet<string> NotAGameIds = new HashSet<string> { "228980", "431960", "1070560", "1391110", "1628350", "250820" };
 
-        public static List<Game> Scan(List<Game> custom)
+        public static List<Game> Scan(List<Game> custom) { return Scan(custom, null); }
+        public static List<Game> Scan(List<Game> custom, List<Emulator> emulators)
         {
             var list = new List<Game>();
             try { list.AddRange(Steam()); } catch { }
@@ -34,6 +35,7 @@ namespace HallowHub
                 try { var f = g.IconExe ?? (File.Exists(g.Launch) ? g.Launch : null); if (f != null) { g.UpdatedAt = File.GetLastWriteTime(f); g.Drive = Path.GetPathRoot(f).TrimEnd('\\'); } } catch { }
             }
             try { SteamPlaytime(list); } catch { }
+            try { list.AddRange(Roms.Scan(emulators)); } catch { }   // v2.9: after the merge would be wrong - ROMs never merge with store games, so they skip it below
             return Merge(list.GroupBy(g => g.Id).Select(x => x.First()).ToList());
         }
 
@@ -143,7 +145,8 @@ namespace HallowHub
         static List<Game> Merge(List<Game> list)
         {
             var result = new List<Game>();
-            foreach (var grp in list.GroupBy(g => Norm(g.Name)))
+            foreach (var rom in list.Where(g => g.Source == "rom")) result.Add(rom);
+            foreach (var grp in list.Where(g => g.Source != "rom").GroupBy(g => Norm(g.Name)))
             {
                 var all = grp.ToList();
                 if (all.Count == 1) { result.Add(all[0]); continue; }

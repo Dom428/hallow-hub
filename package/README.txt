@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.9
+- Emulators and ROMs: Settings > Emulators... - add an emulator, its ROM folder and file types, and every ROM becomes a game.
+- ROMs get playtime, collections, notes and Big Picture like any other game.
+
 WHAT'S NEW IN 2.8
 - About (the i button next to Play): description, genres, features, developer, release date and screenshots for Steam games.
 - Filters by genre and feature (co-op, controller support...).

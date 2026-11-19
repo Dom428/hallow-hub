@@ -21,11 +21,9 @@
 | **2.6** | Steam news and patch notes on game pages (cached 6 h), playtime charts per week and month |
 | **2.7** | Library backup and import (one zip, no secrets), opt-in Steam wishlist sale alerts |
 | **2.8** | Game details from Steam (description, genres, features, developer, release, screenshots), genre and feature filters |
+| **2.9** | Emulator profiles and ROM folders - every ROM a game with playtime, collections and Big Picture |
 
 ## Next
-
-### 2.9 - Emulators and ROMs
-- Your own emulator profiles (exe + arguments with {rom}) and ROM folders Hub scans; ROMs become games with playtime, collections and everything else
 
 ### 2.10 - Play status, ratings and a better search
 - Play status per game (Playing, Beaten, Completed, On hold, Abandoned, Plan to play) and your own rating, both as filters and sorts

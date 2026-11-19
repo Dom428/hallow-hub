@@ -13,6 +13,7 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("2.9", new[] { "Emulators and ROMs: Settings > Emulators... - add an emulator, its ROM folder and file types, and every ROM becomes a game", "ROMs get playtime, collections, notes, favourites and Big Picture like any other game (covers from a covers / boxart folder)" }),
             Tuple.Create("2.8", new[] { "About (the i button next to Play): description, genres, features, developer, release date and screenshots for Steam games", "Filters: by genre and feature (co-op, controller support...) - click a genre in About to see the others" }),
             Tuple.Create("2.7", new[] { "Settings > Back up library / Import library: your collections, notes, pins, names and pictures, settings and playtime in one zip for another PC", "Opt-in sale alerts for your public Steam wishlist - on sale, or below a price you set (the cart button)" }),
             Tuple.Create("2.6", new[] { "News and patch notes for Steam games: the newspaper button next to Play (Read more opens your browser)", "Stats: hours per week and per month, with your top games for each" }),

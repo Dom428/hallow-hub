@@ -29,6 +29,7 @@ namespace HallowHub
 
         public class Running { public Game Game; public DateTime Since; public DateTime LastCount; public int Missed; public string Process; }
         public readonly Dictionary<string, Running> Now = new Dictionary<string, Running>();
+        public readonly Dictionary<string, int> Pids = new Dictionary<string, int>();   // v2.9: game id -> the emulator process Hub started for it
         public Action<Game> Started; public Action<Game, DateTime> Stopped;   // Stopped gets when the session began
         public Action<Game, double> Counted;   // minutes to add to a game's playtime
 
@@ -48,6 +49,12 @@ namespace HallowHub
                 }
                 catch { }
                 finally { p.Dispose(); }
+            }
+            foreach (var kv in Pids.ToList())
+            {
+                bool alive = false;
+                try { using (var p = Process.GetProcessById(kv.Value)) alive = !p.HasExited; } catch { }
+                if (alive && games.Any(x => x.Id == kv.Key)) { if (!seen.ContainsKey(kv.Key)) seen[kv.Key] = "emulator"; } else if (!alive) Pids.Remove(kv.Key);
             }
             var now = DateTime.Now;
             foreach (var id in seen.Keys)

@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.8.0.0")]
-[assembly: AssemblyFileVersion("2.8.0.0")]
+[assembly: AssemblyVersion("2.9.0.0")]
+[assembly: AssemblyFileVersion("2.9.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.8";
+        public const string Version = "2.9";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -103,7 +103,7 @@ namespace HallowHub
         static Color C(string hex) { return (Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex)); }   // v2.5: Hub's orange follows the Hallow accent
         static SolidColorBrush B(string hex) { return new SolidColorBrush(C(hex)); }
         static readonly Dictionary<string, string> SourceColor = new Dictionary<string, string> {
-            { "steam", "#5AB4F0" }, { "battlenet", "#4AA8FF" }, { "epic", "#ECE8F4" }, { "custom", "#A98BE0" }, { "ea", "#F05A5A" }, { "ubisoft", "#5A8CF0" }, { "gog", "#B48BF0" }, { "riot", "#F0505A" }, { "xbox", "#6ED28C" } };
+            { "steam", "#5AB4F0" }, { "battlenet", "#4AA8FF" }, { "epic", "#ECE8F4" }, { "custom", "#A98BE0" }, { "rom", "#E0A050" }, { "ea", "#F05A5A" }, { "ubisoft", "#5A8CF0" }, { "gog", "#B48BF0" }, { "riot", "#F0505A" }, { "xbox", "#6ED28C" } };
 
         readonly HubSettings S = HubSettings.Load();
         List<Game> games = new List<Game>();
@@ -567,6 +567,9 @@ namespace HallowHub
             var im = new Button { Content = "Import library...", Style = (Style)FindResource("Btn"), ToolTip = "Bring a library backup in - added to what's here, games matched by store and name" };
             im.Click += (s, e) => ImportLibrary();
             lib.Children.Add(bk); lib.Children.Add(im); sp.Children.Add(lib);
+            var emuBtn = new Button { Content = "Emulators...", Style = (Style)FindResource("Btn"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0), ToolTip = "Your emulators and ROM folders - every ROM becomes a game" };
+            emuBtn.Click += (s, e) => { var w = new EmulatorsWindow(S.Emulators) { Owner = this }; if (w.ShowDialog() == true) { S.Emulators = w.Result; S.Save(); Rescan(); Status(games.Count(x => x.Source == "rom") + " ROMs in your library from " + S.Emulators.Count + (S.Emulators.Count == 1 ? " emulator." : " emulators.")); } };   // v2.9
+            sp.Children.Add(emuBtn);
             var upd = new Button { Content = "Check for updates", Style = (Style)FindResource("Btn"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
             upd.Click += (s, e) => CheckForUpdate(true); sp.Children.Add(upd);
             linkInfo = new TextBlock { Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0), FontSize = 11.5, LineHeight = 18 };
@@ -667,14 +670,14 @@ namespace HallowHub
         void RescanInBackground(Action after)
         {
             if (rescanning) return; rescanning = true;
-            var custom = S.Custom.ToList();
+            var custom = S.Custom.ToList(); var emus = S.Emulators.ToList();
             new Thread(() =>
             {
-                List<Game> found = null; try { found = Library.Scan(custom); } catch { }
+                List<Game> found = null; try { found = Library.Scan(custom, emus); } catch { }
                 Dispatcher.BeginInvoke(new Action(() => { rescanning = false; if (found != null) { Apply(found); if (after != null) after(); } }));
             }) { IsBackground = true }.Start();
         }
-        void Rescan() { Apply(Library.Scan(S.Custom)); }
+        void Rescan() { Apply(Library.Scan(S.Custom, S.Emulators)); }
         void Apply(List<Game> found)
         {
             games = found;
@@ -715,7 +718,7 @@ namespace HallowHub
             var opts = new List<Tuple<string, string>> { Tuple.Create("all", "All"), Tuple.Create("fav", "Favorites") };
             if (games.Any(g => g.NeedsUpdate || g.Updating)) opts.Add(Tuple.Create("upd", "Needs update"));
             if (games.Any(Stale)) opts.Add(Tuple.Create("stale", "Not played lately"));
-            foreach (var src in new[] { "steam", "battlenet", "epic", "ea", "ubisoft", "gog", "riot", "xbox", "custom" })
+            foreach (var src in new[] { "steam", "battlenet", "epic", "ea", "ubisoft", "gog", "riot", "xbox", "custom", "rom" })
                 if (games.Any(g => g.Source == src)) opts.Add(Tuple.Create(src, games.First(g => g.Source == src).SourceName));
             foreach (var c in S.Collections) if (games.Any(g => S.For(g.Id).Tags.Contains(c))) opts.Add(Tuple.Create("col:" + c, c));
             int hiddenN = HiddenCount(); if (hiddenN > 0) opts.Add(Tuple.Create("hidden", "Hidden (" + hiddenN + ")"));   // v2.3: where hidden games are, to bring them back
@@ -816,7 +819,7 @@ namespace HallowHub
             var clock = Icons.Make("clock", 11, B("#D6D0E2")); clock.Margin = new Thickness(0, 0, 6, 0); foot.Children.Add(clock);
             foot.Children.Add(new TextBlock { Text = Total(g) < 1 ? "New" : HubSettings.Duration(Total(g)), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = B("#ECE8F4") });
             inner.Children.Add(foot);
-            var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "xbox" ? "xbox" : "gamepad";
+            var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "rom" ? "compact-disc" : g.Source == "xbox" ? "xbox" : "gamepad";
             var badge = Icons.Make(srcIcon, 12, new SolidColorBrush(Color.FromArgb(200, 0xEC, 0xE8, 0xF4)));
             badge.HorizontalAlignment = HorizontalAlignment.Right; badge.VerticalAlignment = VerticalAlignment.Bottom; badge.Margin = new Thickness(0, 0, 11, 11);
             inner.Children.Add(badge);
@@ -921,7 +924,7 @@ namespace HallowHub
             item("Game settings and collections...", "sliders", () => { Select(g); GameSettings(g); });
             item("Open folder", "folder-open", () => OpenFolder(g));
             item("Create desktop shortcut", "arrow-up-right-from-square", () => Shortcut(g));
-            foreach (var cp in new[] { g }.Concat(g.Alts)) { var c2 = cp; item(g.Alts.Count > 0 ? "Uninstall the " + c2.SourceName + " copy..." : "Uninstall...", "trash-can", () => Uninstall(c2)); }
+            foreach (var cp in new[] { g }.Concat(g.Alts).Where(x => x.Source != "rom")) { var c2 = cp; item(g.Alts.Count > 0 ? "Uninstall the " + c2.SourceName + " copy..." : "Uninstall...", "trash-can", () => Uninstall(c2)); }
             if (g.Source == "steam") item("Steam store page", "arrow-up-right-from-square", () => OpenUrl("steam://store/" + g.Id.Substring(6)));
             item(S.For(g.Id).Hidden ? "Unhide" : "Hide from the library", S.For(g.Id).Hidden ? "eye" : "eye-slash", () => ToggleHide(g));
             if (g.Source == "custom") item("Remove from Hallow Hub", "trash-can", () => { S.Custom.RemoveAll(x => x.Id == g.Id); S.Save(); Rescan(); Status(g.Name + " removed (its playtime is kept)."); });
@@ -975,8 +978,8 @@ namespace HallowHub
                     heroPills.Children.Add(new Border { Child = sp2, CornerRadius = new CornerRadius(10), Padding = new Thickness(9, 3, 10, 4), Margin = new Thickness(0, 0, 6, 6),
                         Background = new SolidColorBrush(Color.FromArgb(150, 0x1A, 0x15, 0x22)), BorderBrush = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), BorderThickness = new Thickness(1) });
                 };
-                var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "xbox" ? "xbox" : "gamepad";
-                pill(srcIcon, g.SourceName + (g.Alts.Count > 0 ? " + " + string.Join(" + ", g.Alts.Select(a => a.SourceName)) : ""), "#ECE8F4");
+                var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "rom" ? "compact-disc" : g.Source == "xbox" ? "xbox" : "gamepad";
+                pill(srcIcon, (g.Source == "rom" && !string.IsNullOrEmpty(g.Platform) ? g.Platform : g.SourceName) + (g.Alts.Count > 0 ? " + " + string.Join(" + ", g.Alts.Select(a => a.SourceName)) : ""), "#ECE8F4");
                 if (g.Updating) pill("arrows-rotate", g.Progress >= 0 ? "Updating " + (int)(g.Progress * 100) + "%" : "Updating", "#8FCBF5");
                 else if (g.NeedsUpdate) pill("arrows-rotate", "Update waiting", "#F0BE5A");
                 var sz = Size(g.SizeBytes); if (sz != null) pill(null, sz + (g.Drive != null ? " on " + g.Drive : ""), "#CFC8DC");
@@ -1094,7 +1097,7 @@ namespace HallowHub
                     if (File.Exists(copy.Launch)) psi.WorkingDirectory = System.IO.Path.GetDirectoryName(copy.Launch);
                     if (exe && d.Admin) psi.Verb = "runas";
                 }
-                try { Process.Start(psi); }
+                try { var started = Process.Start(psi); if (copy.Source == "rom" && started != null) tracker.Pids[copy.Id] = started.Id; }   // v2.9: an emulator counts for the ROM Hub started
                 catch (System.ComponentModel.Win32Exception wx) { if (wx.NativeErrorCode == 1223) { Status("Cancelled - " + g.Name + " wasn't started."); return; } throw; }
                 starting = g.Id; startingAt = DateTime.Now; ShowHero();
                 Status("Starting " + g.Name + (g.Alts.Count > 0 ? " on " + copy.SourceName : "") + "...");
@@ -1326,6 +1329,7 @@ namespace HallowHub
         }
         void OpenFolder(Game g)
         {
+            if (g != null && g.RomPath != null && File.Exists(g.RomPath)) { try { Process.Start("explorer.exe", "/select,\"" + g.RomPath + "\""); } catch { } return; }   // v2.9
             if (g == null || string.IsNullOrEmpty(g.InstallDir) || !Directory.Exists(g.InstallDir)) { Status("Can't find that game's folder."); return; }
             try { Process.Start("explorer.exe", "\"" + g.InstallDir + "\""); } catch { }
         }
@@ -1482,6 +1486,21 @@ namespace HallowHub
                 }
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "meta.err.txt"), ex.ToString()); }
+            // v2.9: emulators - the profiles window and the ROMs from a test folder
+            try
+            {
+                var t9 = Environment.GetEnvironmentVariable("HALLOW_FAMILY_TEST");
+                if (!string.IsNullOrEmpty(t9) && Directory.Exists(System.IO.Path.Combine(t9, "roms")))
+                {
+                    S.Emulators = new List<Emulator> { new Emulator { Name = "Super Nintendo", Exe = System.IO.Path.Combine(t9, "emu", "snes9x.exe"), Args = "-fullscreen \"{rom}\"", Folder = System.IO.Path.Combine(t9, "roms"), Types = "sfc smc" } };
+                    Snap.Save(new EmulatorsWindow(S.Emulators), System.IO.Path.Combine(dir, "emulators.png"), 640, 0);
+                    Rescan(); S.Filter = "rom"; RebuildChips(); RebuildGrid(); var rg = games.FirstOrDefault(x => x.Source == "rom"); if (rg != null) Select(rg);
+                    Snap.Save(this, System.IO.Path.Combine(dir, "roms.png"), 1180, 780);
+                    File.WriteAllText(System.IO.Path.Combine(dir, "roms.txt"), string.Join("\r\n", games.Where(x => x.Source == "rom").Select(x => x.Name + " | " + x.Launch + " " + x.Args + " | cover=" + (x.Cover != null))));
+                    S.Filter = "all"; RebuildChips(); RebuildGrid();
+                }
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "roms.err.txt"), ex.ToString()); }
             // v2.5: the accent switched live (the window rebuilds with the new theme)
             try { var was = HallowLook.UseShared; HallowLook.UseShared = !was; ApplyAccent(false); Snap.Save(this, System.IO.Path.Combine(dir, "accent-switched.png"), 1180, 780); HallowLook.UseShared = was; ApplyAccent(false); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "accent.err.txt"), ex.ToString()); }
         }

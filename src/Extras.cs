@@ -85,7 +85,7 @@ namespace HallowHub
             // stores: any number of them
             filterBody.Children.Add(FilterLabel("STORE"));
             var stores = new WrapPanel();
-            foreach (var src in new[] { "steam", "battlenet", "epic", "ea", "ubisoft", "gog", "riot", "xbox", "custom" })
+            foreach (var src in new[] { "steam", "battlenet", "epic", "ea", "ubisoft", "gog", "riot", "xbox", "custom", "rom" })
             {
                 var one = AllCopies().FirstOrDefault(c => c.Source == src); if (one == null) continue;
                 var key = src;

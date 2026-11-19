@@ -205,7 +205,7 @@ namespace HallowHub
         List<string> BigFilters()
         {
             var keys = new List<string> { "all", "fav" };
-            foreach (var src in new[] { "steam", "battlenet", "epic", "ea", "ubisoft", "gog", "riot", "xbox", "custom" }) if (games.Any(x => x.Source == src)) keys.Add(src);
+            foreach (var src in new[] { "steam", "battlenet", "epic", "ea", "ubisoft", "gog", "riot", "xbox", "custom", "rom" }) if (games.Any(x => x.Source == src)) keys.Add(src);
             foreach (var c in S.Collections) if (games.Any(g => S.For(g.Id).Tags.Contains(c))) keys.Add("col:" + c);
             return keys;
         }

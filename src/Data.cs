@@ -19,6 +19,7 @@ namespace HallowHub
         [DataMember] public string Launch;      // URI or exe path
         [DataMember] public string Args = "";
         public string Cover, Hero, Logo, Header, IconExe; public string OriginalName;
+        public string Platform, RomPath;   // v2.9: ROMs - the emulator profile's name and the ROM file
         // v1.1
         public DateTime UpdatedAt;              // when the install last changed (picks the main copy of a duplicate)
         public long SizeBytes; public string Drive; public string Uninstall;   // v1.4: the launcher's own uninstall command (Battle.net)
@@ -26,7 +27,7 @@ namespace HallowHub
         public double SteamMinutes, Steam2Weeks; public DateTime? LauncherLast;   // the launcher's own last-played (Steam; Battle.net since 2.1)
         public List<Game> Alts = new List<Game>();   // the same game from another store (merged into one card)
         public Game Parent;                          // set on an alt: the card it belongs to
-        public string SourceName { get { return Source == "steam" ? "Steam" : Source == "battlenet" ? "Battle.net" : Source == "epic" ? "Epic Games" : Source == "ea" ? "EA app" : Source == "ubisoft" ? "Ubisoft Connect" : Source == "gog" ? "GOG" : Source == "riot" ? "Riot" : Source == "xbox" ? "Xbox" : "Added by you"; } }
+        public string SourceName { get { return Source == "steam" ? "Steam" : Source == "battlenet" ? "Battle.net" : Source == "epic" ? "Epic Games" : Source == "ea" ? "EA app" : Source == "ubisoft" ? "Ubisoft Connect" : Source == "gog" ? "GOG" : Source == "riot" ? "Riot" : Source == "xbox" ? "Xbox" : Source == "rom" ? "Emulators" : "Added by you"; } }
     }
 
     [DataContract]
@@ -115,12 +116,13 @@ namespace HallowHub
         [DataMember] public Dictionary<string, double> SaleTargets = new Dictionary<string, double>();   // appid -> tell me below this price
         [DataMember] public string LastSaleCheck = "";
         [DataMember] public List<string> SaleTold = new List<string>();   // "appid:final price" already told
+        [DataMember] public List<Emulator> Emulators = new List<Emulator>();   // v2.9: your emulator profiles
         [DataMember] public List<string> FTags = new List<string>();     // v2.8: genres / features a game must have
         [DataMember] public bool OneIcon = true;                         // v2.4: One Hallow icon - the other Hallow apps use Hub's tray icon
         [OnDeserializing] void D(StreamingContext c)
         {
             Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1; WeeklyRecap = true; LastRecap = "";
-            FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>();
+            FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>(); Emulators = new List<Emulator>();
         }
 
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }
