@@ -11,12 +11,9 @@
 | **1.6** | Apps that open and close with a game, break reminder, daily limit per game, session history |
 | **1.7** | List view, cover size, moving banner, notes per game, pins |
 | **1.8** | Weekly recap, play streaks, export to CSV, opt-in Discord posts (through Hallow Toolkit's link) |
+| **1.9** | PC check next to Play (CPU, RAM, GPU temperature, free space); start recent games from the phone dashboard (Hallow Toolkit 5.3) |
 
 ## Next
-
-### 1.9 - Phone and PC health
-- Start a game from your phone (Hallow Toolkit's dashboard)
-- PC check before you play: free RAM, CPU and GPU temperature, disk space
 
 ### 2.0 - Big Picture
 - Full-screen mode for the couch, made for a controller

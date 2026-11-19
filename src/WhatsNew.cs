@@ -13,6 +13,7 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("1.9", new[] { "Your PC right now: CPU, free RAM, GPU temperature and free space, next to Play", "Start your recent games from your phone (Hallow Toolkit 5.3 dashboard)" }),
             Tuple.Create("1.8", new[] { "Weekly recap on Mondays and play streaks; Stats > Export to a spreadsheet", "Opt-in: post to Discord when you start a game (Settings, uses Hallow Toolkit's Discord link)" }),
             Tuple.Create("1.7", new[] { "Cover size (Small / Medium / Large) and a list view", "Notes per game, pin games to the top, and a slowly moving banner" }),
             Tuple.Create("1.6", new[] { "Game settings: apps that open with a game (Discord, OBS...) and close after, and a daily limit", "Settings: break reminder; Stats: your recent sessions" }),

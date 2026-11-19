@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("1.8.0.0")]
-[assembly: AssemblyFileVersion("1.8.0.0")]
+[assembly: AssemblyVersion("1.9.0.0")]
+[assembly: AssemblyFileVersion("1.9.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "1.8";
+        public const string Version = "1.9";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -136,9 +136,10 @@ namespace HallowHub
                 PreviewKeyDown += OnKey;
                 var padTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) }; padTimer.Tick += (s, e) => { try { TickPad(); } catch { } }; padTimer.Start();
                 slow = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-                slow.Tick += (s, e) => { CheckLinks(); CheckRecap(); if (sel != null && IsRunning(sel)) ShowHero(); };
+                slow.Tick += (s, e) => { CheckLinks(); CheckRecap(); RefreshPc(); WriteRecent(); if (sel != null && IsRunning(sel)) ShowHero(); };
                 slow.Start();
-                Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); }), DispatcherPriority.ApplicationIdle);
+                Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); RefreshPc(); WriteRecent(); }), DispatcherPriority.ApplicationIdle);
+                IsVisibleChanged += (s, e) => { if (IsVisible) RefreshPc(); };
                 if (!startHidden) Show();
                 StartWatching();
                 DateTime lastCheck;
@@ -147,7 +148,7 @@ namespace HallowHub
                 else if (!startHidden) Dispatcher.BeginInvoke(new Action(ShowWhatsNew), DispatcherPriority.ApplicationIdle);
                 IsVisibleChanged += (s, e) => { if (IsVisible) Dispatcher.BeginInvoke(new Action(ShowWhatsNew), DispatcherPriority.ApplicationIdle); };
             }
-            else CheckLinks();
+            else { CheckLinks(); RefreshPc(); }
         }
 
         static ImageSource AppIcon()
@@ -267,6 +268,11 @@ namespace HallowHub
             op.Children.Add(sessionBox);
             sessionNote = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 11, Margin = new Thickness(52, 2, 0, 0), TextWrapping = TextWrapping.Wrap };
             op.Children.Add(sessionNote);
+            var pch = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 6) };
+            var pci = Icons.Make("heart-pulse", 11, B("#A98BE0")); pci.Margin = new Thickness(0, 0, 8, 0); pch.Children.Add(pci);
+            pch.Children.Add(new TextBlock { Text = "YOUR PC RIGHT NOW", FontSize = 10.5, FontWeight = FontWeights.Bold, Foreground = B("#A98BE0") });
+            op.Children.Add(pch);
+            pcPills = new WrapPanel(); op.Children.Add(pcPills);
             opts.Child = op;
             heroGrid.Children.Add(opts);
             hero.Child = heroGrid;
@@ -793,7 +799,7 @@ namespace HallowHub
             var prev = sel; sel = g; S.Selected = g.Id; S.Save();
             Border b; if (prev != null && cards.TryGetValue(prev.Id, out b)) Paint(b, false);
             if (cards.TryGetValue(g.Id, out b)) Paint(b, b.IsMouseOver);
-            ShowHero();
+            ShowHero(); ShowPc();
         }
 
         void ShowHero()
@@ -1203,7 +1209,7 @@ namespace HallowHub
                 var gg = g; var mi = new WF.ToolStripMenuItem(g.Name + (IsRunning(g) ? "   (playing)" : ""));
                 mi.Click += (s, e) => Dispatcher.BeginInvoke(new Action(() => Play(gg))); trayGames.DropDownItems.Add(mi);
             }
-            trayGames.Enabled = trayGames.DropDownItems.Count > 0;
+            trayGames.Enabled = trayGames.DropDownItems.Count > 0; WriteRecent();
             var run = tracker.Now.Values.Select(r => Main(r.Game).Name).FirstOrDefault();
             tray.Text = run != null ? ("Hallow Hub - playing " + run).Substring(0, Math.Min(63, ("Hallow Hub - playing " + run).Length)) : "Hallow Hub";
         }
