@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.9.0.0")]
-[assembly: AssemblyFileVersion("2.9.0.0")]
+[assembly: AssemblyVersion("2.10.0.0")]
+[assembly: AssemblyFileVersion("2.10.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.9";
+        public const string Version = "2.10";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -224,7 +224,7 @@ namespace HallowHub
             search = new TextBox { Style = (Style)FindResource("Search") };
             search.TextChanged += (s, e) => { searchHint.Visibility = search.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed; RebuildGrid(); };
             var si = Icons.Make("magnifying-glass", 14, (Brush)FindResource("Muted")); si.HorizontalAlignment = HorizontalAlignment.Left; si.Margin = new Thickness(13, 0, 0, 0); si.IsHitTestVisible = false;
-            searchHint = new TextBlock { Text = "Search your games", Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(36, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false, FontSize = 13 };
+            searchHint = new TextBlock { Text = "Search games, genres, notes...", Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(36, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false, FontSize = 13 };
             sg.Children.Add(search); sg.Children.Add(si); sg.Children.Add(searchHint);
             head.Children.Add(sg);
             Grid.SetRow(head, 0); root.Children.Add(head);
@@ -275,6 +275,7 @@ namespace HallowHub
             info.Children.Add(actions);
             playOn = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
             info.Children.Add(playOn);
+            info.Children.Add(BuildStatusRow());   // v2.10: play status and your rating
             heroGrid.Children.Add(info);
             // "when it starts" card
             var opts = new Border { Background = new SolidColorBrush(Color.FromArgb(205, 0x1A, 0x15, 0x22)), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14, 18, 16), Width = 310,
@@ -319,7 +320,7 @@ namespace HallowHub
             // ---- filters + sort
             var bar = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
             sortBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 170, VerticalAlignment = VerticalAlignment.Center };
-            foreach (var o in new[] { Tuple.Create("recent", "Recently played"), Tuple.Create("played", "Most played"), Tuple.Create("name", "A to Z"), Tuple.Create("size", "Biggest first"), Tuple.Create("store", "By store") })
+            foreach (var o in new[] { Tuple.Create("recent", "Recently played"), Tuple.Create("played", "Most played"), Tuple.Create("name", "A to Z"), Tuple.Create("size", "Biggest first"), Tuple.Create("store", "By store"), Tuple.Create("rating", "Your rating"), Tuple.Create("status", "Play status") })
                 sortBox.Items.Add(new ComboBoxItem { Content = o.Item2, Tag = o.Item1 });
             sortBox.SelectionChanged += (s, e) => { if (loading) return; var it = sortBox.SelectedItem as ComboBoxItem; if (it != null) { S.Sort = (string)it.Tag; S.Save(); RebuildGrid(); } };
             DockPanel.SetDock(sortBox, Dock.Right); bar.Children.Add(sortBox);
@@ -707,6 +708,8 @@ namespace HallowHub
         {
             if (S.Sort == "played") return list.OrderByDescending(g => Total(g)).ThenBy(g => g.Name);
             if (S.Sort == "name") return list.OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase);
+            if (S.Sort == "rating") return list.OrderByDescending(g => S.For(g.Id).Rating).ThenByDescending(g => Total(g)).ThenBy(g => g.Name);
+            if (S.Sort == "status") return list.OrderBy(g => StatusOrder(S.For(g.Id).Status)).ThenByDescending(g => LastOf(g) ?? DateTime.MinValue).ThenBy(g => g.Name);
             if (S.Sort == "store") return list.OrderBy(g => g.SourceName, StringComparer.CurrentCultureIgnoreCase).ThenByDescending(g => LastOf(g) ?? DateTime.MinValue).ThenBy(g => g.Name);
             if (S.Sort == "size") return list.OrderByDescending(g => g.SizeBytes + g.Alts.Sum(a => a.SizeBytes)).ThenBy(g => g.Name);
             return list.OrderByDescending(g => LastOf(g) ?? DateTime.MinValue).ThenByDescending(g => Total(g)).ThenBy(g => g.Name);
@@ -749,7 +752,7 @@ namespace HallowHub
             return Sorted(games.Where(g =>
                 (S.Filter == "hidden" ? S.For(g.Id).Hidden : (S.ShowHidden || !S.For(g.Id).Hidden)) && PassesFilters(g) &&
                 (S.Filter == "all" || S.Filter == "hidden" || (S.Filter == "fav" ? S.For(g.Id).Favorite : S.Filter == "upd" ? (g.NeedsUpdate || g.Updating) : S.Filter == "stale" ? Stale(g) : S.Filter.StartsWith("col:") ? S.For(g.Id).Tags.Contains(S.Filter.Substring(4)) : g.Source == S.Filter)) &&
-                (q.Length == 0 || g.Name.IndexOf(q, StringComparison.CurrentCultureIgnoreCase) >= 0))).ToList();
+                SearchMatch(g, q))).ToList();   // v2.10: names, genres, developer, notes, collections, status
         }
 
         void RebuildGrid()
@@ -1021,6 +1024,7 @@ namespace HallowHub
                 favBtn.IsChecked = d.Favorite;
                 ShowNewsButton(g); if (newsPanel.Visibility == Visibility.Visible) FillNews();
                 ShowAboutButton(g); if (aboutPanel.Visibility == Visibility.Visible) FillAbout();
+                ShowStatus(g);
                 hideBtn.Content = d.Hidden ? "Unhide" : "Hide"; hideBtn.ToolTip = d.Hidden ? "Bring it back to your library" : "Hide it from your library (tools, test servers...) - nothing is uninstalled";
                 var nt = (d.Notes ?? "").Trim();
                 notesBtn.ToolTip = nt.Length == 0 ? "Notes (keybinds, loadouts, codes)" : (nt.Length > 400 ? nt.Substring(0, 400) + "..." : nt);
@@ -1107,7 +1111,7 @@ namespace HallowHub
 
         void OnStarted(Game g)
         {
-            var d = S.For(g.Id); d.Sessions++; d.LastPlayed = DateTime.Now.ToString("o"); S.Save();
+            var d = S.For(g.Id); d.Sessions++; d.LastPlayed = DateTime.Now.ToString("o"); StatusOnStart(g); S.Save();
             if (starting == g.Id) starting = null;
             var did = new List<string>();
             if (d.Preset != "" && Mixer.UsePreset(d.Preset)) did.Add("Hallow Mixer on \"" + d.Preset + "\"");
@@ -1501,6 +1505,24 @@ namespace HallowHub
                 }
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "roms.err.txt"), ex.ToString()); }
+            // v2.10: play status, rating and search
+            try
+            {
+                foreach (var g in games) { S.For(g.Id).Status = ""; S.For(g.Id).Rating = 0; }
+                var owg = games.FirstOrDefault(x => x.Alts.Count > 0) ?? games[0];
+                S.For(owg.Id).Status = "playing"; S.For(owg.Id).Rating = 4;
+                if (games.Count > 2) { S.For(games[1].Id).Status = "beaten"; S.For(games[1].Id).Rating = 5; S.For(games[2].Id).Status = "plan"; }
+                S.Filter = "all"; RebuildChips(); Select(owg); RebuildGrid(); Snap.Save(this, System.IO.Path.Combine(dir, "status.png"), 1180, 780);
+                var lines = new List<string>();
+                foreach (var q in new[] { "lethal", "genre:co-op", "co-op", "status:playing", "status:plan", "dev:zeekerss", "note:test", "store:battle", "zzz nothing", "Half-Life: Alyx" })
+                { search.Text = q; lines.Add(q + " -> " + string.Join(", ", Visible().Select(x => x.Name))); }
+                search.Text = "genre:co-op"; Snap.Save(this, System.IO.Path.Combine(dir, "search.png"), 1180, 780); search.Text = "";
+                S.FStatus = "playing"; RebuildGrid(); lines.Add("filter playing -> " + string.Join(", ", Visible().Select(x => x.Name))); S.FStatus = "";
+                S.Sort = "rating"; lines.Add("sort rating -> " + string.Join(", ", Visible().Take(3).Select(x => x.Name))); S.Sort = "recent";
+                S.View = "list"; RebuildGrid(); Snap.Save(this, System.IO.Path.Combine(dir, "status-list.png"), 1180, 780); S.View = "grid"; RebuildGrid();
+                File.WriteAllText(System.IO.Path.Combine(dir, "search.txt"), string.Join("\r\n", lines));
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "status.err.txt"), ex.ToString()); }
             // v2.5: the accent switched live (the window rebuilds with the new theme)
             try { var was = HallowLook.UseShared; HallowLook.UseShared = !was; ApplyAccent(false); Snap.Save(this, System.IO.Path.Combine(dir, "accent-switched.png"), 1180, 780); HallowLook.UseShared = was; ApplyAccent(false); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "accent.err.txt"), ex.ToString()); }
         }

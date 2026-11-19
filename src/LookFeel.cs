@@ -49,7 +49,8 @@ namespace HallowHub
             names.Children.Add(top);
             var sub = g.SourceName + (g.Alts.Count > 0 ? " + " + string.Join(" + ", g.Alts.Select(a => a.SourceName)) : "") +
                 (g.Updating ? "   ·   updating" + (g.Progress >= 0 ? " " + (int)(g.Progress * 100) + "%" : "") : g.NeedsUpdate ? "   ·   update waiting" : "") +
-                (d.Tags.Count > 0 ? "   ·   " + string.Join(", ", d.Tags) : "");
+                (d.Tags.Count > 0 ? "   ·   " + string.Join(", ", d.Tags) : "") +
+                ((d.Status ?? "") != "" ? "   ·   " + StatusName(d.Status) : "") + (d.Rating > 0 ? "   ·   " + new string('\u2605', d.Rating) : "");
             names.Children.Add(new TextBlock { Text = sub, Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis });
             dp.Children.Add(names);
             row.Child = dp;

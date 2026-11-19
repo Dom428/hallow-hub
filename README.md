@@ -15,6 +15,7 @@ All your games in one place - part of the Hallow family with [Hallow Mixer](http
 - **Hallow family on every game page:** Saves (Hallow Vault: last backup, Back up now, Restore), Clips (Hallow Clips: this game's newest clips) and Overlay (Hallow Overlay on/off per game) - each only when that app is installed. Break reminders show on Hallow Overlay when it's running.
 - **One Hallow icon:** Hub's tray icon hosts the whole family - each Hallow app gets a submenu (its own actions, Open, Exit) and the others hide their own icons (Settings > One Hallow icon, on by default).
 - **Game details:** description, genres, features, developer, release date and screenshots for Steam games (Steam's public store data, cached a month), and filters by genre and feature.
+- **Play status and ratings:** Playing, Beaten, Completed, On hold, Abandoned, Plan to play and your own stars, as filters and sorts; a search that also finds genres, developers, notes and collections (genre: dev: status: col: note: store:).
 - **Emulators and ROMs:** your own emulator profiles and ROM folders - every ROM becomes a game with playtime, collections and Big Picture.
 - **News and charts:** patch notes and news on each Steam game's page (Steam's public news, plain text, Read more in your browser), and hours per week and per month in Stats.
 - **Library backup:** collections, notes, pins, hidden games, your names and pictures, settings and playtime history in one zip - import it on another PC (games matched by store and name). No passwords or keys in it.

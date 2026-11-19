@@ -22,12 +22,10 @@
 | **2.7** | Library backup and import (one zip, no secrets), opt-in Steam wishlist sale alerts |
 | **2.8** | Game details from Steam (description, genres, features, developer, release, screenshots), genre and feature filters |
 | **2.9** | Emulator profiles and ROM folders - every ROM a game with playtime, collections and Big Picture |
+| **2.10** | Play status and your own rating (filters and sorts), search across genres, developer, notes, collections and status |
 
 ## Next
 
-### 2.10 - Play status, ratings and a better search
-- Play status per game (Playing, Beaten, Completed, On hold, Abandoned, Plan to play) and your own rating, both as filters and sorts
-- Search that also looks at genres, features, developer, notes and collections, with genre: / dev: / status: words
 ### Gaps vs Playnite / GOG Galaxy
 What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
 - Game details (descriptions, genres, tags, developer, release date, screenshots) and filtering by them - **buildable** (Steam's public store data, no key) - 2.8

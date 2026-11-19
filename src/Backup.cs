@@ -171,6 +171,7 @@ namespace HallowHub
                 foreach (var t in from.Tags) if (!to.Tags.Contains(t)) to.Tags.Add(t);
                 foreach (var o in from.OpenWith) if (!to.OpenWith.Contains(o, StringComparer.OrdinalIgnoreCase)) to.OpenWith.Add(o);
                 if (to.Preset == "") to.Preset = from.Preset ?? "";
+                if ((to.Status ?? "") == "") to.Status = from.Status ?? ""; if (to.Rating == 0) to.Rating = from.Rating;
                 if (to.LaunchArgs == "") to.LaunchArgs = from.LaunchArgs ?? "";
                 if (to.DailyLimit == 0) to.DailyLimit = from.DailyLimit;
                 if (to.CustomName == "") to.CustomName = from.CustomName ?? "";
@@ -194,7 +195,7 @@ namespace HallowHub
                 S.Sort = st.Sort; S.View = st.View; S.CardScale = st.CardScale; S.StillBanner = st.StillBanner; S.BreakMinutes = st.BreakMinutes; S.WeeklyRecap = st.WeeklyRecap;
                 S.ShowHidden = st.ShowHidden; S.TrayOnClose = st.TrayOnClose; S.OneIcon = st.OneIcon; S.UseHallowAccent = st.UseHallowAccent;
                 S.DiscordOnStart = st.DiscordOnStart; S.DiscordRecap = st.DiscordRecap;
-                S.FStores = st.FStores ?? new List<string>(); S.FSize = st.FSize ?? ""; S.FLast = st.FLast ?? ""; S.FTime = st.FTime ?? "";
+                S.FStatus = st.FStatus ?? ""; S.FStores = st.FStores ?? new List<string>(); S.FSize = st.FSize ?? ""; S.FLast = st.FLast ?? ""; S.FTime = st.FTime ?? "";
                 S.SaleAlerts = st.SaleAlerts; if (string.IsNullOrEmpty(S.SteamProfile)) S.SteamProfile = st.SteamProfile ?? "";
                 if (st.SaleTargets != null) foreach (var t in st.SaleTargets) if (!S.SaleTargets.ContainsKey(t.Key)) S.SaleTargets[t.Key] = t.Value;
             }

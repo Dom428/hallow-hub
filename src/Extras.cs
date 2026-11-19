@@ -24,9 +24,10 @@ namespace HallowHub
         int HiddenCount() { return games.Count(g => S.For(g.Id).Hidden); }
 
         // ---- combined filters
-        int FilterCount() { return (S.FTags.Count > 0 ? 1 : 0) + (S.FStores.Count > 0 ? 1 : 0) + (S.FSize != "" ? 1 : 0) + (S.FLast != "" ? 1 : 0) + (S.FTime != "" ? 1 : 0); }
+        int FilterCount() { return (S.FStatus != "" ? 1 : 0) + (S.FTags.Count > 0 ? 1 : 0) + (S.FStores.Count > 0 ? 1 : 0) + (S.FSize != "" ? 1 : 0) + (S.FLast != "" ? 1 : 0) + (S.FTime != "" ? 1 : 0); }
         bool PassesFilters(Game g)
         {
+            if (S.FStatus != "" && (S.FStatus == "none" ? (S.For(g.Id).Status ?? "") != "" : S.For(g.Id).Status != S.FStatus)) return false;   // v2.10
             if (S.FTags.Count > 0) { var tg = TagsOf(g).ToList(); if (!S.FTags.All(t => tg.Contains(t))) return false; }   // v2.8
             if (S.FStores.Count > 0 && !new[] { g }.Concat(g.Alts).Any(c => S.FStores.Contains(c.Source))) return false;
             if (S.FSize != "")
@@ -78,7 +79,7 @@ namespace HallowHub
             filterBody.Children.Clear();
             var head = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
             var clear = new Button { Content = "Clear", Style = (Style)FindResource("Btn"), Padding = new Thickness(10, 3, 10, 3), FontSize = 11.5, IsEnabled = FilterCount() > 0 };
-            clear.Click += (s, e) => { S.FStores.Clear(); S.FTags.Clear(); S.FSize = ""; S.FLast = ""; S.FTime = ""; S.Save(); RebuildGrid(); FillFilters(); };
+            clear.Click += (s, e) => { S.FStores.Clear(); S.FTags.Clear(); S.FStatus = ""; S.FSize = ""; S.FLast = ""; S.FTime = ""; S.Save(); RebuildGrid(); FillFilters(); };
             DockPanel.SetDock(clear, Dock.Right); head.Children.Add(clear);
             head.Children.Add(new TextBlock { Text = "Show games that match all of these", FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
             filterBody.Children.Add(head);
@@ -97,6 +98,7 @@ namespace HallowHub
             FilterChoice("SIZE", new[] { "", "Any", "small", "Under 10 GB", "mid", "10 to 50 GB", "big", "Over 50 GB" }, () => S.FSize, v => S.FSize = v);
             FilterChoice("LAST PLAYED", new[] { "", "Any time", "week", "This week", "month", "This month", "old", "Not in 2 months", "never", "Never" }, () => S.FLast, v => S.FLast = v);
             FilterChoice("PLAYTIME", new[] { "", "Any", "new", "Under 1 hour", "some", "1 to 20 hours", "lots", "Over 20 hours" }, () => S.FTime, v => S.FTime = v);
+            FilterChoice("PLAY STATUS", new[] { "", "Any", "playing", "Playing", "plan", "Plan to play", "beaten", "Beaten", "completed", "Completed", "hold", "On hold", "abandoned", "Abandoned", "none", "No status" }, () => S.FStatus, v => S.FStatus = v);
             // v2.8: genres and features from the game details Hub has (fills in as you open games)
             var known = games.SelectMany(g => { var m = MetaOf(g); return m == null ? new List<string>() : m.Genres; }).Distinct().OrderBy(t => t).ToList();
             var feats = games.SelectMany(g => { var m = MetaOf(g); return m == null ? new List<string>() : m.Features; }).Distinct().OrderBy(t => t).ToList();
