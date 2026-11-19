@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.6
+- News and patch notes for Steam games: the newspaper button next to Play (Read more opens your browser).
+- Stats: hours per week and per month, with your top games for each.
+
 WHAT'S NEW IN 2.5
 - Uses the Hallow accent colour you pick in Hallow Toolkit (Settings > Use the Hallow accent); game glows keep their own colours.
 - Crash reports stay on this PC; after a crash Hub tells you once (Show details / Open folder).

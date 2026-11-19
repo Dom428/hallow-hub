@@ -18,12 +18,9 @@
 | **2.3** | Hide and unhide games, combined filters (store, size, last played, playtime), Big Picture collections and Storage with the controller |
 | **2.4** | One Hallow icon: Hub hosts the family tray menu (tray-host, notify, per-app submenus, Start / Exit, Open Hallow Toolkit) |
 | **2.5** | Hallow accent from Hallow Toolkit (live), crash reports kept on this PC with a notice, lastCrash in status |
+| **2.6** | Steam news and patch notes on game pages (cached 6 h), playtime charts per week and month |
 
 ## Next
-
-### 2.6 - News and charts
-- Patch notes and news on each Steam game's page (Steam's public news, cached 6 h, plain text, Read more in the browser)
-- Playtime charts: hours per week and per month from Hub's own sessions, top games
 
 ### 2.7 - Library backup and sale alerts
 - Back up Hub's library data (collections, notes, pins, hidden, names and art, settings, sessions) to one zip and import it on another PC - never secrets

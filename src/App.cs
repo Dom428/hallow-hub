@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.5.0.0")]
-[assembly: AssemblyFileVersion("2.5.0.0")]
+[assembly: AssemblyVersion("2.6.0.0")]
+[assembly: AssemblyFileVersion("2.6.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.5";
+        public const string Version = "2.6";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -198,10 +198,10 @@ namespace HallowHub
             var refresh = new Button { Content = "Refresh", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Look for newly installed games" };
             refresh.Click += (s, e) => { Rescan(); Status("Library refreshed - " + games.Count + " games."); }; right.Children.Add(refresh);
             gearBtn = new ToggleButton { Content = "Settings", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), ToolTip = "Settings" };
-            gearBtn.Checked += (s, e) => { if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
+            gearBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
             gearBtn.Unchecked += (s, e) => settingsPanel.Visibility = Visibility.Collapsed;
             statsBtn = new ToggleButton { Content = "Stats", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your playtime" };
-            statsBtn.Checked += (s, e) => { gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
+            statsBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
             statsBtn.Unchecked += (s, e) => statsPanel.Visibility = Visibility.Collapsed;
             var bigBtn = new Button { Content = "Big Picture", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Big Picture: full screen for the couch (F11, or View on a controller)" };
             bigBtn.Click += (s, e) => OpenBigPicture();
@@ -211,7 +211,7 @@ namespace HallowHub
             right.Children.Add(dice);
             right.Children.Add(statsBtn);
             storageBtn = new ToggleButton { Content = "Storage", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Storage: what's on each drive, and what you could free up" };
-            storageBtn.Checked += (s, e) => { gearBtn.IsChecked = false; statsBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
+            storageBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; statsBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
             storageBtn.Unchecked += (s, e) => storagePanel.Visibility = Visibility.Collapsed;
             right.Children.Add(storageBtn);
             right.Children.Add(gearBtn);
@@ -262,6 +262,9 @@ namespace HallowHub
             hideBtn = new Button { Content = "Hide", Tag = "icon", Width = 42, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(8, 0, 0, 0) };
             hideBtn.Click += (s, e) => ToggleHide(sel);
             actions.Children.Add(hideBtn);
+            newsBtn = new Button { Content = "News", Tag = "icon", Width = 42, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
+            newsBtn.Click += (s, e) => OpenNews();   // v2.6
+            actions.Children.Add(newsBtn);
             info.Children.Add(actions);
             playOn = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
             info.Children.Add(playOn);
@@ -349,6 +352,7 @@ namespace HallowHub
             settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
             statsPanel = BuildStats(); outer.Children.Add(statsPanel);
             storagePanel = BuildStorage(); outer.Children.Add(storagePanel);
+            newsPanel = BuildNews(); outer.Children.Add(newsPanel);
             return outer;
         }
 
@@ -393,29 +397,51 @@ namespace HallowHub
             tile("Today", today, "#F07820", streak >= 2 ? "streak: " + streak + " days in a row" : null); tile("This week", week, "#A98BE0", null);
             tile("Last 2 weeks", two, "#6ED28C", "Steam + Hallow Hub"); tile("All time", all, "#5AB4F0", vis.Count(g => Total(g) >= 1) + " games played");
             statsBody.Children.Add(tiles);
-            // 14-day chart (days are counted by Hallow Hub while it runs)
-            statsBody.Children.Add(SectionLabel("LAST 14 DAYS", "calendar-days"));
-            var days = Enumerable.Range(0, 14).Select(i => DateTime.Today.AddDays(i - 13)).ToList();
-            var per = days.Select(d => S.Games.Values.Sum(x => x.MinutesOn(d))).ToList();
-            double max = Math.Max(per.Max(), 1);
-            var chart = new Grid { Height = 150, Margin = new Thickness(0, 0, 0, 18) };
-            for (int i = 0; i < 14; i++) chart.ColumnDefinitions.Add(new ColumnDefinition());
-            for (int i = 0; i < 14; i++)
+            // v2.6: 14 days, hours per week or per month - all from Hub's own day-by-day history
+            var mode = statsMode;
+            var head = new DockPanel();
+            var seg = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Top };
+            foreach (var m in new[] { Tuple.Create("days", "14 days"), Tuple.Create("weeks", "Weeks"), Tuple.Create("months", "Months") })
             {
-                var col = new DockPanel { Margin = new Thickness(4, 0, 4, 0) };
-                var lbl = new TextBlock { Text = days[i].ToString("ddd").Substring(0, 2) + " " + days[i].Day, FontSize = 10, Foreground = days[i] == DateTime.Today ? B("#F07820") : (Brush)FindResource("Muted"), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 6, 0, 0) };
-                DockPanel.SetDock(lbl, Dock.Bottom); col.Children.Add(lbl);
-                var fill = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
-                fill.GradientStops.Add(new GradientStop(C("#FF9A45"), 0)); fill.GradientStops.Add(new GradientStop(C("#F05A8C"), 1));
-                var h = per[i] < 1 ? 3 : Math.Max(6, per[i] / max * 112);
-                col.Children.Add(new Border { Height = h, VerticalAlignment = VerticalAlignment.Bottom, CornerRadius = new CornerRadius(5), Background = per[i] < 1 ? B("#2E2639") : (Brush)fill,
-                    ToolTip = days[i].ToString("dddd d MMM") + ": " + (per[i] < 1 ? "nothing" : HubSettings.Duration(per[i])) });
-                Grid.SetColumn(col, i); chart.Children.Add(col);
+                var key = m.Item1;
+                var chip = new ToggleButton { Content = m.Item2, Style = (Style)FindResource("Chip"), Padding = new Thickness(10, 2, 10, 3), FontSize = 11, Margin = new Thickness(6, 0, 0, 0), IsChecked = mode == key };
+                chip.Click += (s, e) => { statsMode = key; FillStats(); };
+                seg.Children.Add(chip);
             }
-            if (per.Max() < 1)
-                { var note = new TextBlock { Text = "This fills in day by day as you play with Hallow Hub running.", Foreground = (Brush)FindResource("Muted"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, 30) }; Grid.SetColumnSpan(note, 14); chart.Children.Add(note); }
-            statsBody.Children.Add(chart);
-            // top games
+            DockPanel.SetDock(seg, Dock.Right); head.Children.Add(seg);
+            head.Children.Add(SectionLabel(mode == "weeks" ? "HOURS PER WEEK - LAST 12 WEEKS" : mode == "months" ? "HOURS PER MONTH - LAST 12 MONTHS" : "LAST 14 DAYS", mode == "days" ? "calendar-days" : "chart-column"));
+            statsBody.Children.Add(head);
+            var labels = new List<string>(); var per = new List<double>(); var tips = new List<string>(); DateTime periodStart;
+            if (mode == "weeks")
+            {
+                var monday = DateTime.Today.AddDays(-(((int)DateTime.Today.DayOfWeek + 6) % 7));
+                periodStart = monday.AddDays(-7 * 11);
+                for (int i = 0; i < 12; i++)
+                {
+                    var from = periodStart.AddDays(7 * i); var v = HubMinutes(from, from.AddDays(7));
+                    labels.Add(from.ToString("d MMM")); per.Add(v); tips.Add("Week of " + from.ToString("d MMM yyyy") + ": " + (v < 1 ? "nothing" : HubSettings.Duration(v)));
+                }
+            }
+            else if (mode == "months")
+            {
+                var first = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                periodStart = first.AddMonths(-11);
+                for (int i = 0; i < 12; i++)
+                {
+                    var from = periodStart.AddMonths(i); var v = HubMinutes(from, from.AddMonths(1));
+                    labels.Add(from.ToString("MMM")); per.Add(v); tips.Add(from.ToString("MMMM yyyy") + ": " + (v < 1 ? "nothing" : HubSettings.Duration(v)));
+                }
+            }
+            else
+            {
+                periodStart = DateTime.Today.AddDays(-13);
+                for (int i = 0; i < 14; i++)
+                {
+                    var d = periodStart.AddDays(i); var v = HubMinutes(d, d.AddDays(1));
+                    labels.Add(d.ToString("ddd").Substring(0, 2) + " " + d.Day); per.Add(v); tips.Add(d.ToString("dddd d MMM") + ": " + (v < 1 ? "nothing" : HubSettings.Duration(v)));
+                }
+            }
+            statsBody.Children.Add(BarChart(labels, per, tips, mode == "days" ? "This fills in day by day as you play with Hallow Hub running." : "This fills in as you play with Hallow Hub running - it counts from the day you installed it."));            // top games
             var two2 = new Grid(); two2.ColumnDefinitions.Add(new ColumnDefinition()); two2.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) }); two2.ColumnDefinitions.Add(new ColumnDefinition());
             Func<string, string, Func<Game, double>, FrameworkElement> top = (title, icon, f) =>
             {
@@ -440,10 +466,51 @@ namespace HallowHub
                 if (list.Count == 0) sp.Children.Add(new TextBlock { Text = "Nothing yet.", Foreground = (Brush)FindResource("Muted") });
                 return sp;
             };
-            var a1 = top("MOST PLAYED", "trophy", Total); var a2 = top("LAST 2 WEEKS", "fire", Recent);
+            var a1 = top("MOST PLAYED", "trophy", Total);
+            var ps = periodStart;
+            var a2 = mode == "days" ? top("LAST 2 WEEKS", "fire", Recent) : top(mode == "weeks" ? "TOP GAMES - LAST 12 WEEKS" : "TOP GAMES - LAST 12 MONTHS", "fire", g => S.For(g.Id).MinutesSince(ps));
             Grid.SetColumn(a2, 2); two2.Children.Add(a1); two2.Children.Add(a2);
             statsBody.Children.Add(two2);
             statsBody.Children.Add(RecentSessions());
+        }
+
+        // ---- v2.6 charts
+        string statsMode = "days";
+        // minutes Hub counted for every game between two days (from inclusive, to exclusive)
+        double HubMinutes(DateTime from, DateTime to)
+        {
+            string a = from.ToString("yyyy-MM-dd"), b = to.ToString("yyyy-MM-dd"); double t = 0;
+            foreach (var gd in S.Games.Values)
+                foreach (var d in gd.Days)
+                {
+                    var p = d.Split('='); double v;
+                    if (p.Length == 2 && string.CompareOrdinal(p[0], a) >= 0 && string.CompareOrdinal(p[0], b) < 0 && double.TryParse(p[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out v)) t += v;
+                }
+            return t;
+        }
+        // bars in the Hub look; the last bar (now) is highlighted
+        FrameworkElement BarChart(List<string> labels, List<double> per, List<string> tips, string empty)
+        {
+            int n = per.Count; double max = Math.Max(per.Count > 0 ? per.Max() : 0, 1);
+            var chart = new Grid { Height = 150, Margin = new Thickness(0, 0, 0, 18) };
+            for (int i = 0; i < n; i++) chart.ColumnDefinitions.Add(new ColumnDefinition());
+            for (int i = 0; i < n; i++)
+            {
+                var col = new DockPanel { Margin = new Thickness(4, 0, 4, 0) };
+                var lbl = new TextBlock { Text = labels[i], FontSize = 10, Foreground = i == n - 1 ? B("#F07820") : (Brush)FindResource("Muted"), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 6, 0, 0) };
+                DockPanel.SetDock(lbl, Dock.Bottom); col.Children.Add(lbl);
+                var fill = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+                fill.GradientStops.Add(new GradientStop(C("#FF9A45"), 0)); fill.GradientStops.Add(new GradientStop(C("#F05A8C"), 1));
+                var h = per[i] < 1 ? 3 : Math.Max(6, per[i] / max * 112);
+                var stack = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom };
+                if (per[i] >= 60) stack.Children.Add(new TextBlock { Text = (per[i] / 60).ToString(per[i] >= 600 ? "0" : "0.#") + "h", FontSize = 9.5, Foreground = (Brush)FindResource("Muted"), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 3) });
+                stack.Children.Add(new Border { Height = h, CornerRadius = new CornerRadius(5), Background = per[i] < 1 ? B("#2E2639") : (Brush)fill, ToolTip = tips[i] });
+                col.Children.Add(stack);
+                Grid.SetColumn(col, i); chart.Children.Add(col);
+            }
+            if (per.Count == 0 || per.Max() < 1)
+                { var note = new TextBlock { Text = empty, Foreground = (Brush)FindResource("Muted"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, 30) }; Grid.SetColumnSpan(note, Math.Max(1, n)); chart.Children.Add(note); }
+            return chart;
         }
 
         Border BuildSettings()
@@ -933,6 +1000,7 @@ namespace HallowHub
                 heroBorder.Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = ac, BlurRadius = 34, ShadowDepth = 0, Opacity = 0.35 };
                 heroTint.Color = Color.FromArgb(240, (byte)(0x12 + (ac.R - 0x12) * 0.14), (byte)(0x0F + (ac.G - 0x0F) * 0.14), (byte)(0x18 + (ac.B - 0x18) * 0.14));
                 favBtn.IsChecked = d.Favorite;
+                ShowNewsButton(g); if (newsPanel.Visibility == Visibility.Visible) FillNews();
                 hideBtn.Content = d.Hidden ? "Unhide" : "Hide"; hideBtn.ToolTip = d.Hidden ? "Bring it back to your library" : "Hide it from your library (tools, test servers...) - nothing is uninstalled";
                 var nt = (d.Notes ?? "").Trim();
                 notesBtn.ToolTip = nt.Length == 0 ? "Notes (keybinds, loadouts, codes)" : (nt.Length > 400 ? nt.Substring(0, 400) + "..." : nt);
@@ -1078,6 +1146,7 @@ namespace HallowHub
         }
         bool Back()
         {
+            if (newsPanel.Visibility == Visibility.Visible) { newsPanel.Visibility = Visibility.Collapsed; return true; }
             if (statsBtn.IsChecked == true) { statsBtn.IsChecked = false; return true; }
             if (storageBtn.IsChecked == true) { storageBtn.IsChecked = false; return true; }
             if (gearBtn.IsChecked == true) { gearBtn.IsChecked = false; return true; }
@@ -1345,6 +1414,16 @@ namespace HallowHub
                 S.For(hid.Id).Hidden = false; S.Filter = "all"; RebuildChips(); RebuildGrid();
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "extras.err.txt"), ex.ToString()); }
+            // v2.6: news (from the test cache) and the week / month charts with sample history (in memory only)
+            try
+            {
+                if (df != null) { Select(df); OpenNews(); Snap.Save(this, System.IO.Path.Combine(dir, "news.png"), 1180, 900); newsPanel.Visibility = Visibility.Collapsed; }
+                var rnd = new Random(7); var some = games.Take(4).ToList();
+                for (int i = 0; i < 360; i++) { var day = DateTime.Today.AddDays(-i); if (rnd.Next(3) == 0) continue; var gg = some[rnd.Next(some.Count)]; S.For(gg.Id).AddMinutes(20 + rnd.Next(150), day); }
+                statsMode = "weeks"; FillStats(); statsPanel.Visibility = Visibility.Visible; Snap.Save(this, System.IO.Path.Combine(dir, "stats-weeks.png"), 1180, 900);
+                statsMode = "months"; FillStats(); Snap.Save(this, System.IO.Path.Combine(dir, "stats-months.png"), 1180, 900); statsPanel.Visibility = Visibility.Collapsed; statsMode = "days";
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "news.err.txt"), ex.ToString()); }
             // v2.5: the accent switched live (the window rebuilds with the new theme)
             try { var was = HallowLook.UseShared; HallowLook.UseShared = !was; ApplyAccent(false); Snap.Save(this, System.IO.Path.Combine(dir, "accent-switched.png"), 1180, 780); HallowLook.UseShared = was; ApplyAccent(false); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "accent.err.txt"), ex.ToString()); }
         }
