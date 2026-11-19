@@ -147,7 +147,54 @@ namespace HallowHub
             var keep = new CheckBox { Content = new TextBlock { Text = "Leave them open when the game closes", TextWrapping = TextWrapping.Wrap }, Style = (Style)FindResource("Switch"), IsChecked = d.KeepOpen };
             sp.Children.Add(keep);
             sp.Children.Add(new TextBlock { Text = "Apps that were already running are never closed. Closing is like clicking X, so they can still ask to save.", Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(52, 0, 0, 14) });
-            var lim = new DockPanel { Margin = new Thickness(0, 0, 0, 16) };
+            // v2.12: apps to close when the game starts (a launch checklist), opened again after
+            sp.Children.Add(label("Close when this game starts", "power-off"));
+            var shut = new List<string>((d.CloseFirst ?? new List<string>()).Where(CloseApps.Allowed));
+            var shutList = new StackPanel();
+            Action fillShut = null;
+            fillShut = () =>
+            {
+                shutList.Children.Clear();
+                foreach (var a in shut.ToList())
+                {
+                    var exe = a; var row = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
+                    var rm = new Button { Content = "x", Tag = "icon", Width = 26, Height = 24, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), ToolTip = "Don't close it any more" };
+                    rm.Click += (o, e) => { shut.Remove(exe); fillShut(); };
+                    DockPanel.SetDock(rm, Dock.Right); row.Children.Add(rm);
+                    row.Children.Add(new TextBlock { Text = CloseApps.Name(exe), VerticalAlignment = VerticalAlignment.Center, ToolTip = exe, TextTrimming = TextTrimming.CharacterEllipsis });
+                    shutList.Children.Add(row);
+                }
+                if (shut.Count == 0) shutList.Children.Add(new TextBlock { Text = "Nothing yet - for example a browser, a sync app or a video editor that slows games down.", Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, TextWrapping = TextWrapping.Wrap });
+            };
+            fillShut(); sp.Children.Add(shutList);
+            var shutBtns = new WrapPanel { Margin = new Thickness(0, 6, 0, 6) };
+            var addRunning = new Button { Content = "Add a running app", Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 6, 0), ToolTip = "Pick from the apps open right now" };
+            addRunning.Click += (o, e) =>
+            {
+                var m = new ContextMenu { PlacementTarget = addRunning, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+                foreach (var r in CloseApps.Running())
+                {
+                    var exe = r.Key; var mi = new MenuItem { Header = r.Value, ToolTip = exe, IsEnabled = !shut.Contains(exe, StringComparer.OrdinalIgnoreCase) };
+                    mi.Click += (o2, e2) => { shut.Add(exe); fillShut(); };
+                    m.Items.Add(mi);
+                }
+                if (m.Items.Count == 0) m.Items.Add(new MenuItem { Header = "No other apps with a window are open", IsEnabled = false });
+                m.IsOpen = true;
+            };
+            var addShut = new Button { Content = "Add app...", Style = (Style)FindResource("Btn") };
+            addShut.Click += (o, e) =>
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Pick an app to close when " + g.Name + " starts", Filter = "Programs (*.exe)|*.exe" };
+                if (dlg.ShowDialog(this) != true || shut.Contains(dlg.FileName, StringComparer.OrdinalIgnoreCase)) return;
+                if (!CloseApps.Allowed(dlg.FileName)) { MessageBox.Show(this, CloseApps.Name(dlg.FileName) + " can't be closed by Hub - it's part of Windows, a game launcher or a Hallow app.", "Hallow Hub"); return; }
+                shut.Add(dlg.FileName); fillShut();
+            };
+            shutBtns.Children.Add(addRunning); shutBtns.Children.Add(addShut); sp.Children.Add(shutBtns);
+            var reopen = new CheckBox { Content = new TextBlock { Text = "Open them again when the game closes", TextWrapping = TextWrapping.Wrap }, Style = (Style)FindResource("Switch"), IsChecked = !d.NoReopen };
+            sp.Children.Add(reopen);
+            sp.Children.Add(new TextBlock { Text = "Like clicking X - an app can still ask to save, and nothing is force-closed. Windows, game launchers and the Hallow apps are never closed. For High performance power and your Boost apps, turn on the Hallow Toolkit game session.", Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(52, 0, 0, 14) });
+            Closing += (o, e) => { if (DialogResult == true) { d.CloseFirst = shut; d.NoReopen = reopen.IsChecked != true; } };
+            var lim =new DockPanel { Margin = new Thickness(0, 0, 0, 16) };
             var limBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 150 };
             foreach (var m in new[] { 0, 30, 60, 90, 120, 180, 240 }) limBox.Items.Add(new ComboBoxItem { Content = m == 0 ? "No limit" : HubSettings.Duration(m).Replace("h 00m", "h") + " a day", Tag = m });
             limBox.SelectedItem = limBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == d.DailyLimit) ?? limBox.Items[0];

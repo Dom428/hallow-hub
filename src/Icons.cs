@@ -23,6 +23,7 @@ namespace HallowHub
             { "All", "table-cells-large" }, { "Favorites", "star" }, { "Steam", "steam" }, { "Battle.net", "battle-net" }, { "Epic Games", "gamepad" }, { "Added by you", "windows" },
             { "Back up now", "floppy-disk" }, { "News", "newspaper" }, { "About", "circle-info" }, { "Emulators...", "compact-disc" }, { "Emulators", "compact-disc" }, { "Add emulator", "plus" }, { "Browse...", "folder-open" }, { "Wishlist", "cart-shopping" }, { "Check now", "arrows-rotate" }, { "Back up library...", "file-export" }, { "Import library...", "file-import" }, { "Read more", "arrow-up-right-from-square" }, { "Show details", "note-sticky" }, { "Backing up...", "spinner" }, { "Restore...", "rotate-left" },
             { "OK", "check" }, { "Cancel", "xmark" }, { "Got it", "check" }, { "Store page", "arrow-up-right-from-square" },
+            { "Links", "bookmark" }, { "Add link", "plus" }, { "Add a running app", "power-off" },
         };
         // label starts with -> icon
         static readonly string[][] Prefixes = {

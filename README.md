@@ -21,6 +21,9 @@ All your games in one place - part of the Hallow family with [Hallow Mixer](http
 - **Library backup:** collections, notes, pins, hidden games, your names and pictures, settings and playtime history in one zip - import it on another PC (games matched by store and name). No passwords or keys in it.
 - **Sale alerts** (opt-in): Hub checks your public Steam wishlist once a day and tells you when something is on sale or below a price you set.
 - **Hallow accent:** uses the colour you pick in Hallow Toolkit (game glows keep their own). **Crash reports** stay on this PC - after a crash Hub tells you once and can show the details.
+- **What should I play, your way (2.12):** right-click Surprise me for From my backlog (Plan to play, and installed games you've never started - Ctrl+Shift+R), one of your favorites, or one you haven't played in a month. Stats gets a **Your library** section: play status split, backlog, finished games, your ratings.
+- **Links on every game (2.12):** Steam store page, community hub and guides, PCGamingWiki and HowLongToBeat (both open the site in your browser - Hub fetches nothing from them), plus links of your own. Also on the right-click menu.
+- **Close apps when a game starts (2.12):** pick apps (a browser, a sync app...) to close like clicking X when the game starts, opened again when it closes. Windows, game launchers and the Hallow apps are never closed. The When this game starts card lists everything that happens.
 - **Filters that combine** (store, size, last played, playtime) with the chips, search and sort; **hide** tools and test servers (the Hidden filter brings them back). Favorites, search, sort by recent / most played / A to Z / size / store. Lives in the tray so playtime keeps counting.
 
 Built with the C# compiler that ships with Windows (.NET Framework 4.8): run `build.ps1`. No admin needed to install or run.

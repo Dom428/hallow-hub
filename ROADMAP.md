@@ -24,6 +24,7 @@
 | **2.9** | Emulator profiles and ROM folders - every ROM a game with playtime, collections and Big Picture |
 | **2.10** | Play status and your own rating (filters and sorts), search across genres, developer, notes, collections and status |
 | **2.11** | Hallow Keys in the Hallow icon (its submenu, Start when installed) |
+| **2.12** | Surprise me from your backlog, links per game (Steam, PCGamingWiki, HowLongToBeat, your own), close apps when a game starts, Your library on Stats, pipe open / quit |
 
 ## Next
 
@@ -33,6 +34,10 @@ What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
 - Emulators and ROM scanning (Playnite, LaunchBox) - **buildable** (local only) - 2.9
 - Play status (beaten, completed, abandoned, backlog) and your own ratings (Playnite, Galaxy) - **buildable** - 2.10
 - Search across tags, genres, developer and notes (Playnite) - **buildable** - 2.10
+- Random game from your backlog (Playnite's random game picker, Galaxy's backlog view) - **buildable** - 2.12
+- Links per game (Playnite's Links: store pages, wikis, guides, your own) - **buildable** (links only, nothing fetched) - 2.12
+- Actions before a game starts (Playnite's game scripts: close apps, power plan) - **buildable** - 2.12 closes the apps you pick and opens them again after; power plan through the Hallow Toolkit game session
+- Library statistics (Playnite's statistics: completion, status split, ratings) - **buildable** - 2.12
 - Achievements (Galaxy, Playnite add-ons) - **not now**: Steam's no-key source only works for public profiles and gives one game per request; every other store needs a sign-in or key
 - Friends, chat and activity feeds (Galaxy) - **not buildable**: needs each store's sign-in, and Hub won't hold your passwords
 - Owned-but-not-installed games from every store (Galaxy, Playnite) - **not buildable** without store sign-ins or API keys (Steam's owned-games list needs a Web API key)
@@ -42,7 +47,7 @@ What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
 - Add-ons, scripting and custom themes (Playnite, LaunchBox) - **not planned**: Hub stays one small app; it has the Hallow accent and cover size / list view
 - Cloud sync of the library between PCs (Galaxy) - **partly done**: 2.7 library backup moves it by zip; no cloud without an account
 - Videos, 3D boxes and arcade cabinets (LaunchBox Big Box) - **not planned**: needs large media downloads
-- HowLongToBeat times (Playnite add-on) - **not buildable**: no public API
+- HowLongToBeat times (Playnite add-on) - **not buildable**: no public API (2.12 adds a HowLongToBeat link that opens the site's search in your browser)
 ### Fixes from real use
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
 

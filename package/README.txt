@@ -6,6 +6,13 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.12
+- Surprise me, your way: right-click the dice for From my backlog (Ctrl+Shift+R), a favorite, or one you haven't played in a month.
+- Links on every game (the bookmark button next to Notes, and the right-click menu): Steam pages, PCGamingWiki, HowLongToBeat and your own.
+- Close apps when a game starts (Game settings > Close when this game starts) - opened again when it closes. The When this game starts card lists everything that happens.
+- Stats: Your library - play status split, backlog, finished games and your ratings.
+- Hallow family: Hub now answers open and quit on its pipe, like the other Hallow apps.
+
 WHAT'S NEW IN 2.11
 - Hallow Keys gets its own submenu in the Hallow icon.
 

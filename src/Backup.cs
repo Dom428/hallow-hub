@@ -170,6 +170,9 @@ namespace HallowHub
                 to.Hidden |= from.Hidden; to.Favorite |= from.Favorite; to.Pinned |= from.Pinned; to.GameSession |= from.GameSession; to.KeepOpen |= from.KeepOpen; to.Admin |= from.Admin;
                 foreach (var t in from.Tags) if (!to.Tags.Contains(t)) to.Tags.Add(t);
                 foreach (var o in from.OpenWith) if (!to.OpenWith.Contains(o, StringComparer.OrdinalIgnoreCase)) to.OpenWith.Add(o);
+                foreach (var o in from.Links ?? new List<string>()) if (!to.Links.Contains(o, StringComparer.OrdinalIgnoreCase)) to.Links.Add(o);   // v2.12
+                foreach (var o in from.CloseFirst ?? new List<string>()) if (CloseApps.Allowed(o) && !to.CloseFirst.Contains(o, StringComparer.OrdinalIgnoreCase)) to.CloseFirst.Add(o);
+                to.NoReopen |= from.NoReopen;
                 if (to.Preset == "") to.Preset = from.Preset ?? "";
                 if ((to.Status ?? "") == "") to.Status = from.Status ?? ""; if (to.Rating == 0) to.Rating = from.Rating;
                 if (to.LaunchArgs == "") to.LaunchArgs = from.LaunchArgs ?? "";

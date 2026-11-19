@@ -55,7 +55,10 @@ namespace HallowHub
         [DataMember] public string LastCopy = "", LastCopyAt = "";
         [DataMember] public string Status = "";                            // v2.10: plan, playing, beaten, completed, hold, abandoned
         [DataMember] public int Rating;                                    // v2.10: your stars, 0-5         // v2.1: which copy of a merged game Hub last saw running, and when
-        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; OpenWith = new List<string>(); SessionLog = new List<string>(); LimitTold = ""; Notes = ""; LastCopy = ""; LastCopyAt = ""; Status = ""; }
+        [DataMember] public List<string> Links = new List<string>();      // v2.12: your own links, "name|https://..."
+        [DataMember] public List<string> CloseFirst = new List<string>(); // v2.12: apps to close when the game starts (exe paths)
+        [DataMember] public bool NoReopen;                                 // v2.12: don't open them again when the game closes
+        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; OpenWith = new List<string>(); SessionLog = new List<string>(); LimitTold = ""; Notes = ""; LastCopy = ""; LastCopyAt = ""; Status = ""; Links = new List<string>(); CloseFirst = new List<string>(); }
 
         public DateTime? Last { get { DateTime d; return DateTime.TryParse(LastPlayed, null, System.Globalization.DateTimeStyles.RoundtripKind, out d) ? d : (DateTime?)null; } }
         public void AddMinutes(double m, DateTime when)

@@ -17,8 +17,26 @@ namespace HallowHub
         readonly List<WF.ToolStripItem> familyItems = new List<WF.ToolStripItem>();
 
         // pipe commands only Hub has (run on the window's thread, 5 s at most)
-        string FamilyCommand(string cmd, string arg)
+        public bool QuitRequested;
+        public string FamilyCommand(string cmd, string arg)
         {
+            // v2.12: open and quit, like every Hallow app (HALLOW-FAMILY.md v2) - quit answers ok first, then exits like the tray's Quit
+            if (cmd == "open")
+            {
+                if (Snap.On) return "ok";
+                return OnUi(ShowFromTray) ? "ok" : "error busy";
+            }
+            if (cmd == "quit")
+            {
+                QuitRequested = true;
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };   // let the "ok" reach the caller first
+                    t.Tick += (s, e) => { t.Stop(); Quit(); };
+                    t.Start();
+                }));
+                return "ok";
+            }
             if (cmd == "tray-host")
             {
                 bool on = false;
