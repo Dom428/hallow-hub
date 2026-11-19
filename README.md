@@ -15,6 +15,8 @@ All your games in one place - part of the Hallow family with [Hallow Mixer](http
 - **Hallow family on every game page:** Saves (Hallow Vault: last backup, Back up now, Restore), Clips (Hallow Clips: this game's newest clips) and Overlay (Hallow Overlay on/off per game) - each only when that app is installed. Break reminders show on Hallow Overlay when it's running.
 - **One Hallow icon:** Hub's tray icon hosts the whole family - each Hallow app gets a submenu (its own actions, Open, Exit) and the others hide their own icons (Settings > One Hallow icon, on by default).
 - **News and charts:** patch notes and news on each Steam game's page (Steam's public news, plain text, Read more in your browser), and hours per week and per month in Stats.
+- **Library backup:** collections, notes, pins, hidden games, your names and pictures, settings and playtime history in one zip - import it on another PC (games matched by store and name). No passwords or keys in it.
+- **Sale alerts** (opt-in): Hub checks your public Steam wishlist once a day and tells you when something is on sale or below a price you set.
 - **Hallow accent:** uses the colour you pick in Hallow Toolkit (game glows keep their own). **Crash reports** stay on this PC - after a crash Hub tells you once and can show the details.
 - **Filters that combine** (store, size, last played, playtime) with the chips, search and sort; **hide** tools and test servers (the Hidden filter brings them back). Favorites, search, sort by recent / most played / A to Z / size / store. Lives in the tray so playtime keeps counting.
 

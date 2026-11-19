@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -25,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.6.0.0")]
-[assembly: AssemblyFileVersion("2.6.0.0")]
+[assembly: AssemblyVersion("2.7.0.0")]
+[assembly: AssemblyFileVersion("2.7.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.6";
+        public const string Version = "2.7";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -154,7 +155,7 @@ namespace HallowHub
                 PreviewKeyDown += OnKey;
                 var padTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) }; padTimer.Tick += (s, e) => { try { TickPad(); } catch { } }; padTimer.Start();
                 slow = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-                slow.Tick += (s, e) => { CheckLinks(); ShowFamily(false); WatchTheme(); CheckRecap(); RefreshPc(); WriteRecent(); if (sel != null && IsRunning(sel)) ShowHero(); };
+                slow.Tick += (s, e) => { CheckLinks(); ShowFamily(false); WatchTheme(); CheckSales(false); CheckRecap(); RefreshPc(); WriteRecent(); if (sel != null && IsRunning(sel)) ShowHero(); };
                 slow.Start();
                 Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); RefreshPc(); WriteRecent(); }), DispatcherPriority.ApplicationIdle);
                 IsVisibleChanged += (s, e) => { if (IsVisible) RefreshPc(); };
@@ -198,10 +199,10 @@ namespace HallowHub
             var refresh = new Button { Content = "Refresh", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Look for newly installed games" };
             refresh.Click += (s, e) => { Rescan(); Status("Library refreshed - " + games.Count + " games."); }; right.Children.Add(refresh);
             gearBtn = new ToggleButton { Content = "Settings", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), ToolTip = "Settings" };
-            gearBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
+            gearBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
             gearBtn.Unchecked += (s, e) => settingsPanel.Visibility = Visibility.Collapsed;
             statsBtn = new ToggleButton { Content = "Stats", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your playtime" };
-            statsBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
+            statsBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
             statsBtn.Unchecked += (s, e) => statsPanel.Visibility = Visibility.Collapsed;
             var bigBtn = new Button { Content = "Big Picture", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Big Picture: full screen for the couch (F11, or View on a controller)" };
             bigBtn.Click += (s, e) => OpenBigPicture();
@@ -209,9 +210,12 @@ namespace HallowHub
             var dice = new Button { Content = "Surprise me", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "What should I play? (Ctrl+R, or X on a controller)" };
             dice.Click += (s, e) => Surprise();
             right.Children.Add(dice);
+            wishBtn = new Button { Content = "Wishlist", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your Steam wishlist and what's on sale" };
+            wishBtn.Click += (s, e) => OpenWishlist(); UpdateWishButton();   // v2.7
+            right.Children.Add(wishBtn);
             right.Children.Add(statsBtn);
             storageBtn = new ToggleButton { Content = "Storage", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Storage: what's on each drive, and what you could free up" };
-            storageBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; statsBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
+            storageBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; statsBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
             storageBtn.Unchecked += (s, e) => storagePanel.Visibility = Visibility.Collapsed;
             right.Children.Add(storageBtn);
             right.Children.Add(gearBtn);
@@ -353,6 +357,7 @@ namespace HallowHub
             statsPanel = BuildStats(); outer.Children.Add(statsPanel);
             storagePanel = BuildStorage(); outer.Children.Add(storagePanel);
             newsPanel = BuildNews(); outer.Children.Add(newsPanel);
+            wishPanel = BuildWishlist(); outer.Children.Add(wishPanel);
             return outer;
         }
 
@@ -551,6 +556,13 @@ namespace HallowHub
             DockPanel.SetDock(brBox, Dock.Right); br.Children.Add(brBox);
             br.Children.Add(new TextBlock { Text = "Break reminder", VerticalAlignment = VerticalAlignment.Center });
             sp.Children.Add(br);
+            AddSaleSettings(sp);   // v2.7
+            var lib = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+            var bk = new Button { Content = "Back up library...", Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Collections, notes, pins, hidden games, names and pictures, settings and playtime history in one zip - for another PC or a fresh Windows" };
+            bk.Click += (s, e) => ExportLibrary();
+            var im = new Button { Content = "Import library...", Style = (Style)FindResource("Btn"), ToolTip = "Bring a library backup in - added to what's here, games matched by store and name" };
+            im.Click += (s, e) => ImportLibrary();
+            lib.Children.Add(bk); lib.Children.Add(im); sp.Children.Add(lib);
             var upd = new Button { Content = "Check for updates", Style = (Style)FindResource("Btn"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
             upd.Click += (s, e) => CheckForUpdate(true); sp.Children.Add(upd);
             linkInfo = new TextBlock { Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0), FontSize = 11.5, LineHeight = 18 };
@@ -1147,6 +1159,7 @@ namespace HallowHub
         bool Back()
         {
             if (newsPanel.Visibility == Visibility.Visible) { newsPanel.Visibility = Visibility.Collapsed; return true; }
+            if (wishPanel.Visibility == Visibility.Visible) { wishPanel.Visibility = Visibility.Collapsed; return true; }
             if (statsBtn.IsChecked == true) { statsBtn.IsChecked = false; return true; }
             if (storageBtn.IsChecked == true) { storageBtn.IsChecked = false; return true; }
             if (gearBtn.IsChecked == true) { gearBtn.IsChecked = false; return true; }
@@ -1424,6 +1437,31 @@ namespace HallowHub
                 statsMode = "months"; FillStats(); Snap.Save(this, System.IO.Path.Combine(dir, "stats-months.png"), 1180, 900); statsPanel.Visibility = Visibility.Collapsed; statsMode = "days";
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "news.err.txt"), ex.ToString()); }
+            // v2.7: sale alerts (from the test wishlist cache), Settings with them on, and a library backup round trip
+            try
+            {
+                S.SaleAlerts = true; S.SteamProfile = "76561197960265729"; S.SaleTargets["1966720"] = 12; UpdateWishButton();
+                OpenWishlist(); Snap.Save(this, System.IO.Path.Combine(dir, "wishlist.png"), 1180, 900); wishPanel.Visibility = Visibility.Collapsed;
+                var outer = (Grid)Content; outer.Children.Remove(settingsPanel); settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
+                settingsPanel.Visibility = Visibility.Visible; Snap.Save(this, System.IO.Path.Combine(dir, "settings-27.png"), 1180, 900); settingsPanel.Visibility = Visibility.Collapsed;
+                var t = Environment.GetEnvironmentVariable("HALLOW_FAMILY_TEST");
+                if (!string.IsNullOrEmpty(t))
+                {
+                    var zip = System.IO.Path.Combine(t, "library-test.zip");
+                    var names = AllCopies().GroupBy(c => c.Id).ToDictionary(x => x.Key, x => x.First().OriginalName ?? x.First().Name);
+                    S.For(games[0].Id).Notes = "test note"; S.For(games[0].Id).Tags.Add("Backup test");
+                    int n = LibraryZip.Export(S, names, zip);
+                    Dictionary<string, byte[]> art; var b = LibraryZip.Read(zip, out art);
+                    var before = S.Collections.Count;
+                    b.Names["steam:999999999"] = games[1].OriginalName ?? games[1].Name; b.Games["steam:999999999"] = new GameData { Notes = "matched by name", Pinned = true };
+                    int m = MergeBackup(b, art, System.IO.Path.Combine(t, "art"));
+                    var json = Encoding.UTF8.GetString(b.ToJson());
+                    File.WriteAllText(System.IO.Path.Combine(dir, "backup.txt"), "exported " + n + " games, matched on import " + m + "\r\nentries in zip: " + string.Join(", ", System.IO.Compression.ZipFile.OpenRead(zip).Entries.Select(x => x.FullName)) +
+                        "\r\nname-matched game notes: " + S.For(games[1].Id).Notes + " pinned=" + S.For(games[1].Id).Pinned + "\r\ncollections " + before + " -> " + S.Collections.Count +
+                        "\r\njson mentions webhook/token/key: " + (json.IndexOf("webhook", StringComparison.OrdinalIgnoreCase) >= 0) + "/" + (json.IndexOf("token", StringComparison.OrdinalIgnoreCase) >= 0) + "/" + (json.IndexOf("apikey", StringComparison.OrdinalIgnoreCase) >= 0) + "\r\nlength " + json.Length);
+                }
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "sales.err.txt"), ex.ToString()); }
             // v2.5: the accent switched live (the window rebuilds with the new theme)
             try { var was = HallowLook.UseShared; HallowLook.UseShared = !was; ApplyAccent(false); Snap.Save(this, System.IO.Path.Combine(dir, "accent-switched.png"), 1180, 780); HallowLook.UseShared = was; ApplyAccent(false); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "accent.err.txt"), ex.ToString()); }
         }

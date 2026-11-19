@@ -19,12 +19,9 @@
 | **2.4** | One Hallow icon: Hub hosts the family tray menu (tray-host, notify, per-app submenus, Start / Exit, Open Hallow Toolkit) |
 | **2.5** | Hallow accent from Hallow Toolkit (live), crash reports kept on this PC with a notice, lastCrash in status |
 | **2.6** | Steam news and patch notes on game pages (cached 6 h), playtime charts per week and month |
+| **2.7** | Library backup and import (one zip, no secrets), opt-in Steam wishlist sale alerts |
 
 ## Next
-
-### 2.7 - Library backup and sale alerts
-- Back up Hub's library data (collections, notes, pins, hidden, names and art, settings, sessions) to one zip and import it on another PC - never secrets
-- Opt-in sale alerts for your public Steam wishlist (discounts, or below a price you set)
 
 ### Fixes from real use
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)

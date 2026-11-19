@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.7
+- Settings > Back up library / Import library: collections, notes, pins, names and pictures, settings and playtime in one zip for another PC.
+- Opt-in sale alerts for your public Steam wishlist - on sale, or below a price you set (the cart button).
+
 WHAT'S NEW IN 2.6
 - News and patch notes for Steam games: the newspaper button next to Play (Read more opens your browser).
 - Stats: hours per week and per month, with your top games for each.

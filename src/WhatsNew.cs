@@ -13,6 +13,7 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("2.7", new[] { "Settings > Back up library / Import library: your collections, notes, pins, names and pictures, settings and playtime in one zip for another PC", "Opt-in sale alerts for your public Steam wishlist - on sale, or below a price you set (the cart button)" }),
             Tuple.Create("2.6", new[] { "News and patch notes for Steam games: the newspaper button next to Play (Read more opens your browser)", "Stats: hours per week and per month, with your top games for each" }),
             Tuple.Create("2.5", new[] { "Uses the Hallow accent colour you pick in Hallow Toolkit (Settings > Use the Hallow accent); game glows keep their own colours", "If Hub ever closes unexpectedly, it keeps a crash report on this PC and tells you once - nothing is sent anywhere" }),
             Tuple.Create("2.4", new[] { "One Hallow icon: Hub's tray icon hosts the whole Hallow family - right-click it for each app's menu (Open, its actions, Exit), or Start the ones that aren't running", "The other Hallow apps hide their own tray icons while it's on (Settings > One Hallow icon)" }),
