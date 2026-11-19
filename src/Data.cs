@@ -18,7 +18,7 @@ namespace HallowHub
         [DataMember] public string InstallDir;  // processes running from here count as this game
         [DataMember] public string Launch;      // URI or exe path
         [DataMember] public string Args = "";
-        public string Cover, Hero, Logo, Header, IconExe;
+        public string Cover, Hero, Logo, Header, IconExe; public string OriginalName;
         // v1.1
         public DateTime UpdatedAt;              // when the install last changed (picks the main copy of a duplicate)
         public long SizeBytes; public string Drive; public string Uninstall;   // v1.4: the launcher's own uninstall command (Battle.net)
@@ -26,7 +26,7 @@ namespace HallowHub
         public double SteamMinutes, Steam2Weeks; public DateTime? SteamLast;
         public List<Game> Alts = new List<Game>();   // the same game from another store (merged into one card)
         public Game Parent;                          // set on an alt: the card it belongs to
-        public string SourceName { get { return Source == "steam" ? "Steam" : Source == "battlenet" ? "Battle.net" : Source == "epic" ? "Epic Games" : "Added by you"; } }
+        public string SourceName { get { return Source == "steam" ? "Steam" : Source == "battlenet" ? "Battle.net" : Source == "epic" ? "Epic Games" : Source == "ea" ? "EA app" : Source == "ubisoft" ? "Ubisoft Connect" : Source == "gog" ? "GOG" : Source == "riot" ? "Riot" : Source == "xbox" ? "Xbox" : "Added by you"; } }
     }
 
     [DataContract]
@@ -43,7 +43,8 @@ namespace HallowHub
         [DataMember] public string LaunchArgs = "";                  // v1.2: extra launch options
         [DataMember] public bool Admin;                              // v1.2: run as administrator (games started from an .exe)
         [DataMember] public List<string> Tags = new List<string>();   // v1.2: collections it's in
-        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); }
+        [DataMember] public string CustomName = "", CustomCover = "", CustomHero = "";   // v1.5: your own name and pictures
+        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; }
 
         public DateTime? Last { get { DateTime d; return DateTime.TryParse(LastPlayed, null, System.Globalization.DateTimeStyles.RoundtripKind, out d) ? d : (DateTime?)null; } }
         public void AddMinutes(double m, DateTime when)

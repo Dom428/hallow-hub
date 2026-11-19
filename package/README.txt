@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 1.5
+- Finds EA app, Ubisoft Connect, GOG, Riot and Xbox app games too.
+- Game settings > Look: rename a game and pick your own cover and banner.
+
 WHAT'S NEW IN 1.4
 - Storage page (drive icon): each drive's games by size, and what you could free up.
 - Uninstall from Hub - always through Steam / Battle.net / Epic, which ask again first.

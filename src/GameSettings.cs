@@ -1,4 +1,4 @@
-// Hallow Hub v1.2 - one game's settings: launch options, run as administrator, and which collections it's in.
+﻿// Hallow Hub v1.2 - one game's settings: launch options, run as administrator, and which collections it's in.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,6 +29,42 @@ namespace HallowHub
             sp.Children.Add(head);
 
             Func<string, string, TextBlock> label = (text, icon) => new TextBlock { Text = text, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) };
+            // v1.5: your own name and pictures
+            sp.Children.Add(label("Name", "pen"));
+            var nameBox = new TextBox { Style = (Style)FindResource("Field"), Text = string.IsNullOrEmpty(d.CustomName) ? (g.OriginalName ?? g.Name) : d.CustomName };
+            sp.Children.Add(nameBox);
+            var pics = new WrapPanel { Margin = new Thickness(0, 8, 0, 4) };
+            string cover = d.CustomCover ?? "", hero = d.CustomHero ?? "";
+            var picNote = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 14) };
+            Action note = () => picNote.Text = (cover != "" ? "Cover: your picture. " : "Cover: from " + g.SourceName + ". ") + (hero != "" ? "Banner: your picture." : "Banner: from " + g.SourceName + ".") + "  Covers look best tall (600 x 900), banners wide (1920 x 620).";
+            Func<string, string> pick = what =>
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Pick a " + what + " picture", Filter = "Pictures (*.jpg; *.jpeg; *.png; *.webp; *.bmp)|*.jpg;*.jpeg;*.png;*.webp;*.bmp" };
+                if (dlg.ShowDialog(this) != true) return null;
+                try
+                {
+                    var dir = System.IO.Path.Combine(HubSettings.Dir, "art"); System.IO.Directory.CreateDirectory(dir);
+                    var safe = new string(g.Id.Select(ch => char.IsLetterOrDigit(ch) ? ch : '_').ToArray());
+                    var dest = System.IO.Path.Combine(dir, safe + "-" + what + "-" + DateTime.Now.Ticks + System.IO.Path.GetExtension(dlg.FileName).ToLowerInvariant());
+                    System.IO.File.Copy(dlg.FileName, dest, true); return dest;   // a copy, so moving the original doesn't break it
+                }
+                catch { return null; }
+            };
+            var coverBtn = new Button { Content = "Cover picture...", Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 6, 6) };
+            coverBtn.Click += (o, e) => { var f = pick("cover"); if (f != null) { cover = f; note(); } };
+            var heroBtn = new Button { Content = "Banner picture...", Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 6, 6) };
+            heroBtn.Click += (o, e) => { var f = pick("banner"); if (f != null) { hero = f; note(); } };
+            var resetBtn = new Button { Content = "Reset look", Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 6, 6), ToolTip = "Back to the launcher's name and pictures" };
+            resetBtn.Click += (o, e) => { cover = ""; hero = ""; nameBox.Text = g.OriginalName ?? g.Name; note(); };
+            pics.Children.Add(coverBtn); pics.Children.Add(heroBtn); pics.Children.Add(resetBtn);
+            sp.Children.Add(pics); note(); sp.Children.Add(picNote);
+            Closing += (o, e) =>
+            {
+                if (DialogResult != true) return;
+                var n = (nameBox.Text ?? "").Trim();
+                d.CustomName = n.Length == 0 || n == (g.OriginalName ?? g.Name) ? "" : n;
+                d.CustomCover = cover; d.CustomHero = hero;
+            };
             // launch options
             sp.Children.Add(label("Launch options", "terminal"));
             var args = new TextBox { Style = (Style)FindResource("Field"), Text = d.LaunchArgs ?? "" };

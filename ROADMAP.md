@@ -7,12 +7,9 @@
 | **1.2** | Game settings (launch options, run as admin), collections, Surprise me, keyboard, Xbox controller |
 | **1.3** | Updates from GitHub and What's new, notices installs and updates by itself, Steam download progress, --play and desktop shortcuts |
 | **1.4** | Storage page with drive bars, clean-up suggestions, uninstall through the launcher, Biggest first, Needs update / Not played lately filters |
+| **1.5** | EA app, Ubisoft Connect, GOG, Riot and Xbox games; your own name, cover and banner per game |
 
 ## Next
-
-### 1.5 - More launchers
-- EA app, Ubisoft Connect, GOG Galaxy, Xbox / Microsoft Store, Riot (Valorant, League)
-- Your own cover and banner for any game, and rename a game
 
 ### 1.6 - Session helpers
 - Open apps with a game (Discord, OBS, Medal) and close them after

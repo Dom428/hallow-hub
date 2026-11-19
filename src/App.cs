@@ -25,14 +25,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("1.4.0.0")]
-[assembly: AssemblyFileVersion("1.4.0.0")]
+[assembly: AssemblyVersion("1.5.0.0")]
+[assembly: AssemblyFileVersion("1.5.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "1.4";
+        public const string Version = "1.5";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -84,7 +84,7 @@ namespace HallowHub
         static Color C(string hex) { return (Color)ColorConverter.ConvertFromString(hex); }
         static SolidColorBrush B(string hex) { return new SolidColorBrush(C(hex)); }
         static readonly Dictionary<string, string> SourceColor = new Dictionary<string, string> {
-            { "steam", "#5AB4F0" }, { "battlenet", "#4AA8FF" }, { "epic", "#ECE8F4" }, { "custom", "#A98BE0" } };
+            { "steam", "#5AB4F0" }, { "battlenet", "#4AA8FF" }, { "epic", "#ECE8F4" }, { "custom", "#A98BE0" }, { "ea", "#F05A5A" }, { "ubisoft", "#5A8CF0" }, { "gog", "#B48BF0" }, { "riot", "#F0505A" }, { "xbox", "#6ED28C" } };
 
         readonly HubSettings S = HubSettings.Load();
         List<Game> games = new List<Game>();
@@ -486,9 +486,30 @@ namespace HallowHub
         }
 
         // ================================================================ data -> screen
-        void Rescan()
+        // v1.5: scans off the window's thread (watchers fire often while Steam downloads)
+        bool rescanning;
+        void RescanInBackground(Action after)
         {
-            games = Library.Scan(S.Custom);
+            if (rescanning) return; rescanning = true;
+            var custom = S.Custom.ToList();
+            new Thread(() =>
+            {
+                List<Game> found = null; try { found = Library.Scan(custom); } catch { }
+                Dispatcher.BeginInvoke(new Action(() => { rescanning = false; if (found != null) { Apply(found); if (after != null) after(); } }));
+            }) { IsBackground = true }.Start();
+        }
+        void Rescan() { Apply(Library.Scan(S.Custom)); }
+        void Apply(List<Game> found)
+        {
+            games = found;
+            foreach (var g in AllCopies())
+            {
+                g.OriginalName = g.Name;
+                var d = S.For(Main(g).Id);
+                if (!string.IsNullOrEmpty(d.CustomName)) g.Name = d.CustomName;
+                if (!string.IsNullOrEmpty(d.CustomCover) && File.Exists(d.CustomCover)) g.Cover = d.CustomCover;
+                if (!string.IsNullOrEmpty(d.CustomHero) && File.Exists(d.CustomHero)) g.Hero = d.CustomHero;
+            }
             // games without art (Battle.net, Epic, added) borrow Steam's artwork when the same game is on Steam
             foreach (var g in games.Where(x => x.Cover == null))
             {
@@ -515,7 +536,7 @@ namespace HallowHub
             var opts = new List<Tuple<string, string>> { Tuple.Create("all", "All"), Tuple.Create("fav", "Favorites") };
             if (games.Any(g => g.NeedsUpdate || g.Updating)) opts.Add(Tuple.Create("upd", "Needs update"));
             if (games.Any(Stale)) opts.Add(Tuple.Create("stale", "Not played lately"));
-            foreach (var src in new[] { "steam", "battlenet", "epic", "custom" })
+            foreach (var src in new[] { "steam", "battlenet", "epic", "ea", "ubisoft", "gog", "riot", "xbox", "custom" })
                 if (games.Any(g => g.Source == src)) opts.Add(Tuple.Create(src, games.First(g => g.Source == src).SourceName));
             foreach (var c in S.Collections) if (games.Any(g => S.For(g.Id).Tags.Contains(c))) opts.Add(Tuple.Create("col:" + c, c));
             if (!opts.Any(o => o.Item1 == S.Filter)) S.Filter = "all";
@@ -614,7 +635,7 @@ namespace HallowHub
             var clock = Icons.Make("clock", 11, B("#D6D0E2")); clock.Margin = new Thickness(0, 0, 6, 0); foot.Children.Add(clock);
             foot.Children.Add(new TextBlock { Text = Total(g) < 1 ? "New" : HubSettings.Duration(Total(g)), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = B("#ECE8F4") });
             inner.Children.Add(foot);
-            var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : "gamepad";
+            var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "xbox" ? "xbox" : "gamepad";
             var badge = Icons.Make(srcIcon, 12, new SolidColorBrush(Color.FromArgb(200, 0xEC, 0xE8, 0xF4)));
             badge.HorizontalAlignment = HorizontalAlignment.Right; badge.VerticalAlignment = VerticalAlignment.Bottom; badge.Margin = new Thickness(0, 0, 11, 11);
             inner.Children.Add(badge);
@@ -767,7 +788,7 @@ namespace HallowHub
                     heroPills.Children.Add(new Border { Child = sp2, CornerRadius = new CornerRadius(10), Padding = new Thickness(9, 3, 10, 4), Margin = new Thickness(0, 0, 6, 6),
                         Background = new SolidColorBrush(Color.FromArgb(150, 0x1A, 0x15, 0x22)), BorderBrush = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), BorderThickness = new Thickness(1) });
                 };
-                var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : "gamepad";
+                var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "xbox" ? "xbox" : "gamepad";
                 pill(srcIcon, g.SourceName + (g.Alts.Count > 0 ? " + " + string.Join(" + ", g.Alts.Select(a => a.SourceName)) : ""), "#ECE8F4");
                 if (g.Updating) pill("arrows-rotate", g.Progress >= 0 ? "Updating " + (int)(g.Progress * 100) + "%" : "Updating", "#8FCBF5");
                 else if (g.NeedsUpdate) pill("arrows-rotate", "Update waiting", "#F0BE5A");
@@ -896,7 +917,7 @@ namespace HallowHub
         {
             if (g == null) return;
             var w = new GameSettingsWindow(g, S.For(g.Id), S, ExeLaunch(PlayCopy(g))) { Owner = this };
-            if (w.ShowDialog() == true) { S.Save(); RebuildChips(); RebuildGrid(); ShowHero(); Status(g.Name + " settings saved."); }
+            if (w.ShowDialog() == true) { S.Save(); imgCache.Clear(); accentCache.Clear(); Rescan(); Status(g.Name + " settings saved."); }
         }
 
         // "What should I play?" - favourites and games you haven't touched for a while come up more often
@@ -1024,7 +1045,7 @@ namespace HallowHub
         void StartWatching()
         {
             rescanSoon = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-            rescanSoon.Tick += (s, e) => { rescanSoon.Stop(); var before = games.Count; Rescan(); if (games.Count != before) Status(games.Count > before ? "New game found - your library is up to date." : "A game was uninstalled - your library is up to date."); };
+            rescanSoon.Tick += (s, e) => { rescanSoon.Stop(); var before = games.Count; RescanInBackground(() => { if (games.Count != before) Status(games.Count > before ? "New game found - your library is up to date." : "A game was uninstalled - your library is up to date."); }); };
             var dirs = Library.SteamLibraries().Select(l => Tuple.Create(System.IO.Path.Combine(l, "steamapps"), "appmanifest_*.acf")).ToList();
             dirs.Add(Tuple.Create(Library.EpicManifests, "*.item"));
             foreach (var d in dirs)

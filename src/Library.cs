@@ -23,6 +23,11 @@ namespace HallowHub
             try { list.AddRange(Steam()); } catch { }
             try { list.AddRange(BattleNet()); } catch { }
             try { list.AddRange(Epic()); } catch { }
+            try { list.AddRange(EA()); } catch { }
+            try { list.AddRange(Ubisoft()); } catch { }
+            try { list.AddRange(Gog()); } catch { }
+            try { list.AddRange(Riot()); } catch { }
+            try { list.AddRange(Xbox()); } catch { }
             foreach (var c in custom) if (c != null && !string.IsNullOrEmpty(c.Launch)) { c.IconExe = c.Launch; c.Alts = new List<Game>(); c.Parent = null; list.Add(c); }
             foreach (var g in list.Where(x => x.Source != "steam"))
             {
@@ -226,6 +231,129 @@ namespace HallowHub
                 catch { }
             }
             return total;
+        }
+
+        // ---- v1.5: EA app - EA games have an __Installer folder in their install location
+        static IEnumerable<Game> EA()
+        {
+            foreach (var e in Uninstall())
+            {
+                if (e.Publisher == null || e.Publisher.IndexOf("Electronic Arts", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                if (string.IsNullOrEmpty(e.Location) || !Directory.Exists(Path.Combine(e.Location, "__Installer"))) continue;
+                var exe = e.Icon == null ? null : e.Icon.Split(',')[0].Trim('"');
+                if (exe == null || !File.Exists(exe) || !exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
+                yield return new Game { Id = "ea:" + Norm(e.Name), Name = Clean(e.Name), Source = "ea", InstallDir = e.Location.TrimEnd('\\'), Launch = exe, IconExe = exe, Uninstall = e.Uninstall };
+            }
+        }
+        // ---- Ubisoft Connect: HKLM\...\Ubisoft\Launcher\Installs\<id>, started with uplay://launch/<id>/0
+        static IEnumerable<Game> Ubisoft()
+        {
+            using (var k = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs"))
+            {
+                if (k == null) yield break;
+                var names = Uninstall().Where(e => e.Name != null).ToList();
+                foreach (var id in k.GetSubKeyNames())
+                    using (var s = k.OpenSubKey(id))
+                    {
+                        var dir = s == null ? null : s.GetValue("InstallDir") as string;
+                        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) continue;
+                        var name = Path.GetFileName(dir.TrimEnd('/', '\\'));
+                        using (var u = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Uplay Install " + id))
+                        { var dn = u == null ? null : u.GetValue("DisplayName") as string; if (!string.IsNullOrEmpty(dn)) name = dn; }
+                        var exe = Directory.GetFiles(dir, "*.exe").OrderByDescending(f => new FileInfo(f).Length).FirstOrDefault();
+                        yield return new Game { Id = "ubi:" + id, Name = Clean(name), Source = "ubisoft", InstallDir = dir.Replace('/', '\\').TrimEnd('\\'), Launch = "uplay://launch/" + id + "/0", IconExe = exe };
+                    }
+            }
+        }
+        // ---- GOG Galaxy: HKLM\...\GOG.com\Games\<id> (gameName, path, exe)
+        static IEnumerable<Game> Gog()
+        {
+            using (var k = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\GOG.com\Games"))
+            {
+                if (k == null) yield break;
+                foreach (var id in k.GetSubKeyNames())
+                    using (var s = k.OpenSubKey(id))
+                    {
+                        if (s == null) continue;
+                        var name = s.GetValue("gameName") as string; var dir = s.GetValue("path") as string; var exe = s.GetValue("exe") as string;
+                        if (name == null || dir == null || !Directory.Exists(dir) || exe == null || !File.Exists(exe)) continue;
+                        yield return new Game { Id = "gog:" + id, Name = Clean(name), Source = "gog", InstallDir = dir.TrimEnd('\\'), Launch = exe, IconExe = exe };
+                    }
+            }
+        }
+        // ---- Riot: the Riot Client starts its games (--launch-product); installed ones have a product_settings.yaml with their path
+        static readonly Dictionary<string, string> RiotNames = new Dictionary<string, string> {
+            { "valorant", "VALORANT" }, { "league_of_legends", "League of Legends" }, { "bacon", "Legends of Runeterra" }, { "lion", "2XKO" }, { "teamfighttactics", "Teamfight Tactics" } };
+        static IEnumerable<Game> Riot()
+        {
+            var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Riot Games");
+            var cfg = Path.Combine(root, "RiotClientInstalls.json"); if (!File.Exists(cfg)) yield break;
+            var rc = Regex.Match(File.ReadAllText(cfg), "\"rc_default\"\\s*:\\s*\"([^\"]+)\""); if (!rc.Success) yield break;
+            var client = rc.Groups[1].Value.Replace('/', '\\'); if (!File.Exists(client)) yield break;
+            var meta = Path.Combine(root, "Metadata"); if (!Directory.Exists(meta)) yield break;
+            foreach (var d in Directory.GetDirectories(meta, "*.live"))
+            {
+                var product = Path.GetFileName(d); product = product.Substring(0, product.Length - 5);
+                var yaml = Directory.GetFiles(d, "*.product_settings.yaml").FirstOrDefault(); if (yaml == null) continue;
+                var m = Regex.Match(File.ReadAllText(yaml), "product_install_full_path:\\s*\"?([^\"\\r\\n]+)\"?"); if (!m.Success) continue;
+                var dir = m.Groups[1].Value.Trim().Replace('/', '\\'); if (!Directory.Exists(dir)) continue;
+                string name; if (!RiotNames.TryGetValue(product, out name)) name = product.Replace('_', ' ');
+                var exe = Directory.GetFiles(dir, "*.exe").OrderByDescending(f => new FileInfo(f).Length).FirstOrDefault();
+                yield return new Game { Id = "riot:" + product, Name = name, Source = "riot", InstallDir = dir.TrimEnd('\\'), Launch = client, Args = "--launch-product=" + product + " --launch-patchline=live", IconExe = exe };
+            }
+        }
+        // ---- Xbox app (PC Game Pass): <drive>:\XboxGames\<game>\Content\MicrosoftGame.config, started through Windows' app list
+        static IEnumerable<Game> Xbox()
+        {
+            var aumids = AppsFolder(); if (aumids.Count == 0) yield break;
+            foreach (var drive in DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed && d.IsReady))
+            {
+                var root = Path.Combine(drive.RootDirectory.FullName, "XboxGames"); if (!Directory.Exists(root)) continue;
+                foreach (var dir in Directory.GetDirectories(root))
+                {
+                    var cfg = Path.Combine(dir, @"Content\MicrosoftGame.config"); if (!File.Exists(cfg)) continue;
+                    string idName, publisher, display; try
+                    {
+                        var x = System.Xml.Linq.XDocument.Load(cfg).Root;
+                        var ident = x.Element("Identity"); idName = (string)ident.Attribute("Name"); publisher = (string)ident.Attribute("Publisher");
+                        var sv = x.Element("ShellVisuals"); display = sv == null ? null : (string)sv.Attribute("DefaultDisplayName");
+                    }
+                    catch { continue; }
+                    if (idName == null || publisher == null) continue;
+                    var family = idName + "_" + PublisherId(publisher);
+                    var aumid = aumids.FirstOrDefault(a => a.StartsWith(family + "!", StringComparison.OrdinalIgnoreCase));
+                    if (aumid == null) continue;   // leftover files, not installed
+                    var content = Path.Combine(dir, "Content");
+                    var exe = Directory.GetFiles(content, "*.exe").OrderByDescending(f => new FileInfo(f).Length).FirstOrDefault();
+                    yield return new Game { Id = "xbox:" + idName, Name = Clean(display ?? Path.GetFileName(dir)), Source = "xbox", InstallDir = dir, Launch = "shell:AppsFolder\\" + aumid, IconExe = exe };
+                }
+            }
+        }
+        // the 13-letter id Windows derives from a package publisher (SHA-256 of the UTF-16 name, first 8 bytes, Crockford base32)
+        public static string PublisherId(string publisher)
+        {
+            byte[] h; using (var sha = System.Security.Cryptography.SHA256.Create()) h = sha.ComputeHash(Encoding.Unicode.GetBytes(publisher));
+            var bits = new StringBuilder(); for (int i = 0; i < 8; i++) bits.Append(Convert.ToString(h[i], 2).PadLeft(8, '0')); bits.Append('0');
+            const string a = "0123456789abcdefghjkmnpqrstvwxyz"; var sb = new StringBuilder();
+            for (int i = 0; i < 65; i += 5) sb.Append(a[Convert.ToInt32(bits.ToString(i, 5), 2)]);
+            return sb.ToString();
+        }
+        static List<string> AppsFolder()
+        {
+            var list = new List<string>();
+            try
+            {
+                var t = Type.GetTypeFromProgID("Shell.Application"); var sh = Activator.CreateInstance(t);
+                var ns = t.InvokeMember("NameSpace", System.Reflection.BindingFlags.InvokeMethod, null, sh, new object[] { "shell:AppsFolder" });
+                var items = ns.GetType().InvokeMember("Items", System.Reflection.BindingFlags.InvokeMethod, null, ns, null);
+                foreach (var it in (System.Collections.IEnumerable)items)
+                {
+                    var path = it.GetType().InvokeMember("Path", System.Reflection.BindingFlags.GetProperty, null, it, null) as string;
+                    if (path != null && path.Contains("!")) list.Add(path);
+                }
+            }
+            catch { }
+            return list;
         }
 
         // ---- a game you add yourself (any .exe)

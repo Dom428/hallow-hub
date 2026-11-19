@@ -13,6 +13,8 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("1.5", new[] { "Finds EA app, Ubisoft Connect, GOG, Riot and Xbox games too", "Game settings > Look: your own name, cover and banner for any game" }),
+            Tuple.Create("1.4", new[] { "Storage page (drive icon): what each drive holds and what you could free up", "Uninstall through the game's own launcher; Biggest first; Needs update and Not played lately filters" }),
             Tuple.Create("1.3", new[] { "Updates itself from GitHub (asks first) - and this window", "New installs, uninstalls and finished Steam updates show up by themselves", "Steam download progress on the card (Updating 42%)", "Right-click a game > Create desktop shortcut - starts it through Hub with your preset and session" }),
             Tuple.Create("1.2", new[] { "Game settings: launch options, run as admin, collections", "Surprise me (dice), keyboard shortcuts and Xbox controller" }),
             Tuple.Create("1.1", new[] { "Overwatch is one card (Play on Steam / Battle.net)", "Your Steam hours, update badges, Continue playing, Stats" }),
