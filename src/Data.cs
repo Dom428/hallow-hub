@@ -19,6 +19,13 @@ namespace HallowHub
         [DataMember] public string Launch;      // URI or exe path
         [DataMember] public string Args = "";
         public string Cover, Hero, Logo, Header, IconExe;
+        // v1.1
+        public DateTime UpdatedAt;              // when the install last changed (picks the main copy of a duplicate)
+        public long SizeBytes; public string Drive;
+        public bool NeedsUpdate, Updating;
+        public double SteamMinutes, Steam2Weeks; public DateTime? SteamLast;
+        public List<Game> Alts = new List<Game>();   // the same game from another store (merged into one card)
+        public Game Parent;                          // set on an alt: the card it belongs to
         public string SourceName { get { return Source == "steam" ? "Steam" : Source == "battlenet" ? "Battle.net" : Source == "epic" ? "Epic Games" : "Added by you"; } }
     }
 
@@ -32,7 +39,8 @@ namespace HallowHub
         [DataMember] public string Preset = "";  // Hallow Mixer preset to switch to when the game starts ("" = leave it)
         [DataMember] public bool GameSession;    // Hallow Toolkit game session while it runs
         [DataMember] public List<string> Days = new List<string>();   // "yyyy-MM-dd=minutes" for the last 14 days
-        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); }
+        [DataMember] public string PlayOn = "";  // v1.1: which copy to start when the game is in two stores (a Game.Id)
+        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; }
 
         public DateTime? Last { get { DateTime d; return DateTime.TryParse(LastPlayed, null, System.Globalization.DateTimeStyles.RoundtripKind, out d) ? d : (DateTime?)null; } }
         public void AddMinutes(double m, DateTime when)
@@ -48,6 +56,12 @@ namespace HallowHub
             if (!found) Days.Add(key + "=" + m.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
             var cutoff = when.Date.AddDays(-13).ToString("yyyy-MM-dd");
             Days.RemoveAll(d => string.CompareOrdinal(d.Split('=')[0], cutoff) < 0);
+        }
+        public double MinutesOn(DateTime day)
+        {
+            var k = day.ToString("yyyy-MM-dd");
+            foreach (var d in Days) { var p = d.Split('='); double v; if (p.Length == 2 && p[0] == k && double.TryParse(p[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out v)) return v; }
+            return 0;
         }
         public double MinutesSince(DateTime from)
         {

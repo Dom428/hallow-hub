@@ -6,6 +6,13 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 1.1
+- The same game in two stores (like Overwatch on Steam and Battle.net) is one card, with a
+  "Play on" choice.
+- Your Steam hours and last-played show straight away.
+- Update waiting / updating badges, and each game's size and drive.
+- Continue playing row, a colour glow from each game's cover, and a Stats page (chart icon).
+
 WHAT IT DOES
 - Finds your Steam, Battle.net and Epic Games games by itself, with their real artwork
   (from Steam's own cache - nothing is downloaded). Add anything else with "Add game".

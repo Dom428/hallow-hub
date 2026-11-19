@@ -6,6 +6,8 @@ All your games in one place - part of the Hallow family with [Hallow Mixer](http
 - **Play from one place:** double-click a cover, or select it and press Play.
 - **Playtime:** counted for any game running from its install folder, however you start it - today, this week, total, last played.
 - **When a game starts:** switch Hallow Mixer to a preset you pick for that game, and/or turn on a Hallow Toolkit game session (Boost apps closed, High performance power). Everything goes back when the game closes.
+- **Your Steam hours** show straight away; **update and size badges**; the same game in two stores is **one card** with a Play on choice.
+- **Continue playing** row, a colour glow from each game's cover, and a **Stats** page (today, this week, 14-day chart, top games).
 - Favorites, hide, search, sort by recent / most played / A to Z. Lives in the tray so playtime keeps counting.
 
 Built with the C# compiler that ships with Windows (.NET Framework 4.8): run `build.ps1`. No admin needed to install or run.
