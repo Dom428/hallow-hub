@@ -16,5 +16,20 @@
 
 ## Next
 
-### Fixes from real use
+### 2.1 - Fixes from real use
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
+- The Overwatch merge: check Play on picks the copy you actually use, and offer the Battle.net copy (71 GB on C:, not played in a month) as a clean-up suggestion
+
+### 2.2 - Hallow family on every game page
+- **Saves** (Hallow Vault): last backup time, Back up now, Restore a version
+- **Clips** (Hallow Clips): this game's newest clips as thumbnails, open or show in folder
+- **Overlay** (Hallow Overlay): on/off per game
+- Each card only shows when that app is installed
+
+### 2.3 - Library extras
+- Hide games (tools, test servers, redistributables) without uninstalling
+- Sort and filter by store, size, last played and playtime together
+- Big Picture: collections and the Storage page with the controller
+
+### Later
+- Friends and achievements: need each store's sign-in or an API key, so only if it can be done without Hub holding your passwords
