@@ -19,6 +19,11 @@
 
 ## Next
 
+### 2.4 - One Hallow icon
+- Hub hosts one tray icon for the whole Hallow family: the other apps hide theirs while Hub says so (pipe `tray-host`), their balloons go through Hub (`notify`)
+- Hub's tray menu: a submenu per Hallow app (its own items, Open, Exit), Start for the ones not running, Open Hallow Toolkit
+- A "One Hallow icon" setting (on by default)
+
 ### Fixes from real use
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
 
