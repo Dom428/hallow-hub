@@ -163,7 +163,7 @@ namespace HallowHub
                 if (thumb == null) { var fi = Icons.Make("film", 18, B("#8F88A0")); fi.HorizontalAlignment = HorizontalAlignment.Center; fi.VerticalAlignment = VerticalAlignment.Center; gi.Children.Add(fi); }
                 if (dur > 0) gi.Children.Add(new Border { Background = new SolidColorBrush(Color.FromArgb(190, 0x10, 0x0C, 0x16)), CornerRadius = new CornerRadius(4), Padding = new Thickness(4, 0, 4, 1), Margin = new Thickness(0, 0, 4, 4),
                     HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Child = new TextBlock { Text = (int)Math.Round(dur) + "s", FontSize = 10, Foreground = Brushes.White } });
-                if (Family.Bool(c, "favorite")) { var st = Icons.Make("star", 10, B("#F0BE5A")); st.HorizontalAlignment = HorizontalAlignment.Left; st.VerticalAlignment = VerticalAlignment.Top; st.Margin = new Thickness(5); gi.Children.Add(st); }
+                if (Family.Bool(c, "favorite")) { var st = Icons.Make("star", 10, BI("#F0BE5A")); st.HorizontalAlignment = HorizontalAlignment.Left; st.VerticalAlignment = VerticalAlignment.Top; st.Margin = new Thickness(5); gi.Children.Add(st); }
                 t.Child = gi;
                 var f2 = file;
                 t.MouseEnter += (s, e) => t.BorderBrush = B("#F07820"); t.MouseLeave += (s, e) => t.BorderBrush = B("#3A3248");

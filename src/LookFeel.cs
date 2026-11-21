@@ -44,7 +44,7 @@ namespace HallowHub
             var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
             var top = new StackPanel { Orientation = Orientation.Horizontal };
             if (d.Pinned) { var pi = Icons.Make("thumbtack", 11, B("#F07820")); pi.Margin = new Thickness(0, 0, 7, 0); top.Children.Add(pi); }
-            if (d.Favorite) { var fi = Icons.Make("star", 11, B("#F0BE5A")); fi.Margin = new Thickness(0, 0, 7, 0); top.Children.Add(fi); }
+            if (d.Favorite) { var fi = Icons.Make("star", 11, BI("#F0BE5A")); fi.Margin = new Thickness(0, 0, 7, 0); top.Children.Add(fi); }
             top.Children.Add(new TextBlock { Text = g.Name, FontSize = 14, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
             names.Children.Add(top);
             var sub = g.SourceName + (g.Alts.Count > 0 ? " + " + string.Join(" + ", g.Alts.Select(a => a.SourceName)) : "") +

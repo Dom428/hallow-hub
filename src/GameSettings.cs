@@ -14,7 +14,7 @@ namespace HallowHub
     public class GameSettingsWindow : Window
     {
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int val, int size);
-        static SolidColorBrush B(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex))); }
+        static SolidColorBrush B(string hex) { return HallowLook.Brush(hex); }   // v2.16: remembers its palette colour (live restyle)
 
         public GameSettingsWindow(Game g, GameData d, HubSettings s, bool exeLaunch)
         {

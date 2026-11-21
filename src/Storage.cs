@@ -92,10 +92,10 @@ namespace HallowHub
             if (tips.Count > 0)
             {
                 var box = new Border { Background = B("#2A2333"), CornerRadius = new CornerRadius(12), Padding = new Thickness(16, 12, 16, 8), Margin = new Thickness(0, 0, 0, 18),
-                    BorderBrush = new SolidColorBrush(Color.FromArgb(90, C("#F0BE5A").R, C("#F0BE5A").G, C("#F0BE5A").B)), BorderThickness = new Thickness(1) };
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(90, CI("#F0BE5A").R, CI("#F0BE5A").G, CI("#F0BE5A").B)), BorderThickness = new Thickness(1) };
                 var bs = new StackPanel();
                 var hd = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
-                var bi = Icons.Make("broom", 13, B("#F0BE5A")); bi.Margin = new Thickness(0, 0, 9, 0); hd.Children.Add(bi);
+                var bi = Icons.Make("broom", 13, BI("#F0BE5A")); bi.Margin = new Thickness(0, 0, 9, 0); hd.Children.Add(bi);
                 hd.Children.Add(new TextBlock { Text = "You could free up " + Size(tips.Sum(t => t.Item1.SizeBytes)), FontWeight = FontWeights.Bold, FontSize = 14, Foreground = B("#F0BE5A") });
                 bs.Children.Add(hd);
                 foreach (var t in tips.Take(6)) bs.Children.Add(GameRow(t.Item1, t.Item2, true));

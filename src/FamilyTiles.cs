@@ -163,7 +163,7 @@ namespace HallowHub
                 };
                 DockPanel.SetDock(go, Dock.Right); row.Children.Add(go);
                 var dotCol = p.Online == "waiting" ? "#6ED28C" : p.Online == "busy" ? "#F0BE5A" : "#5A5366";
-                var dot = new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Fill = B(dotCol), Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center,
+                var dot = new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Fill = BI(dotCol), Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center,
                     ToolTip = p.Online == "waiting" ? "Online" : p.Online == "busy" ? "Online - in a session" : p.Online == "offline" ? "Offline" : "Not checked yet" };
                 if (p.Online == "unknown") { dot.Fill = Brushes.Transparent; dot.Stroke = B("#8F88A0"); dot.StrokeThickness = 1.2; }
                 DockPanel.SetDock(dot, Dock.Left); row.Children.Add(dot);

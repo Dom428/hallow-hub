@@ -52,7 +52,7 @@ namespace HallowHub
             statusBox.SelectedItem = statusBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == (d.Status ?? "")) ?? statusBox.Items[0];
             loading = was;
             for (int i = 0; i < starRow.Children.Count; i++)
-                ((Border)starRow.Children[i]).Child = Icons.Make("star", 15, i < d.Rating ? B("#F0BE5A") : B("#5A5268"));
+                ((Border)starRow.Children[i]).Child = Icons.Make("star", 15, i < d.Rating ? BI("#F0BE5A") : B("#5A5268"));
         }
         // a game you planned to play counts as Playing once it starts
         void StatusOnStart(Game g) { var d = S.For(g.Id); if (d.Status == "plan") d.Status = "playing"; }

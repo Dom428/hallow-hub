@@ -48,7 +48,7 @@ namespace HallowHub
             try
             {
                 if (!HallowLook.Refresh() && !force) return;
-                Program.LoadTheme(Application.Current);
+                Program.ReloadTheme(Application.Current, this);   // v2.16: other open windows (dialogs, Big Picture) restyle live
                 accentCache.Clear();
                 bool settingsOpen = gearBtn != null && gearBtn.IsChecked == true;
                 Background = (Brush)FindResource("Bg"); Foreground = (Brush)FindResource("Text"); HallowLook.TitleBar(this);   // v2.15
@@ -76,7 +76,7 @@ namespace HallowHub
 
     public class CrashWindow : Window
     {
-        static SolidColorBrush B(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex))); }
+        static SolidColorBrush B(string hex) { return HallowLook.Brush(hex); }   // v2.16: remembers its palette colour (live restyle)
         public CrashWindow(string file)
         {
             Title = "Hallow Hub"; Width = 460; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize; HallowLook.Dress(this);

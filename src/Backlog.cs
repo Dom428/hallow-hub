@@ -98,7 +98,7 @@ namespace HallowHub
             for (int i = 0; i < counts.Count; i++)
             {
                 bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(counts[i].Item2, GridUnitType.Star) });
-                var seg = new Border { Background = B(counts[i].Item1 == "" ? "#3A3248" : StatusColor(counts[i].Item1)), Margin = new Thickness(0, 0, i < counts.Count - 1 ? 2 : 0, 0),
+                var seg = new Border { Background = BI(counts[i].Item1 == "" ? "#3A3248" : StatusColor(counts[i].Item1)), Margin = new Thickness(0, 0, i < counts.Count - 1 ? 2 : 0, 0),
                     ToolTip = StatusName(counts[i].Item1) + ": " + counts[i].Item2 };
                 Grid.SetColumn(seg, i); bar.Children.Add(seg);
             }
@@ -108,7 +108,7 @@ namespace HallowHub
             {
                 var k = c.Item1;
                 var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 16, 4), Cursor = Cursors.Hand, Background = Brushes.Transparent, ToolTip = "Show these games" };
-                item.Children.Add(new Border { Width = 9, Height = 9, CornerRadius = new CornerRadius(5), Background = B(k == "" ? "#5A5268" : StatusColor(k)), Margin = new Thickness(0, 1, 7, 0), VerticalAlignment = VerticalAlignment.Center });
+                item.Children.Add(new Border { Width = 9, Height = 9, CornerRadius = new CornerRadius(5), Background = BI(k == "" ? "#5A5268" : StatusColor(k)), Margin = new Thickness(0, 1, 7, 0), VerticalAlignment = VerticalAlignment.Center });
                 item.Children.Add(new TextBlock { Text = StatusName(k) + "  " + c.Item2, Foreground = B("#CFC8DC"), FontSize = 11.5 });
                 item.MouseLeftButtonUp += (o, e) => { statsBtn.IsChecked = false; S.FStatus = k == "" ? "none" : k; S.Save(); RebuildChips(); RebuildGrid(); Status("Showing " + StatusName(k).ToLowerInvariant() + " games - clear it under Filters."); };
                 legend.Children.Add(item);

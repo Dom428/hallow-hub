@@ -28,6 +28,7 @@
 | **2.13** | Hallow Guard and Hallow Assist in the Hallow icon (tray-host lists them; any Hallow app that answers `menu` is hosted), app icons in the menu, Guard's safety score next to the PC check, Guard / Assist status in Settings |
 | **2.14** | Power plan while a game runs (per game or all games, back after; powercfg /setactive only), family cards for Hallow Guard (score, weekly change, hardening), Hallow Shield (blocked today / week) and Hallow Assist (your PCs, Connect) |
 | **2.15** | Light and dark mode: follows the family mode from Hallow Toolkit (light / dark / same as Windows, live), Settings > Look (Follow Hallow / Light / Dark), light palette with a darkened accent for text, no glows, title bar to match |
+| **2.16** | Light mode readability fixes: green / amber / lilac and the accent as text darkened to >= 4.5:1 on every light panel (accent darkened against Panel 2, same rule as Hallow Toolkit 5.16), filled accents that read under 4.5:1 (violet) get a darker fill with white text, open dialogs restyle live on a mode or accent change |
 
 ## Next
 

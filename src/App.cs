@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.15.0.0")]
-[assembly: AssemblyFileVersion("2.15.0.0")]
+[assembly: AssemblyVersion("2.16.0.0")]
+[assembly: AssemblyFileVersion("2.16.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.15";
+        public const string Version = "2.16";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -95,15 +95,30 @@ namespace HallowHub
             app.Resources.MergedDictionaries.Clear();
             app.Resources.MergedDictionaries.Add((ResourceDictionary)XamlReader.Parse(HallowLook.Theme(xaml)));   // v2.5: with the Hallow accent
         }
+        // v2.16: the theme again (mode / accent changed) and every other open window restyled in place - a dialog keeps what you typed
+        public static int ReloadTheme(Application app, Window rebuilt)
+        {
+            var old = app.Resources.MergedDictionaries.Count > 0 ? app.Resources.MergedDictionaries[0] : null;
+            LoadTheme(app);
+            var now = app.Resources.MergedDictionaries[0]; int n = 0;
+            foreach (Window w in app.Windows)
+            {
+                if (w == rebuilt) continue;
+                try { n += HallowLook.Restyle(w, old, now); HallowLook.TitleBar(w); } catch { }
+            }
+            return n;
+        }
     }
 
     public partial class HubWindow : Window
     {
         [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int val, int size);
         static Color C(string hex) { return (Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex)); }   // v2.5: Hub's orange follows the Hallow accent
-        static SolidColorBrush B(string hex) { return new SolidColorBrush(C(hex)); }
-        static SolidColorBrush BF(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.Fill(hex))); }      // v2.15: a filled accent area (the real accent in both modes)
-        static SolidColorBrush BD(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.DarkHex(hex))); }   // v2.15: drawn on game art - the same in both modes
+        static Color CI(string hex) { return (Color)ColorConverter.ConvertFromString(HallowLook.Icon(hex)); }   // v2.16: an icon / decoration colour
+        static SolidColorBrush B(string hex) { return HallowLook.Brush(hex); }   // v2.16: remembers its palette colour (live restyle)
+        static SolidColorBrush BI(string hex) { return HallowLook.Brush(hex, 'i'); }   // v2.16: an icon / dot / fill without text (green and amber keep their icon values)
+        static SolidColorBrush BF(string hex) { return HallowLook.Brush(hex, 'f'); }      // v2.15: a filled accent area (v2.16: the light fill in light mode)
+        static SolidColorBrush BD(string hex) { return HallowLook.Brush(hex, 'd'); }   // v2.15: drawn on game art - the same in both modes
         static readonly Dictionary<string, string> SourceColor = new Dictionary<string, string> {
             { "steam", "#5AB4F0" }, { "battlenet", "#4AA8FF" }, { "epic", "#ECE8F4" }, { "custom", "#A98BE0" }, { "rom", "#E0A050" }, { "ea", "#F05A5A" }, { "ubisoft", "#5A8CF0" }, { "gog", "#B48BF0" }, { "riot", "#F0505A" }, { "xbox", "#6ED28C" } };
 

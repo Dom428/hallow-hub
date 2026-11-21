@@ -23,6 +23,22 @@ namespace HallowHub
         public static bool Light;                      // what the app shows now
         public static string AccentText = "#B85410";   // the accent for text / thin lines on light backgrounds (>= 4.5:1 on white)
         public static string OnAccent = "#1E1A26";     // text on a filled accent button in light mode
+        public static string AccentFill = Own;         // v2.16: a filled accent area in light mode (buttons, pills, picked chips) - Hallow Toolkit 5.16's rule
+        public static string AccentFillHover = "#D86C1C";   // the fill under the mouse (fill x 0.9)
+        // v2.16: light-mode status colours as small text (the icon / dot values are just under 4.5:1 on white) and the lilac
+        // for text, dark enough for Panel 2 (#EEEAF5) too
+        public const string GreenText = "#1B7A44", AmberText = "#8F5B00", GreenIcon = "#1E8E4F", AmberIcon = "#A66A00";
+        public static readonly string LilacText = Darken("#7A5CC0", 4.5, "#EEEAF5");
+        // the light accents from the user's accent: text / thin lines darkened against Panel 2 (#EEEAF5, the darkest surface they
+        // sit on), the fill the real accent unless neither text colour reaches 4.5:1 on it (then darkened against white, white text)
+        public static void SetAccents(string want)
+        {
+            AccentText = Darken(want, 4.5, "#EEEAF5");
+            AccentFill = Contrast(want, TextOn(want)) >= 4.5 ? want.ToUpperInvariant() : Darken(want, 4.5, "#FFFFFF");
+            OnAccent = TextOn(AccentFill);
+            var f = (Color)ColorConverter.ConvertFromString(AccentFill);
+            AccentFillHover = string.Format("#{0:X2}{1:X2}{2:X2}", (int)(f.R * 0.9), (int)(f.G * 0.9), (int)(f.B * 0.9));
+        }
         public static Func<bool?> SystemLight = ReadSystemLight;   // tests swap this for a fake
 
         // test only: HALLOW_FAMILY_TEST=<folder> reads <folder>\Hallow\theme.json instead of the real one
@@ -102,7 +118,7 @@ namespace HallowHub
             var want = (UseShared ? ReadShared() : null) ?? Own;
             FamilyMode = ReadMode();
             var light = Resolve(LookOverride, FamilyMode, SystemLight) == "light";
-            AccentText = DarkenForWhite(want); OnAccent = TextOn(want);
+            SetAccents(want);
             if (want == Accent && light == Light) return false;
             Accent = want; AccentLight = want == Own ? "#F59A50" : Mix(want, "#FFFFFF", 0.3); Light = light;
             return true;
@@ -122,18 +138,21 @@ namespace HallowHub
             return (Math.Max(la, lb) + 0.05) / (Math.Min(la, lb) + 0.05);
         }
         // keep hue and saturation, lower the lightness in 0.01 steps until it reads on white (>= 4.5:1)
-        public static string DarkenForWhite(string hex)
+        public static string DarkenForWhite(string hex) { return Darken(hex, 4.5, "#FFFFFF"); }
+        // v2.16: exactly Hallow Toolkit 5.16's Get-LightTextAccent: the colour as it is if it reaches min on the surface, else its HSL
+        // (System.Drawing GetHue / GetSaturation / GetBrightness) with the lightness lowered 0.01 at a time to the first colour that does
+        public static string Darken(string hex, double min, string on)
         {
-            var c = (Color)ColorConverter.ConvertFromString(hex);
-            double r = c.R / 255.0, g = c.G / 255.0, b = c.B / 255.0, mx = Math.Max(r, Math.Max(g, b)), mn = Math.Min(r, Math.Min(g, b));
-            double h = 0, s = 0, l = (mx + mn) / 2, d = mx - mn;
-            if (d > 0)
-            {
-                s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-                h = mx == r ? (g - b) / d + (g < b ? 6 : 0) : mx == g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6;
-            }
             var cur = hex.ToUpperInvariant();
-            while (Contrast(cur, "#FFFFFF") < 4.5 && l > 0) { l = Math.Max(0, Math.Round(l - 0.01, 2)); cur = FromHsl(h, s, l); }
+            if (Contrast(cur, on) >= min) return cur;
+            var c = (Color)ColorConverter.ConvertFromString(hex);
+            var dc = System.Drawing.Color.FromArgb(c.R, c.G, c.B);
+            double h = dc.GetHue() / 360.0, s = dc.GetSaturation(), l = dc.GetBrightness();
+            while (l > 0)
+            {
+                l = Math.Max(0.0, l - 0.01); cur = FromHsl(h, s, l);
+                if (Contrast(cur, on) >= min) break;
+            }
             return cur;
         }
         static string FromHsl(double h, double s, double l)
@@ -167,9 +186,9 @@ namespace HallowHub
             { "#ECE8F4", "#1E1A26" }, { "#D6D0E2", "#3A3446" }, { "#CFC8DC", "#423B50" },           // text
             { "#8F88A0", "#6B6478" }, { "#6F6880", "#6B6478" },                                     // muted
             { "#5A5268", "#A79FB8" }, { "#5A5366", "#A79FB8" }, { "#58566A", "#ABA3BC" }, { "#CDCAD6", "#FFFFFF" },   // empty stars, offline dot, switch off
-            { "#A98BE0", "#7A5CC0" }, { "#C9B2F5", "#6A4CB0" }, { "#B48BF0", "#7A4FD0" },           // lilac
-            { "#6ED28C", "#1E8E4F" }, { "#8EE0A6", "#1E8E4F" }, { "#0E2416", "#FFFFFF" },           // green, text on green
-            { "#F0BE5A", "#A66A00" }, { "#E0A050", "#A66A00" }, { "#241A04", "#FFFFFF" },           // amber, text on amber
+            { "#A98BE0", LilacText }, { "#C9B2F5", "#6A4CB0" }, { "#B48BF0", "#7A4FD0" },           // lilac (v2.16: darker, reads on Panel 2 too)
+            { "#6ED28C", GreenText }, { "#8EE0A6", GreenText }, { "#0E2416", "#FFFFFF" },           // green, text on green (v2.16: the text value; icons / dots: Icon())
+            { "#F0BE5A", AmberText }, { "#E0A050", AmberText }, { "#241A04", "#FFFFFF" },           // amber, text on amber (v2.16: the text value; icons / dots: Icon())
             { "#F05A5A", "#C2333F" }, { "#F0505A", "#C2333F" }, { "#C8414B", "#C2333F" }, { "#E05A64", "#A82A35" },   // red
             { "#5AB4F0", "#1C68A5" }, { "#8FCBF5", "#1C68A5" }, { "#4AA8FF", "#1A66B8" }, { "#5A8CF0", "#3158C0" },   // blues (store colours)
             { "#F05A8C", "#C0306A" },
@@ -181,9 +200,18 @@ namespace HallowHub
             if (!Light) return DarkHex(hex);
             var h = hex.ToUpperInvariant();
             if (h == "#F07820") return AccentText;
-            if (h == "#F59A50" || h == "#FF9A45") return Accent;
+            if (h == "#F59A50" || h == "#FF9A45") return AccentFill;
             if (h == "#1A0E04") return OnAccent;
             string l; return LightMap.TryGetValue(h, out l) ? l : hex;
+        }
+        // v2.16: an icon, a dot or a fill with no text on it - green / amber keep their icon values there (3:1 is enough)
+        public static string Icon(string hex)
+        {
+            if (hex == null || !Light) return Hex(hex);
+            var h = hex.ToUpperInvariant();
+            if (h == "#6ED28C" || h == "#8EE0A6") return GreenIcon;
+            if (h == "#F0BE5A" || h == "#E0A050") return AmberIcon;
+            return Hex(hex);
         }
         // the dark-mode colour (things drawn on top of game art stay as they are in both modes)
         public static string DarkHex(string hex)
@@ -194,8 +222,9 @@ namespace HallowHub
             if (h == "#F59A50" || h == "#FF9A45") return AccentLight;
             return hex;
         }
-        // a filled accent area (Play, checked chips): the real accent in both modes
-        public static string Fill(string hex) { return hex != null && hex.ToUpperInvariant() == "#F07820" ? Accent : Hex(hex); }
+        // a filled accent area (Play, checked chips): the real accent in dark mode; in light mode the light fill (v2.16: the real accent
+        // unless its text would read under 4.5:1 - violet #8B5CF6 with white text is 4.23:1 - then a darker step with white text)
+        public static string Fill(string hex) { return hex != null && hex.ToUpperInvariant() == "#F07820" ? (Light ? AccentFill : Accent) : Hex(hex); }
         // the theme file with the accent in place of the orange (and the light palette in light mode)
         public static string Theme(string xaml)
         {
@@ -204,14 +233,19 @@ namespace HallowHub
                 if (Accent == Own) return xaml;
                 return xaml.Replace("#F07820", Accent).Replace("#F59A50", AccentLight).Replace("#FF9A45", AccentLight);
             }
-            // filled accent buttons keep the real accent; the hover veil darkens instead of lightening
+            // filled accent buttons: the light fill (v2.16), x 0.9 under the mouse; elsewhere the hover veil darkens instead of lightening
+            xaml = System.Text.RegularExpressions.Regex.Replace(xaml, "(<Setter Property=\"Foreground\" Value=\"#1A0E04\"/>\\s*<Setter Property=\"FontWeight\" Value=\"SemiBold\"/>)(\\s*</Style>)",
+                "$1<Style.Resources><SolidColorBrush x:Key=\"HoverInk\" Color=\"Transparent\"/></Style.Resources>" +
+                "<Style.Triggers><Trigger Property=\"IsMouseOver\" Value=\"True\"><Setter Property=\"Background\" Value=\"@FILLHOVER\"/></Trigger></Style.Triggers>$2");
+            xaml = xaml.Replace("<SolidColorBrush x:Key=\"Bg\"", "<SolidColorBrush x:Key=\"HoverInk\" Color=\"@INK\"/>\n    <SolidColorBrush x:Key=\"Bg\"");
             var x = xaml.Replace("<Setter Property=\"Background\" Value=\"#F07820\"/>", "<Setter Property=\"Background\" Value=\"@FILL\"/>")
                 .Replace("<Setter Property=\"BorderBrush\" Value=\"#F59A50\"/>", "<Setter Property=\"BorderBrush\" Value=\"@FILL\"/>")
                 .Replace("<SolidColorBrush x:Key=\"CheckedBg\" Color=\"#F07820\"/>", "<SolidColorBrush x:Key=\"CheckedBg\" Color=\"@FILL\"/>")
                 .Replace("<SolidColorBrush x:Key=\"CheckedLine\" Color=\"#F59A50\"/>", "<SolidColorBrush x:Key=\"CheckedLine\" Color=\"@FILL\"/>")
-                .Replace("Background=\"#FFFFFF\" Opacity=\"0\"", "Background=\"@INK\" Opacity=\"0\"");
+                .Replace("Background=\"#FFFFFF\" Opacity=\"0\"", "Background=\"{DynamicResource HoverInk}\" Opacity=\"0\"")
+                .Replace("<Setter TargetName=\"track\" Property=\"Background\" Value=\"#6ED28C\"/>", "<Setter TargetName=\"track\" Property=\"Background\" Value=\"" + GreenIcon + "\"/>");   // v2.16: a fill - icon green
             x = System.Text.RegularExpressions.Regex.Replace(x, "#[0-9A-Fa-f]{6}\\b", m => Hex(m.Value));
-            return x.Replace("@FILL", Accent).Replace("@INK", "#1E1A26");
+            return x.Replace("@FILLHOVER", AccentFillHover).Replace("@FILL", AccentFill).Replace("@INK", "#1E1A26");
         }
 
         // ---- the window side: scrims, shadows, glows and the Windows title bar
@@ -240,6 +274,50 @@ namespace HallowHub
             catch { }
         }
         public static void Dress(System.Windows.Window w) { w.SourceInitialized += (s, e) => TitleBar(w); }
+
+        // ---- v2.16: windows already open restyle live when the mode or the accent changes (not only when reopened)
+        // Every brush made from a palette colour remembers where it came from ('h' Hex, 'f' Fill, 'd' DarkHex, 'i' Icon + the colour).
+        static readonly System.Runtime.CompilerServices.ConditionalWeakTable<SolidColorBrush, string> made = new System.Runtime.CompilerServices.ConditionalWeakTable<SolidColorBrush, string>();
+        public static SolidColorBrush Brush(string hex, char kind)
+        {
+            var v = kind == 'f' ? Fill(hex) : kind == 'd' ? DarkHex(hex) : kind == 'i' ? Icon(hex) : Hex(hex);
+            var b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(v));
+            made.Add(b, kind + hex); return b;
+        }
+        public static SolidColorBrush Brush(string hex) { return Brush(hex, 'h'); }
+        sealed class Same : IEqualityComparer<object>
+        {
+            public new bool Equals(object a, object b) { return ReferenceEquals(a, b); }
+            public int GetHashCode(object o) { return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(o); }
+        }
+        // after the theme was reloaded: walk a window (and its menus / tool tips) and swap what came from the old theme (styles,
+        // brushes looked up by key) for the new theme's, and every palette brush for its colour now. Returns how many values changed.
+        public static int Restyle(System.Windows.DependencyObject root, System.Windows.ResourceDictionary oldRd, System.Windows.ResourceDictionary newRd)
+        {
+            var keyOf = new Dictionary<object, object>(new Same());
+            if (oldRd != null) foreach (var k in oldRd.Keys) { try { var v = oldRd[k]; if (v != null && !keyOf.ContainsKey(v)) keyOf[v] = k; } catch { } }
+            var seen = new HashSet<object>(new Same()); int n = 0;
+            var todo = new Stack<System.Windows.DependencyObject>(); todo.Push(root);
+            while (todo.Count > 0)
+            {
+                var d = todo.Pop(); if (d == null || !seen.Add(d)) continue;
+                var sets = new List<KeyValuePair<System.Windows.DependencyProperty, object>>();
+                var e = d.GetLocalValueEnumerator();
+                while (e.MoveNext())
+                {
+                    var p = e.Current.Property; var v = e.Current.Value; if (p.ReadOnly || v == null) continue;
+                    object key; string tag; var sb = v as SolidColorBrush;
+                    if (keyOf.TryGetValue(v, out key)) { if (newRd != null && newRd.Contains(key)) sets.Add(new KeyValuePair<System.Windows.DependencyProperty, object>(p, newRd[key])); }
+                    else if (sb != null && made.TryGetValue(sb, out tag)) sets.Add(new KeyValuePair<System.Windows.DependencyProperty, object>(p, Brush(tag.Substring(1), tag[0])));
+                    else if (v is System.Windows.FrameworkElement && !(v is System.Windows.Window)) todo.Push((System.Windows.DependencyObject)v);   // a ContextMenu / ToolTip held in a property
+                }
+                foreach (var s in sets) { try { d.SetValue(s.Key, s.Value); n++; } catch { } }
+                foreach (var c in System.Windows.LogicalTreeHelper.GetChildren(d)) { var cd = c as System.Windows.DependencyObject; if (cd != null) todo.Push(cd); }
+                if (d is Visual || d is System.Windows.Media.Media3D.Visual3D)
+                    for (int i = 0; i < VisualTreeHelper.GetChildrenCount(d); i++) todo.Push(VisualTreeHelper.GetChild(d, i));
+            }
+            return n;
+        }
     }
 
     public static class Crash

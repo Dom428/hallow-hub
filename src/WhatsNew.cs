@@ -13,6 +13,7 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("2.16", new[] { "Light mode readability fixes: green and amber text, the accent as text and lilac labels are darker so they read on every light panel; a filled accent that would be hard to read (like violet) gets a deeper shade with white text", "Windows that are already open (game settings, emulators, What's new) switch light / dark and accent straight away" }),
             Tuple.Create("2.15", new[] { "Light and dark mode: Hub follows the Hallow family's Light / Dark / Same as Windows choice in Hallow Toolkit, live - or pick your own in Settings > Look (Follow Hallow, Light, Dark)" }),
             Tuple.Create("2.14", new[] { "A power plan while you play: Game settings > Power plan while it runs - for one game or all games, back to your own plan when the game closes", "More of the family under each game: Hallow Guard's score and weekly change, Hallow Shield's blocked count, and your PCs in Hallow Assist with Connect" }),
             Tuple.Create("2.13", new[] { "Hallow Guard and Hallow Assist get their own submenus in the Hallow icon (and hide their own tray icons) - every app shows its icon there now", "Hallow Guard's safety score sits next to CPU / RAM / GPU (click it to open Guard); Settings shows Guard's last scan and whether Assist is in a session" }),
@@ -52,7 +53,7 @@ namespace HallowHub
 
     public class WhatsNewWindow : Window
     {
-        static SolidColorBrush B(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex))); }
+        static SolidColorBrush B(string hex) { return HallowLook.Brush(hex); }   // v2.16: remembers its palette colour (live restyle)
         public WhatsNewWindow(List<Tuple<string, string[]>> items)
         {
             Title = "What's new in Hallow Hub"; Width = 560; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize; HallowLook.Dress(this);

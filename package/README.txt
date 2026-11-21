@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.16
+- Light mode readability fixes: green, amber and lilac text and the accent where it's text are darker, so every small text reads clearly on every light panel. A filled accent that would be hard to read (like violet) gets a deeper shade with white text.
+- Windows that are already open (game settings, emulators, What's new) switch light / dark and the accent straight away.
+
 WHAT'S NEW IN 2.15
 - Light and dark mode: Hub follows the Hallow family's Light / Dark / Same as Windows choice in Hallow Toolkit, live with no restart. Settings > Look picks Hub's own: Follow Hallow, Light or Dark.
 

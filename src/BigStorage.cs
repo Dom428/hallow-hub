@@ -43,7 +43,7 @@ namespace HallowHub
             Grid.SetRow(foot, 3); lay.Children.Add(foot);
             bsView.Children.Add(lay);
             // the "are you sure?" box
-            bsAskBox = new Border { Width = 720, Background = B("#211B2A"), BorderBrush = B("#F0BE5A"), BorderThickness = new Thickness(2), CornerRadius = new CornerRadius(18), Padding = new Thickness(34, 28, 34, 28),
+            bsAskBox = new Border { Width = 720, Background = B("#211B2A"), BorderBrush = BI("#F0BE5A"), BorderThickness = new Thickness(2), CornerRadius = new CornerRadius(18), Padding = new Thickness(34, 28, 34, 28),
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed, Effect = HallowLook.Shadow(50, 0.8, 0) };
             var ask = new StackPanel();
             bsAskTitle = new TextBlock { FontSize = 26, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
@@ -131,7 +131,7 @@ namespace HallowHub
                 var txt = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
                 txt.Children.Add(new TextBlock { Text = main.Name + (main.Alts.Count > 0 ? "  (" + c.SourceName + ")" : "") + "   ·   " + (c.Drive ?? ""), FontSize = 20, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
                 var sub = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
-                if (tip) { var bi = Icons.Make("broom", 13, B("#F0BE5A")); bi.Margin = new Thickness(0, 0, 8, 0); sub.Children.Add(bi); }
+                if (tip) { var bi = Icons.Make("broom", 13, BI("#F0BE5A")); bi.Margin = new Thickness(0, 0, 8, 0); sub.Children.Add(bi); }
                 var rl = RowLast(c);
                 sub.Children.Add(new TextBlock { Text = tip ? why[c] : (rl == null ? "no playtime recorded" : "last played " + AgoLow(rl)) + "   ·   uninstalls through " + c.SourceName, FontSize = 14, Foreground = tip ? B("#F0BE5A") : B("#8F88A0"), TextTrimming = TextTrimming.CharacterEllipsis });
                 txt.Children.Add(sub);
