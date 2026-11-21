@@ -44,7 +44,7 @@ namespace HallowHub
             bsView.Children.Add(lay);
             // the "are you sure?" box
             bsAskBox = new Border { Width = 720, Background = B("#211B2A"), BorderBrush = B("#F0BE5A"), BorderThickness = new Thickness(2), CornerRadius = new CornerRadius(18), Padding = new Thickness(34, 28, 34, 28),
-                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed, Effect = new DropShadowEffect { BlurRadius = 50, Opacity = 0.8, ShadowDepth = 0 } };
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed, Effect = HallowLook.Shadow(50, 0.8, 0) };
             var ask = new StackPanel();
             bsAskTitle = new TextBlock { FontSize = 26, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
             bsAskHow = new TextBlock { FontSize = 17, Foreground = B("#CFC8DC"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 14, 0, 0), LineHeight = 26 };
@@ -60,11 +60,11 @@ namespace HallowHub
         // a big button with the controller letter on it
         Border PadButton(string letter, string letterCol, string text, string bg, Action click)
         {
-            var b = new Border { CornerRadius = new CornerRadius(12), Background = B(bg), Padding = new Thickness(20, 10, 26, 10), Margin = new Thickness(0, 0, 14, 0), Cursor = Cursors.Hand };
+            var b = new Border { CornerRadius = new CornerRadius(12), Background = BF(bg), Padding = new Thickness(20, 10, 26, 10), Margin = new Thickness(0, 0, 14, 0), Cursor = Cursors.Hand };
             var sp = new StackPanel { Orientation = Orientation.Horizontal };
             sp.Children.Add(new Border { Width = 30, Height = 30, CornerRadius = new CornerRadius(15), Background = B(letterCol), Margin = new Thickness(0, 0, 12, 0),
                 Child = new TextBlock { Text = letter, FontWeight = FontWeights.Bold, FontSize = 16, Foreground = B("#0E0B12"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } });
-            sp.Children.Add(new TextBlock { Text = text, FontSize = 19, FontWeight = FontWeights.Bold, Foreground = bg == "#F07820" ? B("#1A0E04") : Brushes.White, VerticalAlignment = VerticalAlignment.Center });
+            sp.Children.Add(new TextBlock { Text = text, FontSize = 19, FontWeight = FontWeights.Bold, Foreground = bg == "#F07820" ? B("#1A0E04") : HallowLook.Light ? (Brush)FindResource("Text") : Brushes.White, VerticalAlignment = VerticalAlignment.Center });
             b.Child = sp; b.MouseLeftButtonUp += (s, e) => click();
             return b;
         }
@@ -155,7 +155,7 @@ namespace HallowHub
                 var on = k == bsIdx; var ac = Accent(Main(bsRows[k]));
                 bsTiles[k].BorderBrush = on ? new SolidColorBrush(ac) : Brushes.Transparent;
                 bsTiles[k].Background = on ? B("#2A2333") : B("#1A1522");
-                bsTiles[k].Effect = on ? new DropShadowEffect { Color = ac, BlurRadius = 26, ShadowDepth = 0, Opacity = 0.5 } : null;
+                bsTiles[k].Effect = on ? HallowLook.Glow(ac, 26, 0.5) : null;
             }
             bsTiles[bsIdx].BringIntoView();
         }

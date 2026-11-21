@@ -61,7 +61,7 @@ namespace HallowHub
             filterBody = new StackPanel();
             filterPop = new Popup { StaysOpen = false, AllowsTransparency = true, Placement = PlacementMode.Bottom, VerticalOffset = 8, PlacementTarget = filterBtn,
                 Child = new Border { Width = 380, Background = B("#241E2E"), BorderBrush = B("#3A3248"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(16, 12, 16, 14), Child = filterBody,
-                    Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 24, Opacity = 0.5, ShadowDepth = 4 } } };
+                    Effect = HallowLook.Shadow(24, 0.5, 4) } };
             filterBtn.Checked += (s, e) => { FillFilters(); filterPop.IsOpen = true; };
             filterBtn.Unchecked += (s, e) => filterPop.IsOpen = false;
             filterPop.Closed += (s, e) => { filterBtn.IsChecked = false; UpdateFilterButton(); };
@@ -72,7 +72,7 @@ namespace HallowHub
         {
             if (filterBtn == null) return;
             int n = FilterCount();
-            filterBtn.Content = Icons.WithText("filter", n == 0 ? "Filters" : "Filters · " + n, 12, n == 0 ? (Brush)FindResource("Text") : B("#F07820"));
+            filterBtn.Content = Icons.WithText("filter", n == 0 ? "Filters" : "Filters · " + n, 12, n == 0 || HallowLook.Light ? (Brush)FindResource("Text") : B("#F07820"));
         }
         void FillFilters()
         {

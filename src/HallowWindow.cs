@@ -1,4 +1,5 @@
 ﻿// Hallow Hub v2.5 - the window's side of the Hallow accent (live, when Hallow Toolkit changes it) and the crash notice.
+// v2.15: light / dark mode goes the same way (theme.json "mode", Hub's own Look setting, Windows' app mode for "system").
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -11,7 +12,7 @@ namespace HallowHub
 {
     public partial class HubWindow
     {
-        FileSystemWatcher themeWatch; DispatcherTimer themeSoon;
+        FileSystemWatcher themeWatch; DispatcherTimer themeSoon, systemMode;
 
         // watch %APPDATA%\Hallow for theme.json (the folder may only appear once Toolkit writes it - checked again every 15 s)
         void WatchTheme()
@@ -21,6 +22,13 @@ namespace HallowHub
             {
                 themeSoon = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
                 themeSoon.Tick += (s, e) => { themeSoon.Stop(); ApplyAccent(false); };
+            }
+            if (systemMode == null)
+            {
+                // "Same as Windows": follow Windows' app mode live (a registry read every 3 s, only while it matters)
+                systemMode = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+                systemMode.Tick += (s, e) => { if (HallowLook.FollowsSystem && (HallowLook.SystemLight() == true) != HallowLook.Light) ApplyAccent(false); };
+                systemMode.Start();
             }
             try
             {
@@ -43,6 +51,8 @@ namespace HallowHub
                 Program.LoadTheme(Application.Current);
                 accentCache.Clear();
                 bool settingsOpen = gearBtn != null && gearBtn.IsChecked == true;
+                Background = (Brush)FindResource("Bg"); Foreground = (Brush)FindResource("Text"); HallowLook.TitleBar(this);   // v2.15
+                if (notesPop != null) notesPop.IsOpen = false; if (linksPop != null) linksPop.IsOpen = false; notesPop = null; linksPop = null;   // rebuilt with the new colours
                 Content = Build();
                 RebuildChips(); RebuildGrid(); ShowHero(); ShowPc(); CheckLinks();
                 familySig = null; ShowFamily(true); statusUntil = DateTime.MinValue; UpdateStatus();
@@ -69,7 +79,7 @@ namespace HallowHub
         static SolidColorBrush B(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex))); }
         public CrashWindow(string file)
         {
-            Title = "Hallow Hub"; Width = 460; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize;
+            Title = "Hallow Hub"; Width = 460; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize; HallowLook.Dress(this);
             Background = (Brush)FindResource("Bg"); Foreground = (Brush)FindResource("Text");
             FontFamily = new FontFamily("Segoe UI"); FontSize = 12.5; WindowStartupLocation = WindowStartupLocation.CenterOwner;
             var sp = new StackPanel { Margin = new Thickness(24, 20, 24, 20) };

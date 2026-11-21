@@ -215,7 +215,7 @@ namespace HallowHub
             var b = new Border { Background = B("#211B2A"), BorderBrush = B("#3A3248"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(16),
                 Padding = new Thickness(24, 16, 12, 18), Width = 760, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(0, 62, 0, 24), Visibility = Visibility.Collapsed };
-            b.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 30, Opacity = 0.6, ShadowDepth = 4 };
+            b.Effect = HallowLook.Shadow(30, 0.6, 4);
             var dp = new DockPanel();
             var sh = new DockPanel { Margin = new Thickness(0, 0, 12, 12) };
             var close = new Button { Content = "x", Tag = "icon", Style = (Style)FindResource("Btn"), Width = 30, Height = 28, Padding = new Thickness(0), ToolTip = "Close" };

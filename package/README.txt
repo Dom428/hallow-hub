@@ -6,6 +6,9 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.15
+- Light and dark mode: Hub follows the Hallow family's Light / Dark / Same as Windows choice in Hallow Toolkit, live with no restart. Settings > Look picks Hub's own: Follow Hallow, Light or Dark.
+
 WHAT'S NEW IN 2.14
 - A power plan while you play: Game settings > Power plan while it runs - for one game or for all games (High performance, Ultimate Performance, Balanced or any plan on your PC). Back to your own plan when the game closes. No admin needed; Hub never creates or changes a plan.
 - More of the Hallow family under each game: Hallow Guard's safety score with this week's change and Windows hardening, Hallow Shield's ads and trackers blocked today and this week, and your PCs in Hallow Assist with an online dot and Connect. Each card only shows when that app is there.

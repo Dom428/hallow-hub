@@ -92,7 +92,7 @@ namespace HallowHub
             Title = "Emulators - Hallow Hub"; Width = 640; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize;
             Background = (Brush)FindResource("Bg"); Foreground = (Brush)FindResource("Text"); FontFamily = new FontFamily("Segoe UI"); FontSize = 12.5;
             WindowStartupLocation = WindowStartupLocation.CenterOwner; ShowInTaskbar = false;
-            SourceInitialized += (o, e) => { int dark = 1; DwmSetWindowAttribute(new WindowInteropHelper(this).Handle, 20, ref dark, 4); };
+            HallowLook.Dress(this);   // v2.15: the title bar follows light / dark
             var sp = new StackPanel { Margin = new Thickness(24, 18, 24, 20) };
             var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
             var hi = Icons.Make("compact-disc", 16, B("#F07820")); hi.Margin = new Thickness(0, 0, 10, 0); head.Children.Add(hi);

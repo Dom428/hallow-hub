@@ -14,14 +14,14 @@ namespace HallowHub
     public class GameSettingsWindow : Window
     {
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int val, int size);
-        static SolidColorBrush B(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)); }
+        static SolidColorBrush B(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex))); }
 
         public GameSettingsWindow(Game g, GameData d, HubSettings s, bool exeLaunch)
         {
             Title = g.Name + " - settings"; Width = 480; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize;
             Background = (Brush)FindResource("Bg"); Foreground = (Brush)FindResource("Text"); FontFamily = new FontFamily("Segoe UI"); FontSize = 12.5;
             WindowStartupLocation = WindowStartupLocation.CenterOwner; ShowInTaskbar = false;
-            SourceInitialized += (o, e) => { int dark = 1; DwmSetWindowAttribute(new WindowInteropHelper(this).Handle, 20, ref dark, 4); };
+            HallowLook.Dress(this);   // v2.15: the title bar follows light / dark
             var sp = new StackPanel { Margin = new Thickness(24, 18, 24, 20) };
             var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 16) };
             var hi = Icons.Make("sliders", 16, B("#F07820")); hi.Margin = new Thickness(0, 0, 10, 0); head.Children.Add(hi);

@@ -13,6 +13,7 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("2.15", new[] { "Light and dark mode: Hub follows the Hallow family's Light / Dark / Same as Windows choice in Hallow Toolkit, live - or pick your own in Settings > Look (Follow Hallow, Light, Dark)" }),
             Tuple.Create("2.14", new[] { "A power plan while you play: Game settings > Power plan while it runs - for one game or all games, back to your own plan when the game closes", "More of the family under each game: Hallow Guard's score and weekly change, Hallow Shield's blocked count, and your PCs in Hallow Assist with Connect" }),
             Tuple.Create("2.13", new[] { "Hallow Guard and Hallow Assist get their own submenus in the Hallow icon (and hide their own tray icons) - every app shows its icon there now", "Hallow Guard's safety score sits next to CPU / RAM / GPU (click it to open Guard); Settings shows Guard's last scan and whether Assist is in a session" }),
             Tuple.Create("2.12", new[] { "Surprise me, your way: right-click the dice for From my backlog (Ctrl+Shift+R), a favorite, or one you haven't played in a month", "Links on every game: Steam pages, PCGamingWiki, HowLongToBeat and your own", "Close apps when a game starts (opened again after) - the When this game starts card lists everything that happens", "Stats: Your library - play status split, backlog, finished games and your ratings" }),
@@ -54,7 +55,7 @@ namespace HallowHub
         static SolidColorBrush B(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex))); }
         public WhatsNewWindow(List<Tuple<string, string[]>> items)
         {
-            Title = "What's new in Hallow Hub"; Width = 560; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize;
+            Title = "What's new in Hallow Hub"; Width = 560; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize; HallowLook.Dress(this);
             Background = (Brush)FindResource("Bg"); Foreground = (Brush)FindResource("Text");
             FontFamily = new FontFamily("Segoe UI"); FontSize = 12.5; WindowStartupLocation = WindowStartupLocation.CenterOwner;
             var sp = new StackPanel { Margin = new Thickness(26, 20, 26, 20) };

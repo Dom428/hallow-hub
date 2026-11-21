@@ -26,12 +26,12 @@ namespace HallowHub
             const double W = 230, H = 345, GAP = 26;
 
             big = new Window { Title = "Hallow Hub - Big Picture", WindowStyle = WindowStyle.None, ResizeMode = ResizeMode.NoResize, Background = B("#0E0B12"),
-                Foreground = Brushes.White, FontFamily = new FontFamily("Segoe UI"), ShowInTaskbar = true, Icon = Icon };
+                Foreground = HallowLook.Light ? (Brush)FindResource("Text") : Brushes.White, FontFamily = new FontFamily("Segoe UI"), ShowInTaskbar = true, Icon = Icon };
             var root = new Grid { ClipToBounds = true };
             var bg = new Image { Stretch = Stretch.UniformToFill, Opacity = 0.55, Effect = new BlurEffect { Radius = 6 } };
             root.Children.Add(bg);
             var shade = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
-            shade.GradientStops.Add(new GradientStop(Color.FromArgb(120, 0x0E, 0x0B, 0x12), 0)); shade.GradientStops.Add(new GradientStop(Color.FromArgb(235, 0x0E, 0x0B, 0x12), 0.62));
+            var sc0 = C("#0E0B12"); shade.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(HallowLook.Light ? 160 : 120), sc0.R, sc0.G, sc0.B), 0)); shade.GradientStops.Add(new GradientStop(Color.FromArgb(235, sc0.R, sc0.G, sc0.B), 0.62));
             root.Children.Add(new Rectangle { Fill = shade });
 
             var layout = new Grid { Margin = new Thickness(70, 40, 70, 40) };
@@ -105,7 +105,7 @@ namespace HallowHub
                     if (k.StartsWith("col:")) { var ti = Icons.Make("tag", 13, on ? B("#1A0E04") : B("#C9B2F5")); ti.Margin = new Thickness(0, 0, 8, 0); sp.Children.Add(ti); }
                     sp.Children.Add(new TextBlock { Text = BigFilterName(k), FontSize = 16, FontWeight = on ? FontWeights.Bold : FontWeights.Normal, Foreground = on ? B("#1A0E04") : B("#CFC8DC") });
                     var kk = k;
-                    var chip = new Border { Child = sp, CornerRadius = new CornerRadius(16), Padding = new Thickness(14, 5, 14, 6), Margin = new Thickness(0, 0, 8, 0), Background = on ? B("#F07820") : new SolidColorBrush(Color.FromArgb(150, 0x2A, 0x23, 0x33)), Cursor = Cursors.Hand };
+                    var chip = new Border { Child = sp, CornerRadius = new CornerRadius(16), Padding = new Thickness(14, 5, 14, 6), Margin = new Thickness(0, 0, 8, 0), Background = on ? BF("#F07820") : HallowLook.Light ? new SolidColorBrush(Color.FromArgb(220, 0xFF, 0xFF, 0xFF)) : new SolidColorBrush(Color.FromArgb(150, 0x2A, 0x23, 0x33)), Cursor = Cursors.Hand };
                     chip.MouseLeftButtonUp += (s, e) => { S.Filter = kk; S.Save(); RebuildChips(); RebuildGrid(); list = Visible(); fill(); go(0, false); };
                     filterText.Children.Add(chip);
                 }
@@ -125,18 +125,18 @@ namespace HallowHub
                     t.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(on ? 1 : 0.6, dur));
                     var ac = Accent(list[k]);
                     t.BorderBrush = on ? new SolidColorBrush(ac) : Brushes.Transparent;
-                    t.Effect = on ? new DropShadowEffect { Color = ac, BlurRadius = 40, ShadowDepth = 0, Opacity = 0.75 } : null;
+                    t.Effect = on ? HallowLook.Glow(ac, 40, 0.75) : null;
                 }
                 var vw = big.ActualWidth > 0 ? big.ActualWidth : big.Width;
                 var x = vw / 2 - 70 - (index * (W + GAP) + W / 2);
                 ((TranslateTransform)row.RenderTransform).BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(x, TimeSpan.FromMilliseconds(animate ? 260 : 0)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
                 bg.Source = Img(g.Hero, 1920) ?? Img(g.Header, 0) ?? Img(g.Cover, 0);
-                logo.Source = Img(g.Logo, 0); logo.Visibility = logo.Source != null ? Visibility.Visible : Visibility.Collapsed;
+                logo.Source = Img(g.Logo, 0); if (HallowLook.Light && logo.Source != null && BrightLogo(g.Logo, logo.Source as System.Windows.Media.Imaging.BitmapSource)) logo.Source = null; logo.Visibility = logo.Source != null ? Visibility.Visible : Visibility.Collapsed;
                 name.Text = g.Name; name.Visibility = logo.Source != null ? Visibility.Collapsed : Visibility.Visible;
                 var tot = Total(g);
                 stats.Text = (IsRunning(g) ? "Playing now   ·   " : "") + (tot < 1 ? "Not played yet" : HubSettings.Duration(tot) + " played") + "   ·   Last played: " + HubSettings.Ago(LastOf(g)) + "   ·   " + g.SourceName + (S.For(g.Id).Favorite ? "   ·   Favorite" : "");
                 hint.Children.Clear();
-                var play = new Border { CornerRadius = new CornerRadius(12), Background = B("#F07820"), Padding = new Thickness(26, 12, 30, 12), Cursor = Cursors.Hand };
+                var play = new Border { CornerRadius = new CornerRadius(12), Background = BF("#F07820"), Padding = new Thickness(26, 12, 30, 12), Cursor = Cursors.Hand };
                 var ps = new StackPanel { Orientation = Orientation.Horizontal };
                 ps.Children.Add(new Border { Width = 30, Height = 30, CornerRadius = new CornerRadius(15), Background = B("#6ED28C"), Margin = new Thickness(0, 0, 12, 0), Child = new TextBlock { Text = "A", FontWeight = FontWeights.Bold, FontSize = 16, Foreground = B("#0E2416"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } });
                 ps.Children.Add(new TextBlock { Text = IsRunning(g) ? "Playing" : "Play", FontSize = 22, FontWeight = FontWeights.Bold, Foreground = B("#1A0E04"), VerticalAlignment = VerticalAlignment.Center });
@@ -187,7 +187,7 @@ namespace HallowHub
             big.Loaded += (s, e) => { fill(); go(index, false); timer.Start(); };
             big.SizeChanged += (s, e) => go(index, false);
             big.Closed += (s, e) => { timer.Stop(); big = null; bsView = null; afterSizing = null; ShowFromTray(); };
-            big.SourceInitialized += (s, e) => { int dark = 1; DwmSetWindowAttribute(new WindowInteropHelper(big).Handle, 20, ref dark, 4); };
+            HallowLook.Dress(big);
             big.WindowState = WindowState.Maximized;
             // snapshots: 1 = a collection, 2 = Storage, 3 = its "are you sure?" box
             bigSnapStep = step =>
@@ -247,7 +247,7 @@ namespace HallowHub
                 var sh = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
                 sh.GradientStops.Add(new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.4)); sh.GradientStops.Add(new GradientStop(Color.FromArgb(220, 0x10, 0x0C, 0x16), 1));
                 gi.Children.Add(new Rectangle { Fill = sh });
-                gi.Children.Add(new TextBlock { Text = IsRunning(g) ? "Playing" : g.Name, FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = IsRunning(g) ? B("#6ED28C") : Brushes.White, Margin = new Thickness(8, 0, 8, 6), VerticalAlignment = VerticalAlignment.Bottom, TextTrimming = TextTrimming.CharacterEllipsis });
+                gi.Children.Add(new TextBlock { Text = IsRunning(g) ? "Playing" : g.Name, FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = IsRunning(g) ? BD("#6ED28C") : Brushes.White, Margin = new Thickness(8, 0, 8, 6), VerticalAlignment = VerticalAlignment.Bottom, TextTrimming = TextTrimming.CharacterEllipsis });
                 t.Child = gi;
                 var ac = Accent(g);
                 t.MouseEnter += (s, e) => t.BorderBrush = new SolidColorBrush(ac);
@@ -258,7 +258,7 @@ namespace HallowHub
             sp.Children.Add(grid);
             if (list.Count == 0) sp.Children.Add(new TextBlock { Text = "No games yet.", Foreground = B("#8F88A0") });
             var shell = new Border { Background = B("#1C1724"), BorderBrush = B("#3A3248"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(14, 12, 6, 6), Child = sp, Margin = new Thickness(12),
-                Effect = new DropShadowEffect { BlurRadius = 24, Opacity = 0.6, ShadowDepth = 3 } };
+                Effect = HallowLook.Shadow(24, 0.6, 3) };
             quick.Content = shell;
             quick.Deactivated += (s, e) => { if (quick != null) quick.Close(); };
             quick.Closed += (s, e) => quick = null;

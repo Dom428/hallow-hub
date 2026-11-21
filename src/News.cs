@@ -114,7 +114,7 @@ namespace HallowHub
             var b = new Border { Background = B("#211B2A"), BorderBrush = B("#3A3248"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(16),
                 Padding = new Thickness(24, 16, 12, 18), Width = 760, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(0, 62, 0, 24), Visibility = Visibility.Collapsed };
-            b.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 30, Opacity = 0.6, ShadowDepth = 4 };
+            b.Effect = HallowLook.Shadow(30, 0.6, 4);
             var dp = new DockPanel();
             var sh = new DockPanel { Margin = new Thickness(0, 0, 12, 12) };
             var close = new Button { Content = "x", Tag = "icon", Style = (Style)FindResource("Btn"), Width = 30, Height = 28, Padding = new Thickness(0), ToolTip = "Close" };
@@ -172,7 +172,7 @@ namespace HallowHub
             {
                 var card = new Border { Background = B("#2A2333"), CornerRadius = new CornerRadius(12), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, 10) };
                 var sp = new StackPanel();
-                sp.Children.Add(new TextBlock { Text = n.When.ToString("d MMM yyyy") + (n.Feed.Length > 0 ? "   ·   " + n.Feed : ""), Foreground = B("#A98BE0"), FontSize = 11, FontWeight = FontWeights.SemiBold });
+                sp.Children.Add(new TextBlock { Text = n.When.ToString("d MMM yyyy") + (n.Feed.Length > 0 ? "   ·   " + n.Feed : ""), Foreground = B(HallowLook.Light ? "#C9B2F5" : "#A98BE0"), FontSize = 11, FontWeight = FontWeights.SemiBold });
                 sp.Children.Add(new TextBlock { Text = n.Title, FontSize = 15, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 6) });
                 var text = n.Text.Length > 600 ? n.Text.Substring(0, 600).TrimEnd() + "..." : n.Text;
                 if (text.Length > 0) sp.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Foreground = B("#CFC8DC"), LineHeight = 18 });

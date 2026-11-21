@@ -27,6 +27,7 @@
 | **2.12** | Surprise me from your backlog, links per game (Steam, PCGamingWiki, HowLongToBeat, your own), close apps when a game starts, Your library on Stats, pipe open / quit |
 | **2.13** | Hallow Guard and Hallow Assist in the Hallow icon (tray-host lists them; any Hallow app that answers `menu` is hosted), app icons in the menu, Guard's safety score next to the PC check, Guard / Assist status in Settings |
 | **2.14** | Power plan while a game runs (per game or all games, back after; powercfg /setactive only), family cards for Hallow Guard (score, weekly change, hardening), Hallow Shield (blocked today / week) and Hallow Assist (your PCs, Connect) |
+| **2.15** | Light and dark mode: follows the family mode from Hallow Toolkit (light / dark / same as Windows, live), Settings > Look (Follow Hallow / Light / Dark), light palette with a darkened accent for text, no glows, title bar to match |
 
 ## Next
 
@@ -46,7 +47,7 @@ What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
 - Consoles and other launchers through integrations (PlayStation, Xbox cloud, Amazon, itch.io, Humble - Galaxy, Playnite) - **mostly not buildable**: sign-ins; itch.io / Amazon local installs could be added later
 - Import from Playnite or GOG Galaxy - **not buildable here**: Playnite keeps its library in a LiteDB database and Galaxy in SQLite - both binary formats Hub can't read without bundling a third-party library (and neither is installed on this PC to test)
 - Installing and updating games for stores other than Steam (Galaxy for GOG) - **not buildable**: the store's own client does it
-- Add-ons, scripting and custom themes (Playnite, LaunchBox) - **not planned**: Hub stays one small app; it has the Hallow accent and cover size / list view
+- Add-ons, scripting and custom themes (Playnite, LaunchBox) - **not planned**: Hub stays one small app; it has the Hallow accent and cover size / list view, and light and dark mode - 2.15
 - Cloud sync of the library between PCs (Galaxy) - **partly done**: 2.7 library backup moves it by zip; no cloud without an account
 - Videos, 3D boxes and arcade cabinets (LaunchBox Big Box) - **not planned**: needs large media downloads
 - HowLongToBeat times (Playnite add-on) - **not buildable**: no public API (2.12 adds a HowLongToBeat link that opens the site's search in your browser)

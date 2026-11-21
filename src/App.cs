@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.14.0.0")]
-[assembly: AssemblyFileVersion("2.14.0.0")]
+[assembly: AssemblyVersion("2.15.0.0")]
+[assembly: AssemblyFileVersion("2.15.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.14";
+        public const string Version = "2.15";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -43,7 +43,7 @@ namespace HallowHub
             if (si >= 0 && si + 1 < args.Length)
             {
                 Snap.On = true; HubSettings.Frozen = true;
-                HallowLook.UseShared = HubSettings.Load().UseHallowAccent; HallowLook.Refresh();
+                { var hs0 = HubSettings.Load(); HallowLook.UseShared = hs0.UseHallowAccent; HallowLook.LookOverride = hs0.Look; HallowLook.Refresh(); }
                 var sa = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; LoadTheme(sa);
                 new HubWindow(true).SnapAll(args[si + 1]); return;
             }
@@ -58,7 +58,7 @@ namespace HallowHub
                 else showEvent.Set();
                 return;
             }
-            HallowLook.UseShared = HubSettings.Load().UseHallowAccent; HallowLook.Refresh();
+            { var hs0 = HubSettings.Load(); HallowLook.UseShared = hs0.UseHallowAccent; HallowLook.LookOverride = hs0.Look; HallowLook.Refresh(); }
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; Crash.Hook(app); LoadTheme(app);
             var w = new HubWindow(args.Contains("--tray") || play != null);
             if (play != null) w.Dispatcher.BeginInvoke(new Action(() => w.PlayByKey(play)), DispatcherPriority.ApplicationIdle);
@@ -102,6 +102,8 @@ namespace HallowHub
         [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int val, int size);
         static Color C(string hex) { return (Color)ColorConverter.ConvertFromString(HallowLook.Hex(hex)); }   // v2.5: Hub's orange follows the Hallow accent
         static SolidColorBrush B(string hex) { return new SolidColorBrush(C(hex)); }
+        static SolidColorBrush BF(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.Fill(hex))); }      // v2.15: a filled accent area (the real accent in both modes)
+        static SolidColorBrush BD(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(HallowLook.DarkHex(hex))); }   // v2.15: drawn on game art - the same in both modes
         static readonly Dictionary<string, string> SourceColor = new Dictionary<string, string> {
             { "steam", "#5AB4F0" }, { "battlenet", "#4AA8FF" }, { "epic", "#ECE8F4" }, { "custom", "#A98BE0" }, { "rom", "#E0A050" }, { "ea", "#F05A5A" }, { "ubisoft", "#5A8CF0" }, { "gog", "#B48BF0" }, { "riot", "#F0505A" }, { "xbox", "#6ED28C" } };
 
@@ -118,7 +120,7 @@ namespace HallowHub
         ComboBox presetBox, sortBox; CheckBox sessionBox; TextBlock sessionNote, countText, statusText, searchHint;
         StackPanel contRow; FrameworkElement contLabel, libLabel; ComboBox sizeBox;
         WrapPanel grid, chips; TextBox search; Border settingsPanel; ToggleButton gearBtn; ScrollViewer gridScroll;
-        CheckBox startupBox; TextBlock linkInfo;
+        CheckBox startupBox; TextBlock linkInfo; ComboBox lookBox;
         readonly Dictionary<string, Border> cards = new Dictionary<string, Border>();
         WF.NotifyIcon tray; DispatcherTimer poll, slow;
         bool loading;
@@ -131,7 +133,7 @@ namespace HallowHub
             FontFamily = new FontFamily("Segoe UI"); FontSize = 12.5; WindowStartupLocation = WindowStartupLocation.CenterScreen;
             try { Icon = AppIcon(); } catch { }
             Content = Build();
-            SourceInitialized += (s, e) => { int dark = 1; DwmSetWindowAttribute(new WindowInteropHelper(this).Handle, 20, ref dark, 4); };
+            HallowLook.Dress(this);   // v2.15: the title bar follows light / dark
             Closing += (s, e) =>
             {
                 if (!exiting && S.TrayOnClose && !Snap.On)
@@ -236,14 +238,14 @@ namespace HallowHub
             heroImg = new Image { Stretch = Stretch.UniformToFill, VerticalAlignment = VerticalAlignment.Center };
             heroGrid.Children.Add(heroImg); StartBannerMotion();
             var fadeL = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 0) };
-            heroTint = new GradientStop(Color.FromArgb(240, 0x12, 0x0F, 0x18), 0); fadeL.GradientStops.Add(heroTint); fadeL.GradientStops.Add(new GradientStop(Color.FromArgb(150, 0x12, 0x0F, 0x18), 0.5)); fadeL.GradientStops.Add(new GradientStop(Color.FromArgb(40, 0x12, 0x0F, 0x18), 1));
+            heroTint = new GradientStop(HallowLook.Scrim(240), 0); fadeL.GradientStops.Add(heroTint); fadeL.GradientStops.Add(new GradientStop(HallowLook.Scrim((byte)(HallowLook.Light ? 190 : 150)), 0.5)); fadeL.GradientStops.Add(new GradientStop(HallowLook.Scrim((byte)(HallowLook.Light ? 70 : 40)), 1));
             heroGrid.Children.Add(new Rectangle { Fill = fadeL });
             var fadeB = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
-            fadeB.GradientStops.Add(new GradientStop(Color.FromArgb(0, 0x12, 0x0F, 0x18), 0.45)); fadeB.GradientStops.Add(new GradientStop(Color.FromArgb(220, 0x12, 0x0F, 0x18), 1));
+            fadeB.GradientStops.Add(new GradientStop(HallowLook.Scrim(0), 0.45)); fadeB.GradientStops.Add(new GradientStop(HallowLook.Scrim(220), 1));
             heroGrid.Children.Add(new Rectangle { Fill = fadeB });
             var info = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(34, 0, 0, 28), MaxWidth = 520 };
             heroLogo = new Image { MaxHeight = 104, MaxWidth = 400, HorizontalAlignment = HorizontalAlignment.Left, Stretch = Stretch.Uniform, Margin = new Thickness(0, 0, 0, 4) };
-            heroName = new TextBlock { FontSize = 34, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White };
+            heroName = new TextBlock { FontSize = 34, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap, Foreground = HallowLook.Light ? (Brush)FindResource("Text") : Brushes.White };
             heroStats = new TextBlock { FontSize = 13, Foreground = B("#D6D0E2"), Margin = new Thickness(0, 12, 0, 0), TextWrapping = TextWrapping.Wrap };
             heroPills = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
             info.Children.Add(heroLogo); info.Children.Add(heroName); info.Children.Add(heroStats); info.Children.Add(heroPills);
@@ -281,9 +283,9 @@ namespace HallowHub
             info.Children.Add(BuildStatusRow());   // v2.10: play status and your rating
             heroGrid.Children.Add(info);
             // "when it starts" card
-            var opts = new Border { Background = new SolidColorBrush(Color.FromArgb(205, 0x1A, 0x15, 0x22)), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14, 18, 16), Width = 310,
+            var opts = new Border { Background = new SolidColorBrush(HallowLook.Light ? Color.FromArgb(232, 0xFF, 0xFF, 0xFF) : Color.FromArgb(205, 0x1A, 0x15, 0x22)), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14, 18, 16), Width = 310,
                 HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 26, 26),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), BorderThickness = new Thickness(1) };
+                BorderBrush = HallowLook.Light ? (Brush)B("#3A3248") : new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), BorderThickness = new Thickness(1) };
             var op = new StackPanel();
             var oh = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
             var bolt = Icons.Make("bolt", 12, B("#F07820")); bolt.Margin = new Thickness(0, 0, 8, 0); oh.Children.Add(bolt);
@@ -377,7 +379,7 @@ namespace HallowHub
             var b = new Border { Background = B("#211B2A"), BorderBrush = B("#3A3248"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(16),
                 Padding = new Thickness(24, 16, 24, 22), Width = 800, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(0, 62, 0, 0), Visibility = Visibility.Collapsed };
-            b.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 30, Opacity = 0.6, ShadowDepth = 4 };
+            b.Effect = HallowLook.Shadow(30, 0.6, 4);
             var sp = new StackPanel();
             var sh = new DockPanel { Margin = new Thickness(0, 0, 0, 14) };
             var close = new Button { Content = "x", Tag = "icon", Style = (Style)FindResource("Btn"), Width = 30, Height = 28, Padding = new Thickness(0), ToolTip = "Close" };
@@ -537,7 +539,7 @@ namespace HallowHub
             var b = new Border { Background = B("#241E2E"), BorderBrush = B("#3A3248"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14),
                 Padding = new Thickness(18, 14, 18, 16), Width = 420, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(0, 62, 22, 0), Visibility = Visibility.Collapsed };
-            b.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 24, Opacity = 0.5, ShadowDepth = 4 };
+            b.Effect = HallowLook.Shadow(24, 0.5, 4);
             var sp = new StackPanel();
             var sh = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
             var close = new Button { Content = "x", Tag = "icon", Style = (Style)FindResource("Btn"), Width = 30, Height = 28, Padding = new Thickness(0), ToolTip = "Close settings" };
@@ -557,6 +559,21 @@ namespace HallowHub
             sw("Show hidden games", S.ShowHidden, v => { S.ShowHidden = v; RebuildGrid(); });
             sw("One Hallow icon: the other Hallow apps use this tray icon (their menus are in Hub's menu)", S.OneIcon, v => { S.OneIcon = v; Status(v ? "One Hallow icon is on - the other Hallow apps hide their own tray icons in a few seconds." : "One Hallow icon is off - every Hallow app shows its own tray icon again in a few seconds."); });
             sw("Use the Hallow accent (the colour picked in Hallow Toolkit)", S.UseHallowAccent, v => { S.UseHallowAccent = v; HallowLook.UseShared = v; S.Save(); Dispatcher.BeginInvoke(new Action(() => ApplyAccent(false))); });
+            // v2.15: Look - Follow Hallow (the family mode from Hallow Toolkit) / Light / Dark
+            var lk = new DockPanel { Margin = new Thickness(0, 6, 0, 6) };
+            lookBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 150 };
+            foreach (var o in new[] { new[] { "hallow", "Follow Hallow" }, new[] { "light", "Light" }, new[] { "dark", "Dark" } }) lookBox.Items.Add(new ComboBoxItem { Content = o[1], Tag = o[0] });
+            lookBox.SelectedItem = lookBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == HallowLook.NormalLook(S.Look)) ?? lookBox.Items[0];
+            lookBox.SelectionChanged += (s, e) =>
+            {
+                var it = lookBox.SelectedItem as ComboBoxItem; if (it == null || (string)it.Tag == HallowLook.NormalLook(S.Look)) return;
+                S.Look = (string)it.Tag; HallowLook.LookOverride = S.Look; S.Save(); Dispatcher.BeginInvoke(new Action(() => ApplyAccent(false)));
+            };
+            DockPanel.SetDock(lookBox, Dock.Right); lk.Children.Add(lookBox);
+            var lt = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            lt.Children.Add(new TextBlock { Text = "Look" });
+            lt.Children.Add(new TextBlock { Text = "Follow Hallow: " + (HallowLook.FamilyMode == "system" ? "same as Windows" : HallowLook.FamilyMode) + " (set in Hallow Toolkit)", Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextWrapping = TextWrapping.Wrap });
+            lk.Children.Add(lt); sp.Children.Add(lk);
             sw("Moving banner (the art drifts slowly)", !S.StillBanner, v => { S.StillBanner = !v; if (v) StartBannerMotion(); else StopBannerMotion(); });
             sw("Weekly recap on Mondays (a pop-up with last week's playtime)", S.WeeklyRecap, v => S.WeeklyRecap = v);
             var dc = Discord.Connected;
@@ -643,6 +660,24 @@ namespace HallowHub
         static bool ExeLaunch(Game c) { return c != null && File.Exists(c.Launch) && string.IsNullOrEmpty(c.Args) && c.Source != "battlenet"; }
         static string Size(long bytes) { return bytes <= 0 ? null : bytes >= (1L << 30) ? (bytes / (double)(1L << 30)).ToString("0") + " GB" : (bytes / (double)(1L << 20)).ToString("0") + " MB"; }
 
+        // v2.15: is the logo mostly light (made for dark art)? then light mode shows the game's name instead
+        static readonly Dictionary<string, bool> brightCache = new Dictionary<string, bool>();
+        static bool BrightLogo(string path, BitmapSource src)
+        {
+            if (path == null || src == null) return false;
+            bool r; if (brightCache.TryGetValue(path, out r)) return r;
+            try
+            {
+                BitmapSource s = src; if (s.PixelWidth > 200) s = new TransformedBitmap(s, new ScaleTransform(200.0 / s.PixelWidth, 200.0 / s.PixelWidth));
+                var fb = new FormatConvertedBitmap(s, PixelFormats.Bgra32, null, 0);
+                int w = fb.PixelWidth, h = fb.PixelHeight; var px = new byte[w * h * 4]; fb.CopyPixels(px, w * 4, 0);
+                double sum = 0, n = 0;
+                for (int i = 0; i < px.Length; i += 4) { if (px[i + 3] < 128) continue; sum += (0.0722 * px[i] + 0.7152 * px[i + 1] + 0.2126 * px[i + 2]) / 255.0; n++; }
+                r = n > 0 && sum / n > 0.55;
+            }
+            catch { r = false; }
+            brightCache[path] = r; return r;
+        }
         // the cover's own colour, for the glow around the selected game
         static readonly Dictionary<string, Color> accentCache = new Dictionary<string, Color>();
         static Color Accent(Game g)
@@ -821,15 +856,15 @@ namespace HallowHub
                 var st = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 12, 30) };
                 var ic = ExeIcon(g.IconExe);
                 if (ic != null) st.Children.Add(new Image { Source = ic, Width = 56, Height = 56, Margin = new Thickness(0, 0, 0, 12) });
-                st.Children.Add(new TextBlock { Text = g.Name, FontSize = 15, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Foreground = Brushes.White });
+                st.Children.Add(new TextBlock { Text = g.Name, FontSize = 15, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Foreground = HallowLook.Light ? (Brush)FindResource("Text") : Brushes.White });
                 inner.Children.Add(st);
             }
             var shade = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
             shade.GradientStops.Add(new GradientStop(Color.FromArgb(0, 0, 0, 0), 0)); shade.GradientStops.Add(new GradientStop(Color.FromArgb(215, 0x10, 0x0C, 0x16), 1));
             inner.Children.Add(new Rectangle { Fill = shade, Height = 64, VerticalAlignment = VerticalAlignment.Bottom });
             var foot = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(11, 0, 0, 10) };
-            var clock = Icons.Make("clock", 11, B("#D6D0E2")); clock.Margin = new Thickness(0, 0, 6, 0); foot.Children.Add(clock);
-            foot.Children.Add(new TextBlock { Text = Total(g) < 1 ? "New" : HubSettings.Duration(Total(g)), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = B("#ECE8F4") });
+            var clock = Icons.Make("clock", 11, BD("#D6D0E2")); clock.Margin = new Thickness(0, 0, 6, 0); foot.Children.Add(clock);
+            foot.Children.Add(new TextBlock { Text = Total(g) < 1 ? "New" : HubSettings.Duration(Total(g)), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = BD("#ECE8F4") });
             inner.Children.Add(foot);
             var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "rom" ? "compact-disc" : g.Source == "xbox" ? "xbox" : "gamepad";
             var badge = Icons.Make(srcIcon, 12, new SolidColorBrush(Color.FromArgb(200, 0xEC, 0xE8, 0xF4)));
@@ -838,12 +873,12 @@ namespace HallowHub
             if (d.Pinned)
             {
                 inner.Children.Add(new Border { Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Background = new SolidColorBrush(Color.FromArgb(200, 0x16, 0x12, 0x1C)),
-                    HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 8, d.Favorite ? 38 : 8, 0), Child = Icons.Make("thumbtack", 12, B("#F07820")), ToolTip = "Pinned" });
+                    HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 8, d.Favorite ? 38 : 8, 0), Child = Icons.Make("thumbtack", 12, BD("#F07820")), ToolTip = "Pinned" });
             }
             if (d.Favorite)
             {
                 var star = new Border { Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Background = new SolidColorBrush(Color.FromArgb(200, 0x16, 0x12, 0x1C)),
-                    HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 8, 8, 0), Child = Icons.Make("star", 12, B("#F0BE5A")) };
+                    HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 8, 8, 0), Child = Icons.Make("star", 12, BD("#F0BE5A")) };
                 inner.Children.Add(star);
             }
             if (!IsRunning(g) && (g.NeedsUpdate || g.Updating))
@@ -886,13 +921,14 @@ namespace HallowHub
             if (art != null) gi.Children.Add(new Image { Source = art, Stretch = Stretch.UniformToFill, VerticalAlignment = VerticalAlignment.Center });
             else gi.Children.Add(new TextBlock { Text = g.Name, FontSize = 16, FontWeight = FontWeights.Bold, Margin = new Thickness(12), TextWrapping = TextWrapping.Wrap });
             var ac = Accent(g);
-            var foot = new DockPanel { Background = new SolidColorBrush(Color.FromArgb(255, (byte)(0x1C + (ac.R - 0x1C) * 0.12), (byte)(0x17 + (ac.G - 0x17) * 0.12), (byte)(0x24 + (ac.B - 0x24) * 0.12))) };
+            var fb = C("#1C1724"); var fk = HallowLook.Light ? 0.10 : 0.12;
+            var foot = new DockPanel { Background = new SolidColorBrush(Color.FromArgb(255, (byte)(fb.R + (ac.R - fb.R) * fk), (byte)(fb.G + (ac.G - fb.G) * fk), (byte)(fb.B + (ac.B - fb.B) * fk))) };
             var running = IsRunning(g);
             var left = new TextBlock { Text = running ? "Playing now" : HubSettings.Ago(LastOf(g)), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = running ? B("#6ED28C") : B("#ECE8F4"), Margin = new Thickness(11, 7, 0, 8) };
             var right = new TextBlock { Text = HubSettings.Duration(Total(g)), FontSize = 11.5, Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(0, 7, 11, 8) };
             DockPanel.SetDock(right, Dock.Right); foot.Children.Add(right); foot.Children.Add(left);
             Grid.SetRow(foot, 1); gi.Children.Add(foot);
-            var play = new Border { Width = 36, Height = 36, CornerRadius = new CornerRadius(18), Background = B("#F07820"), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom,
+            var play = new Border { Width = 36, Height = 36, CornerRadius = new CornerRadius(18), Background = BF("#F07820"), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom,
                 Margin = new Thickness(0, 0, 10, 10), Child = Icons.Make("play", 13, B("#1A0E04")), Opacity = 0, ToolTip = "Play " + g.Name };
             ((FrameworkElement)play.Child).Margin = new Thickness(3, 0, 0, 0);
             play.MouseLeftButtonUp += (s, e) => { e.Handled = true; Select(g); Play(g); };
@@ -910,7 +946,7 @@ namespace HallowHub
             var g = card.Tag as Game;
             var ac = g == null ? C("#F07820") : Accent(g);
             card.BorderBrush = g == sel ? new SolidColorBrush(ac) : hot ? B("#55496A") : Brushes.Transparent;
-            card.Effect = g == sel ? new System.Windows.Media.Effects.DropShadowEffect { Color = ac, BlurRadius = 22, ShadowDepth = 0, Opacity = 0.6 } : null;
+            card.Effect = g == sel ? HallowLook.Glow(ac, 22, 0.6) : null;
         }
         static void Zoom(Border card, double to)
         {
@@ -976,6 +1012,7 @@ namespace HallowHub
                 heroImg.Source = Img(g.Hero, 1600) ?? Img(g.Header, 0) ?? Img(g.Cover, 0);
                 heroImg.Effect = g.Hero == null && heroImg.Source != null ? new System.Windows.Media.Effects.BlurEffect { Radius = 30 } : null;
                 heroLogo.Source = Img(g.Logo, 0);
+                if (HallowLook.Light && heroLogo.Source != null && BrightLogo(g.Logo, heroLogo.Source as BitmapSource)) heroLogo.Source = null;   // v2.15: a white logo on the light banner - the name instead
                 heroLogo.Visibility = heroLogo.Source != null ? Visibility.Visible : Visibility.Collapsed;
                 heroName.Text = g.Name; heroName.Visibility = heroLogo.Source != null ? Visibility.Collapsed : Visibility.Visible;
                 var total = Total(g); var recent = Recent(g);
@@ -989,7 +1026,7 @@ namespace HallowHub
                     if (icon != null) { var ic = Icons.Make(icon, 11, B(col)); ic.Margin = new Thickness(0, 0, 6, 0); sp2.Children.Add(ic); }
                     sp2.Children.Add(new TextBlock { Text = text, FontSize = 11.5, Foreground = B(col), FontWeight = FontWeights.SemiBold });
                     heroPills.Children.Add(new Border { Child = sp2, CornerRadius = new CornerRadius(10), Padding = new Thickness(9, 3, 10, 4), Margin = new Thickness(0, 0, 6, 6),
-                        Background = new SolidColorBrush(Color.FromArgb(150, 0x1A, 0x15, 0x22)), BorderBrush = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), BorderThickness = new Thickness(1) });
+                        Background = new SolidColorBrush(HallowLook.Light ? Color.FromArgb(215, 0xFF, 0xFF, 0xFF) : Color.FromArgb(150, 0x1A, 0x15, 0x22)), BorderBrush = HallowLook.Light ? (Brush)B("#3A3248") : new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), BorderThickness = new Thickness(1) });
                 };
                 var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "rom" ? "compact-disc" : g.Source == "xbox" ? "xbox" : "gamepad";
                 pill(srcIcon, (g.Source == "rom" && !string.IsNullOrEmpty(g.Platform) ? g.Platform : g.SourceName) + (g.Alts.Count > 0 ? " + " + string.Join(" + ", g.Alts.Select(a => a.SourceName)) : ""), "#ECE8F4");
@@ -1029,8 +1066,8 @@ namespace HallowHub
                 }
                 var ac = Accent(g);
                 heroBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(150, ac.R, ac.G, ac.B));
-                heroBorder.Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = ac, BlurRadius = 34, ShadowDepth = 0, Opacity = 0.35 };
-                heroTint.Color = Color.FromArgb(240, (byte)(0x12 + (ac.R - 0x12) * 0.14), (byte)(0x0F + (ac.G - 0x0F) * 0.14), (byte)(0x18 + (ac.B - 0x18) * 0.14));
+                heroBorder.Effect = HallowLook.Glow(ac, 34, 0.35);
+                var sc = HallowLook.Scrim(240); var sk = HallowLook.Light ? 0.08 : 0.14; heroTint.Color = Color.FromArgb(240, (byte)(sc.R + (ac.R - sc.R) * sk), (byte)(sc.G + (ac.G - sc.G) * sk), (byte)(sc.B + (ac.B - sc.B) * sk));
                 favBtn.IsChecked = d.Favorite;
                 ShowNewsButton(g); if (newsPanel.Visibility == Visibility.Visible) FillNews();
                 ShowAboutButton(g); if (aboutPanel.Visibility == Visibility.Visible) FillAbout();
@@ -1044,11 +1081,11 @@ namespace HallowHub
                 {
                     var mins = (DateTime.Now - r.Since).TotalMinutes;
                     playBtn.Content = "Playing  \u00B7  " + (mins < 1 ? "just started" : HubSettings.Duration(mins));
-                    playBtn.Background = B("#6ED28C"); playBtn.BorderBrush = B("#8EE0A6"); playBtn.ToolTip = "It's running - have fun";
+                    playBtn.Background = B("#6ED28C"); playBtn.BorderBrush = B("#8EE0A6"); playBtn.ToolTip = "It's running - have fun"; if (HallowLook.Light) playBtn.Foreground = Brushes.White;
                 }
                 else
                 {
-                    playBtn.ClearValue(BackgroundProperty); playBtn.ClearValue(Border.BorderBrushProperty); playBtn.ClearValue(BorderBrushProperty);
+                    playBtn.ClearValue(BackgroundProperty); playBtn.ClearValue(Border.BorderBrushProperty); playBtn.ClearValue(BorderBrushProperty); playBtn.ClearValue(ForegroundProperty);
                     playBtn.Content = starting == g.Id ? "Starting..." : "Play"; playBtn.ToolTip = "Start " + g.Name + " (double-click a game also plays it)";
                 }
                 // mixer preset
@@ -1600,6 +1637,38 @@ namespace HallowHub
                 ShowFamily(true); Snap.Save(this, System.IO.Path.Combine(dir, "family-tiles.png"), 1180, 780); Snap.Save(this, System.IO.Path.Combine(dir, "family-tiles-wide.png"), 1500, 780);
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "v214.err.txt"), ex.ToString()); }
+            // v2.15: more windows (What's new, Emulators, notes), and light / dark switched live - by the Look setting and by rewriting the TEST theme.json
+            try
+            {
+                var tag = HallowLook.Light ? "-light" : "-dark";
+                Snap.Save(new CrashWindow(System.IO.Path.Combine(dir, "2026-11-20 21-14-03.txt")), System.IO.Path.Combine(dir, "crash" + tag + ".png"), 460, 0);
+                Snap.Save(new WhatsNewWindow(WhatsNew.Notes.Take(2).ToList()), System.IO.Path.Combine(dir, "whatsnew" + tag + ".png"), 560, 0);
+                var emu = S.Emulators.Count > 0 ? S.Emulators : new List<Emulator> { new Emulator { Name = "Sample emulator", Exe = @"C:\Emulators\sample.exe", Folder = @"C:\ROMs\SNES", Types = "sfc smc zip" } };
+                Snap.Save(new EmulatorsWindow(emu), System.IO.Path.Combine(dir, "emulators" + tag + ".png"), 640, 0);
+                if (df != null) { Select(df); ShowNotes(notesBtn); notesPop.IsOpen = false; var npc = notesPop.Child; notesPop.Child = null;
+                    var nw = new Window { Background = (Brush)FindResource("Bg"), Foreground = Foreground, FontFamily = FontFamily, FontSize = FontSize, Content = npc };
+                    Snap.Save(nw, System.IO.Path.Combine(dir, "notes" + tag + ".png"), 380, 0); nw.Content = null; notesPop.Child = npc; }
+                if (df != null) Select(df);
+                var lines = new List<string> { "start: light=" + HallowLook.Light + " family=" + HallowLook.FamilyMode + " look=" + HallowLook.LookOverride + " accent=" + HallowLook.Accent + " text accent=" + HallowLook.AccentText };
+                var keepLook = HallowLook.LookOverride;
+                HallowLook.LookOverride = HallowLook.Light ? "dark" : "light"; ApplyAccent(false);
+                lines.Add("Look setting -> " + HallowLook.LookOverride + ": light=" + HallowLook.Light + " window bg=" + Background);
+                Snap.Save(this, System.IO.Path.Combine(dir, "look-switched" + tag + ".png"), 1180, 780);
+                gearBtn.IsChecked = true; Snap.Save(this, System.IO.Path.Combine(dir, "look-switched-settings" + tag + ".png"), 1180, 900); gearBtn.IsChecked = false;
+                HallowLook.LookOverride = keepLook; ApplyAccent(false); lines.Add("back: light=" + HallowLook.Light);
+                var fam = Environment.GetEnvironmentVariable("HALLOW_FAMILY_TEST");
+                var tf = string.IsNullOrEmpty(fam) ? null : System.IO.Path.Combine(HallowLook.Dir, "theme.json");
+                if (tf != null && File.Exists(tf) && HallowLook.NormalLook(keepLook) == "hallow")
+                {
+                    var keep = File.ReadAllText(tf); var flip = HallowLook.Light ? "dark" : "light";
+                    File.WriteAllText(tf, System.Text.RegularExpressions.Regex.Replace(keep, "\"mode\"\\s*:\\s*\"[^\"]*\"", "\"mode\": \"" + flip + "\""));
+                    ApplyAccent(false); lines.Add("test theme.json mode -> " + flip + ": light=" + HallowLook.Light);
+                    Snap.Save(this, System.IO.Path.Combine(dir, "file-switched" + tag + ".png"), 1180, 780);
+                    File.WriteAllText(tf, keep); ApplyAccent(false); lines.Add("test theme.json restored: light=" + HallowLook.Light);
+                }
+                File.AppendAllText(System.IO.Path.Combine(dir, "mode.txt"), string.Join("\r\n", lines) + "\r\n");
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "mode.err.txt"), ex.ToString()); }
             // v2.5: the accent switched live (the window rebuilds with the new theme)
             try { var was = HallowLook.UseShared; HallowLook.UseShared = !was; ApplyAccent(false); Snap.Save(this, System.IO.Path.Combine(dir, "accent-switched.png"), 1180, 780); HallowLook.UseShared = was; ApplyAccent(false); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "accent.err.txt"), ex.ToString()); }
         }

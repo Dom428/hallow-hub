@@ -55,7 +55,7 @@ namespace HallowHub
             var b = new Border { Background = B("#211B2A"), BorderBrush = B("#3A3248"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(16),
                 Padding = new Thickness(24, 16, 12, 18), Width = 820, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(0, 62, 0, 24), Visibility = Visibility.Collapsed };
-            b.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 30, Opacity = 0.6, ShadowDepth = 4 };
+            b.Effect = HallowLook.Shadow(30, 0.6, 4);
             var sp = new DockPanel();
             var sh = new DockPanel { Margin = new Thickness(0, 0, 12, 14) };
             var close = new Button { Content = "x", Tag = "icon", Style = (Style)FindResource("Btn"), Width = 30, Height = 28, Padding = new Thickness(0), ToolTip = "Close" };
@@ -92,7 +92,7 @@ namespace HallowHub
             if (tips.Count > 0)
             {
                 var box = new Border { Background = B("#2A2333"), CornerRadius = new CornerRadius(12), Padding = new Thickness(16, 12, 16, 8), Margin = new Thickness(0, 0, 0, 18),
-                    BorderBrush = new SolidColorBrush(Color.FromArgb(90, 0xF0, 0xBE, 0x5A)), BorderThickness = new Thickness(1) };
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(90, C("#F0BE5A").R, C("#F0BE5A").G, C("#F0BE5A").B)), BorderThickness = new Thickness(1) };
                 var bs = new StackPanel();
                 var hd = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
                 var bi = Icons.Make("broom", 13, B("#F0BE5A")); bi.Margin = new Thickness(0, 0, 9, 0); hd.Children.Add(bi);
@@ -130,7 +130,7 @@ namespace HallowHub
                     var g3 = new Border { Background = B("#2E2639"), CornerRadius = new CornerRadius(0, 6, 6, 0), ToolTip = "Free: " + Size(di.AvailableFreeSpace) };
                     Grid.SetColumn(g2, 1); Grid.SetColumn(g3, 2); bar.Children.Add(g1); bar.Children.Add(g2); bar.Children.Add(g3);
                     storageBody.Children.Add(bar);
-                    var legend = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 10.5, Margin = new Thickness(0, 0, 0, 8), Text = "orange = games   ·   grey = everything else   ·   dark = free" };
+                    var legend = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 10.5, Margin = new Thickness(0, 0, 0, 8), Text = "orange = games   ·   grey = everything else   ·   " + (HallowLook.Light ? "light" : "dark") + " = free" };
                     storageBody.Children.Add(legend);
                 }
                 foreach (var c in grp.OrderByDescending(x => x.SizeBytes)) storageBody.Children.Add(GameRow(c, null, false));

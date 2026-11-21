@@ -128,10 +128,11 @@ namespace HallowHub
         [DataMember] public bool OneIcon = true;                         // v2.4: One Hallow icon - the other Hallow apps use Hub's tray icon
         [DataMember] public string PowerPlanAll = "";                    // v2.14: power plan while any game runs (a GUID, "" = leave it)
         [DataMember] public string PowerRestore = "";                    // v2.14: "game|plan before|plan set" while Hub has switched the plan
+        [DataMember] public string Look = "hallow";                      // v2.15: Look - hallow (follow the Hallow family light / dark mode), light or dark
         [OnDeserializing] void D(StreamingContext c)
         {
             Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1; WeeklyRecap = true; LastRecap = "";
-            FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>(); Emulators = new List<Emulator>(); FStatus = ""; PowerPlanAll = ""; PowerRestore = "";
+            FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; Look = "hallow"; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>(); Emulators = new List<Emulator>(); FStatus = ""; PowerPlanAll = ""; PowerRestore = "";
         }
 
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }
