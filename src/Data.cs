@@ -58,7 +58,8 @@ namespace HallowHub
         [DataMember] public List<string> Links = new List<string>();      // v2.12: your own links, "name|https://..."
         [DataMember] public List<string> CloseFirst = new List<string>(); // v2.12: apps to close when the game starts (exe paths)
         [DataMember] public bool NoReopen;                                 // v2.12: don't open them again when the game closes
-        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; OpenWith = new List<string>(); SessionLog = new List<string>(); LimitTold = ""; Notes = ""; LastCopy = ""; LastCopyAt = ""; Status = ""; Links = new List<string>(); CloseFirst = new List<string>(); }
+        [DataMember] public string PowerPlan = "";                         // v2.14: power plan while it runs (a GUID; "" = the all-games choice, "none" = leave it)
+        [OnDeserializing] void D(StreamingContext c) { LastPlayed = ""; Preset = ""; Days = new List<string>(); PlayOn = ""; LaunchArgs = ""; Tags = new List<string>(); CustomName = ""; CustomCover = ""; CustomHero = ""; OpenWith = new List<string>(); SessionLog = new List<string>(); LimitTold = ""; Notes = ""; LastCopy = ""; LastCopyAt = ""; Status = ""; Links = new List<string>(); CloseFirst = new List<string>(); PowerPlan = ""; }
 
         public DateTime? Last { get { DateTime d; return DateTime.TryParse(LastPlayed, null, System.Globalization.DateTimeStyles.RoundtripKind, out d) ? d : (DateTime?)null; } }
         public void AddMinutes(double m, DateTime when)
@@ -125,10 +126,12 @@ namespace HallowHub
         [DataMember] public string FStatus = "";                          // v2.10: only games with this play status ("none" = no status)
         [DataMember] public List<string> FTags = new List<string>();     // v2.8: genres / features a game must have
         [DataMember] public bool OneIcon = true;                         // v2.4: One Hallow icon - the other Hallow apps use Hub's tray icon
+        [DataMember] public string PowerPlanAll = "";                    // v2.14: power plan while any game runs (a GUID, "" = leave it)
+        [DataMember] public string PowerRestore = "";                    // v2.14: "game|plan before|plan set" while Hub has switched the plan
         [OnDeserializing] void D(StreamingContext c)
         {
             Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1; WeeklyRecap = true; LastRecap = "";
-            FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>(); Emulators = new List<Emulator>(); FStatus = "";
+            FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>(); Emulators = new List<Emulator>(); FStatus = ""; PowerPlanAll = ""; PowerRestore = "";
         }
 
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }

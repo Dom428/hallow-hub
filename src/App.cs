@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.13.0.0")]
-[assembly: AssemblyFileVersion("2.13.0.0")]
+[assembly: AssemblyVersion("2.14.0.0")]
+[assembly: AssemblyFileVersion("2.14.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.13";
+        public const string Version = "2.14";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -160,7 +160,7 @@ namespace HallowHub
                 Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); RefreshPc(); WriteRecent(); }), DispatcherPriority.ApplicationIdle);
                 IsVisibleChanged += (s, e) => { if (IsVisible) RefreshPc(); };
                 if (!startHidden) Show();
-                StartWatching(); StartFamilyServer(); WatchTheme();
+                StartWatching(); StartFamilyServer(); WatchTheme(); PowerAfterStart();
                 DateTime lastCheck;
                 if (!DateTime.TryParse(S.LastUpdateCheck, out lastCheck) || (DateTime.Now - lastCheck).TotalHours > 20) CheckForUpdate(false);
                 if (string.IsNullOrEmpty(S.LastSeenVersion)) { S.LastSeenVersion = Program.Version; S.Save(); }
@@ -1129,6 +1129,7 @@ namespace HallowHub
             if (d.Preset != "" && Mixer.UsePreset(d.Preset)) did.Add("Hallow Mixer on \"" + d.Preset + "\"");
             if (d.GameSession && Toolkit.CanSession && sessionFor == null) { Toolkit.Session(true); sessionFor = g.Id; did.Add("game session on"); }
             did.AddRange(CloseBefore(g));   // v2.12: apps you asked to close for this game
+            did.AddRange(PowerOnStart(g, d));   // v2.14: the power plan you picked
             OpenCompanions(g); ShareStart(g);
             Status(g.Name + " started" + (did.Count > 0 ? " - " + string.Join(", ", did) : "") + ".");
             RefreshCard(g); if (g == sel) ShowHero(); UpdateTrayMenu();
@@ -1140,7 +1141,8 @@ namespace HallowHub
             bool ended = false;
             if (sessionFor == g.Id) { Toolkit.Session(false); sessionFor = null; ended = true; }
             var back = ReopenAfter(g);   // v2.12
-            Status(g.Name + " closed" + (ended ? " - game session ended, everything is back" : "") + (back.Count > 0 ? " - opened " + string.Join(", ", back) + " again" : "") + (d.Minutes >= 1 ? ". " + HubSettings.Duration(d.Minutes) + " played in total." : "."));
+            var pw = PowerOnStop(g);   // v2.14
+            Status(g.Name + " closed" + (ended ? " - game session ended, everything is back" : "") + (back.Count > 0 ? " - opened " + string.Join(", ", back) + " again" : "") + (pw != null ? " - " + pw : "") + (d.Minutes >= 1 ? ". " + HubSettings.Duration(d.Minutes) + " played in total." : "."));
             RefreshCard(g); if (g == sel) ShowHero(); UpdateTrayMenu();
         }
 
@@ -1391,6 +1393,7 @@ namespace HallowHub
         {
             exiting = true; S.Save(); WriteFamilyStatus(false);
             if (sessionFor != null) { Toolkit.Session(false); sessionFor = null; }
+            PowerRestoreNow(true);   // v2.14
             if (tray != null) { tray.Visible = false; tray.Dispose(); }
             Application.Current.Shutdown();
         }
@@ -1570,6 +1573,33 @@ namespace HallowHub
                 }
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "v212.err.txt"), ex.ToString()); }
+            // v2.14: the power plan (with the in-memory FakePowerCfg - snapshots never touch Windows' plans) and the family tiles
+            try
+            {
+                var fake = PowerPlans.Runner as FakePowerCfg; var lines = new List<string> { "runner: " + PowerPlans.Runner.GetType().Name };
+                if (fake != null)
+                {
+                    var pg = games.FirstOrDefault(x => x.Name.StartsWith("Delta")) ?? games[0]; var pd = S.For(pg.Id);
+                    S.PowerPlanAll = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"; pd.PowerPlan = ""; pd.GameSession = false; Plans(true);
+                    Select(pg); Snap.Save(this, System.IO.Path.Combine(dir, "power-checklist.png"), 1180, 780);
+                    lines.Add("checklist: " + checklist.Text.Replace("\n", " / "));
+                    try { var gw3 = new GameSettingsWindow(pg, pd, S, false); Snap.Save(gw3, System.IO.Path.Combine(dir, "gamesettings-214.png"), 480, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "gs214.err.txt"), ex.ToString()); }
+                    var fg = new Game { Id = "custom:power-test", Name = "Power test game", Source = "custom", InstallDir = @"C:\NoSuchGame", Launch = "" };
+                    var fd = S.For(fg.Id); fd.Preset = ""; fd.GameSession = false; fd.OpenWith = new List<string>(); fd.CloseFirst = new List<string>();
+                    S.DiscordOnStart = false; S.DiscordRecap = false; S.BreakMinutes = 0;
+                    fd.PowerPlan = "e9a42b02-d5df-448d-aa00-03f14749eb61";
+                    lines.Add("before: " + fake.Active); OnStarted(fg); lines.Add("started: " + fake.Active + " | " + statusText.Text + " | restore=" + S.PowerRestore);
+                    OnStopped(fg, DateTime.Now.AddMinutes(-3)); lines.Add("stopped: " + fake.Active + " | " + statusText.Text + " | restore=" + S.PowerRestore);
+                    fd.PowerPlan = ""; OnStarted(fg); lines.Add("all-games plan: " + fake.Active); fake.Active = "a1841308-3541-4fab-bc81-f71556f20b4a";
+                    OnStopped(fg, DateTime.Now); lines.Add("changed by hand meanwhile -> stays: " + fake.Active + " | " + statusText.Text);
+                    fd.PowerPlan = "none"; fake.Active = "381b4222-f694-41f0-9685-ff5bb260df2e"; OnStarted(fg); lines.Add("none: " + fake.Active); OnStopped(fg, DateTime.Now);
+                    lines.Add("commands: " + string.Join(" ; ", fake.Log));
+                    S.Games.Remove(fg.Id); S.PowerPlanAll = ""; pd.PowerPlan = "";
+                }
+                File.WriteAllText(System.IO.Path.Combine(dir, "power.txt"), string.Join("\r\n", lines));
+                ShowFamily(true); Snap.Save(this, System.IO.Path.Combine(dir, "family-tiles.png"), 1180, 780); Snap.Save(this, System.IO.Path.Combine(dir, "family-tiles-wide.png"), 1500, 780);
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "v214.err.txt"), ex.ToString()); }
             // v2.5: the accent switched live (the window rebuilds with the new theme)
             try { var was = HallowLook.UseShared; HallowLook.UseShared = !was; ApplyAccent(false); Snap.Save(this, System.IO.Path.Combine(dir, "accent-switched.png"), 1180, 780); HallowLook.UseShared = was; ApplyAccent(false); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "accent.err.txt"), ex.ToString()); }
         }

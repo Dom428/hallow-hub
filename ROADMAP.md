@@ -26,6 +26,7 @@
 | **2.11** | Hallow Keys in the Hallow icon (its submenu, Start when installed) |
 | **2.12** | Surprise me from your backlog, links per game (Steam, PCGamingWiki, HowLongToBeat, your own), close apps when a game starts, Your library on Stats, pipe open / quit |
 | **2.13** | Hallow Guard and Hallow Assist in the Hallow icon (tray-host lists them; any Hallow app that answers `menu` is hosted), app icons in the menu, Guard's safety score next to the PC check, Guard / Assist status in Settings |
+| **2.14** | Power plan while a game runs (per game or all games, back after; powercfg /setactive only), family cards for Hallow Guard (score, weekly change, hardening), Hallow Shield (blocked today / week) and Hallow Assist (your PCs, Connect) |
 
 ## Next
 
@@ -37,7 +38,7 @@ What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
 - Search across tags, genres, developer and notes (Playnite) - **buildable** - 2.10
 - Random game from your backlog (Playnite's random game picker, Galaxy's backlog view) - **buildable** - 2.12
 - Links per game (Playnite's Links: store pages, wikis, guides, your own) - **buildable** (links only, nothing fetched) - 2.12
-- Actions before a game starts (Playnite's game scripts: close apps, power plan) - **buildable** - 2.12 closes the apps you pick and opens them again after; power plan through the Hallow Toolkit game session
+- Actions before a game starts (Playnite's game scripts: close apps, power plan) - **buildable** - 2.12 closes the apps you pick and opens them again after; 2.14 switches to the power plan you pick (per game or all games) and back after
 - Library statistics (Playnite's statistics: completion, status split, ratings) - **buildable** - 2.12
 - Achievements (Galaxy, Playnite add-ons) - **not now**: Steam's no-key source only works for public profiles and gives one game per request; every other store needs a sign-in or key
 - Friends, chat and activity feeds (Galaxy) - **not buildable**: needs each store's sign-in, and Hub won't hold your passwords

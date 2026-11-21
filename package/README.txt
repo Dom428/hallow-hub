@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.14
+- A power plan while you play: Game settings > Power plan while it runs - for one game or for all games (High performance, Ultimate Performance, Balanced or any plan on your PC). Back to your own plan when the game closes. No admin needed; Hub never creates or changes a plan.
+- More of the Hallow family under each game: Hallow Guard's safety score with this week's change and Windows hardening, Hallow Shield's ads and trackers blocked today and this week, and your PCs in Hallow Assist with an online dot and Connect. Each card only shows when that app is there.
+
 WHAT'S NEW IN 2.13
 - Hallow Guard and Hallow Assist get their own submenus in the Hallow icon (Quick scan, Watch Downloads / Get help, Disconnect...) and hide their own tray icons. Each app's icon shows next to its name.
 - Any newer Hallow app that answers on its pipe gets a submenu too, without waiting for a Hub update.

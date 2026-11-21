@@ -18,7 +18,7 @@ namespace HallowHub
 {
     public partial class HubWindow
     {
-        Grid familyRow; string familySig; readonly FamilyServer familyServer = new FamilyServer();
+        Grid familyRow; string familySig; bool compactCards; readonly FamilyServer familyServer = new FamilyServer();
 
         // the names a game might go by in another app, and its install folders
         List<string> NamesOf(Game g)
@@ -44,19 +44,30 @@ namespace HallowHub
             var g = sel;
             bool vi = Family.Installed("Vault"), ci = Family.Installed("Clips"), oi = Family.Installed("Overlay");
             bool vr = vi && Family.Running("Vault"), cr = ci && Family.Running("Clips"), orr = oi && Family.Running("Overlay");
-            var sig = (g == null ? "" : g.Id) + "|" + vi + vr + ci + cr + oi + orr + "|" + Family.StatusTime("Vault").Ticks + "|" + Family.StatusTime("Clips").Ticks + "|" + Family.StatusTime("Overlay").Ticks;
+            // v2.14: Guard, Shield and Assist tiles (each only when that app is there)
+            GuardWeek gw = null; ShieldInfo shield = null; List<AssistPc> pcs = null;
+            try { gw = ReadGuardWeek(); } catch { } try { shield = ReadShield(); } catch { } try { pcs = ReadAssistPcs(); } catch { }
+            bool ar = pcs != null && Family.Running("Assist");
+            var sig = (g == null ? "" : g.Id) + "|" + vi + vr + ci + cr + oi + orr + ar + "|" + Family.StatusTime("Vault").Ticks + "|" + Family.StatusTime("Clips").Ticks + "|" + Family.StatusTime("Overlay").Ticks +
+                "|" + Family.StatusTime("Guard").Ticks + "|" + Family.StatusTime("Shield").Ticks + "|" + Family.StatusTime("Assist").Ticks + "|" + (gw != null) + (shield != null) + (pcs != null);
             if (!force && sig == familySig) return;
             familySig = sig;
             familyRow.Children.Clear(); familyRow.ColumnDefinitions.Clear();
-            if (g == null || !(vi || ci || oi)) { familyRow.Visibility = Visibility.Collapsed; heroBorder.Height = 330; return; }
+            bool tiles = gw != null || shield != null || pcs != null;
+            if (!(g != null && (vi || ci || oi)) && !tiles) { familyRow.Visibility = Visibility.Collapsed; heroBorder.Height = 330; return; }
+            if (g == null) { vi = ci = oi = false; }
             familyRow.Visibility = Visibility.Visible; heroBorder.Height = 300;   // a bit shorter, so the library keeps its room
             Dictionary<string, object> vault = vi ? Family.Status("Vault") : null;
             var vg = vault == null ? null : Match(Family.List(vault, "games"), g);
-            var aliases = NamesOf(g); var vn = Family.Str(vg, "name"); if (vn != null && !aliases.Contains(vn, StringComparer.OrdinalIgnoreCase)) aliases.Add(vn);
+            var aliases = g == null ? new List<string>() : NamesOf(g); var vn = Family.Str(vg, "name"); if (vn != null && !aliases.Contains(vn, StringComparer.OrdinalIgnoreCase)) aliases.Add(vn);
             var cards = new List<Tuple<FrameworkElement, double>>();
+            compactCards = (vi ? 1 : 0) + (ci ? 1 : 0) + (oi ? 1 : 0) + (gw != null ? 1 : 0) + (shield != null ? 1 : 0) + (pcs != null ? 1 : 0) > 4;   // v2.14: many cards - app names go to the tooltip
             if (vi) cards.Add(Tuple.Create(SavesCard(g, vault, vg, vr), 1.0));
             if (ci) cards.Add(Tuple.Create(ClipsCard(g, ci ? Family.Status("Clips") : null, aliases, cr), 1.5));
             if (oi) cards.Add(Tuple.Create(OverlayCard(g, Family.Status("Overlay"), aliases, orr), 0.9));
+            if (gw != null) try { cards.Add(Tuple.Create(GuardTile(gw), 0.85)); } catch { }
+            if (shield != null) try { cards.Add(Tuple.Create(ShieldTile(shield), 0.85)); } catch { }
+            if (pcs != null) try { cards.Add(Tuple.Create(AssistTile(pcs), 0.95)); } catch { }
             for (int i = 0; i < cards.Count; i++)
             {
                 familyRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(cards[i].Item2, GridUnitType.Star) });
@@ -67,10 +78,10 @@ namespace HallowHub
 
         Border FamilyCard(string icon, string title, string app, out StackPanel body)
         {
-            var b = new Border { Background = (Brush)FindResource("Panel"), CornerRadius = new CornerRadius(14), Padding = new Thickness(16, 10, 14, 10), BorderBrush = B("#2E2639"), BorderThickness = new Thickness(1), Height = 96 };
+            var b = new Border { Background = (Brush)FindResource("Panel"), CornerRadius = new CornerRadius(14), Padding = compactCards ? new Thickness(13, 10, 11, 10) : new Thickness(16, 10, 14, 10), BorderBrush = B("#2E2639"), BorderThickness = new Thickness(1), Height = 96 };
             var sp = new StackPanel();
-            var head = new DockPanel { Margin = new Thickness(0, 0, 0, 7) };
-            var an = new TextBlock { Text = app, Foreground = (Brush)FindResource("Muted"), FontSize = 10.5, VerticalAlignment = VerticalAlignment.Center };
+            var head = new DockPanel { Margin = new Thickness(0, 0, 0, 7), Background = Brushes.Transparent, ToolTip = compactCards ? app : null };
+            var an = new TextBlock { Text = app, Foreground = (Brush)FindResource("Muted"), FontSize = 10.5, VerticalAlignment = VerticalAlignment.Center, Visibility = compactCards ? Visibility.Collapsed : Visibility.Visible };
             DockPanel.SetDock(an, Dock.Right); head.Children.Add(an);
             var ic = Icons.Make(icon, 11, B("#A98BE0")); ic.Margin = new Thickness(0, 0, 8, 0); DockPanel.SetDock(ic, Dock.Left); head.Children.Add(ic);
             head.Children.Add(new TextBlock { Text = title, FontSize = 10.5, FontWeight = FontWeights.Bold, Foreground = B("#A98BE0"), VerticalAlignment = VerticalAlignment.Center });

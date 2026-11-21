@@ -192,8 +192,43 @@ namespace HallowHub
             shutBtns.Children.Add(addRunning); shutBtns.Children.Add(addShut); sp.Children.Add(shutBtns);
             var reopen = new CheckBox { Content = new TextBlock { Text = "Open them again when the game closes", TextWrapping = TextWrapping.Wrap }, Style = (Style)FindResource("Switch"), IsChecked = !d.NoReopen };
             sp.Children.Add(reopen);
-            sp.Children.Add(new TextBlock { Text = "Like clicking X - an app can still ask to save, and nothing is force-closed. Windows, game launchers and the Hallow apps are never closed. For High performance power and your Boost apps, turn on the Hallow Toolkit game session.", Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(52, 0, 0, 14) });
+            sp.Children.Add(new TextBlock { Text = "Like clicking X - an app can still ask to save, and nothing is force-closed. Windows, game launchers and the Hallow apps are never closed. For your Boost apps, turn on the Hallow Toolkit game session; for a power plan, see below.", Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(52, 0, 0, 14) });
             Closing += (o, e) => { if (DialogResult == true) { d.CloseFirst = shut; d.NoReopen = reopen.IsChecked != true; } };
+            // v2.14: a power plan while it runs (only plans already on this PC; nothing is created or changed)
+            sp.Children.Add(label("Power plan while it runs", "bolt"));
+            List<PowerPlan> plans; try { plans = PowerPlans.List(); } catch { plans = new List<PowerPlan>(); }
+            Func<string, string> planName = guid => PowerPlans.NameOf(guid, plans) ?? "a plan that isn't on this PC";
+            var allName = string.IsNullOrEmpty(s.PowerPlanAll) ? "leave it" : planName(s.PowerPlanAll);
+            var mineBox = new ComboBox { Style = (Style)FindResource("Combo"), Margin = new Thickness(0, 0, 0, 8) };
+            mineBox.Items.Add(new ComboBoxItem { Content = "Same as all games (" + allName + ")", Tag = "" });
+            mineBox.Items.Add(new ComboBoxItem { Content = "Leave the power plan as it is", Tag = "none" });
+            foreach (var p in plans) mineBox.Items.Add(new ComboBoxItem { Content = p.Name + (p.Active ? "  (in use now)" : ""), Tag = p.Guid });
+            if (PowerPlans.IsGuid(d.PowerPlan) && !plans.Any(p => p.Guid == d.PowerPlan.ToLowerInvariant())) mineBox.Items.Add(new ComboBoxItem { Content = "A plan that isn't on this PC any more", Tag = d.PowerPlan });
+            mineBox.SelectedItem = mineBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => string.Equals((string)i.Tag, d.PowerPlan ?? "", StringComparison.OrdinalIgnoreCase)) ?? mineBox.Items[0];
+            var mineRow = new DockPanel { Margin = new Thickness(0, 0, 0, 0) };
+            mineBox.Width = 250; DockPanel.SetDock(mineBox, Dock.Right); mineRow.Children.Add(mineBox);
+            mineRow.Children.Add(new TextBlock { Text = "This game", VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) });
+            sp.Children.Add(mineRow);
+            var allBox = new ComboBox { Style = (Style)FindResource("Combo"), Margin = new Thickness(0, 0, 0, 8), Width = 250 };
+            allBox.Items.Add(new ComboBoxItem { Content = "Leave the power plan as it is", Tag = "" });
+            foreach (var p in plans) allBox.Items.Add(new ComboBoxItem { Content = p.Name + (p.Active ? "  (in use now)" : ""), Tag = p.Guid });
+            if (PowerPlans.IsGuid(s.PowerPlanAll) && !plans.Any(p => p.Guid == s.PowerPlanAll.ToLowerInvariant())) allBox.Items.Add(new ComboBoxItem { Content = "A plan that isn't on this PC any more", Tag = s.PowerPlanAll });
+            allBox.SelectedItem = allBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => string.Equals((string)i.Tag, s.PowerPlanAll ?? "", StringComparison.OrdinalIgnoreCase)) ?? allBox.Items[0];
+            allBox.SelectionChanged += (o, e) => { var it = allBox.SelectedItem as ComboBoxItem; ((ComboBoxItem)mineBox.Items[0]).Content = "Same as all games (" + (it == null || (string)it.Tag == "" ? "leave it" : planName((string)it.Tag)) + ")"; };
+            var allRow = new DockPanel();
+            DockPanel.SetDock(allBox, Dock.Right); allRow.Children.Add(allBox);
+            allRow.Children.Add(new TextBlock { Text = "All games", VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) });
+            sp.Children.Add(allRow);
+            sp.Children.Add(new TextBlock { Text = plans.Count == 0 ? "Couldn't read this PC's power plans (powercfg /list)." :
+                "Hub switches to it when the game starts and back to the plan you had when it closes (unless you picked another one meanwhile). Only plans already on this PC - Hub never creates or changes one, and no admin is needed." +
+                (d.GameSession ? " With the Hallow Toolkit game session on, the session picks the power plan instead." : ""),
+                Foreground = (Brush)FindResource("Muted"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 14) });
+            Closing += (o, e) =>
+            {
+                if (DialogResult != true) return;
+                var mi = mineBox.SelectedItem as ComboBoxItem; d.PowerPlan = mi == null ? "" : (string)mi.Tag;
+                var ai = allBox.SelectedItem as ComboBoxItem; s.PowerPlanAll = ai == null ? "" : (string)ai.Tag;
+            };
             var lim =new DockPanel { Margin = new Thickness(0, 0, 0, 16) };
             var limBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 150 };
             foreach (var m in new[] { 0, 30, 60, 90, 120, 180, 240 }) limBox.Items.Add(new ComboBoxItem { Content = m == 0 ? "No limit" : HubSettings.Duration(m).Replace("h 00m", "h") + " a day", Tag = m });

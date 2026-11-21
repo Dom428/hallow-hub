@@ -153,6 +153,7 @@ namespace HallowHub
             if (close.Count > 0) lines.Add("\u2715  Closes " + string.Join(", ", close) + (d.NoReopen ? "" : " (back after)"));
             var open = d.OpenWith.Where(File.Exists).Select(CloseApps.Name).ToList();
             if (open.Count > 0) lines.Add("\u2713  Opens " + string.Join(", ", open) + (d.KeepOpen ? "" : " (closed after)"));
+            var pl = PowerLine(d); if (pl != null) lines.Add(pl);   // v2.14
             if (d.DailyLimit > 0) lines.Add("\u2022  Daily limit " + HubSettings.Duration(d.DailyLimit).Replace("h 00m", "h"));
             checklist.Text = string.Join("\n", lines);
             checklist.Visibility = lines.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
