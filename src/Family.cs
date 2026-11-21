@@ -63,6 +63,43 @@ namespace HallowHub
             catch { return false; }
         }
 
+        // v2.13: the Hallow apps whose pipe is open right now ("HallowFamily.<App>.<user>", ".test" added in tests) - names only,
+        // nothing is connected to. Lets Hub's menu host a Hallow app it doesn't know by name yet.
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        struct FindData
+        {
+            public uint Attributes; public System.Runtime.InteropServices.ComTypes.FILETIME Created, Accessed, Written;
+            public uint SizeHigh, SizeLow, Reserved0, Reserved1;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string Name;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)] public string ShortName;
+        }
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] static extern IntPtr FindFirstFile(string name, out FindData d);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] static extern bool FindNextFile(IntPtr h, out FindData d);
+        [DllImport("kernel32.dll")] static extern bool FindClose(IntPtr h);
+        public static List<string> PipeApps()
+        {
+            var r = new List<string>();
+            const string pre = "HallowFamily.";
+            var post = "." + Environment.UserName + (TestDir != null ? ".test" : "");
+            FindData d; var h = FindFirstFile(@"\\.\pipe\*", out d);
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return r;
+            try
+            {
+                int n = 0;
+                do
+                {
+                    var p = d.Name ?? "";
+                    if (p.Length > pre.Length + post.Length && p.StartsWith(pre, StringComparison.OrdinalIgnoreCase) && p.EndsWith(post, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var app = p.Substring(pre.Length, p.Length - pre.Length - post.Length);
+                        if (app.Length <= 24 && app.All(c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) && !r.Contains(app, StringComparer.OrdinalIgnoreCase)) r.Add(app);
+                    }
+                } while (++n < 5000 && FindNextFile(h, out d));
+            }
+            finally { FindClose(h); }
+            return r;
+        }
+
         // One command, one reply line ("ok", "ok {...}", "error ..."), or null when the app isn't there or doesn't answer.
         // Blocks up to ~6 s: call it off the window's thread.
         public static string Send(string app, string line) { return Send(app, line, 1500, 6000); }
@@ -181,15 +218,35 @@ namespace HallowHub
         }
     }
     // v2.4: One Hallow icon - what Hub's tray menu shows for the other Hallow apps
-    public class FamilyApp { public string App; public bool Running; public List<Dictionary<string, object>> Items = new List<Dictionary<string, object>>(); public bool Answered; }
+    public class FamilyApp { public string App; public bool Running; public List<Dictionary<string, object>> Items = new List<Dictionary<string, object>>(); public bool Answered; public bool Known = true; }
     public static class FamilyTray
     {
-        public static readonly string[] Apps = { "Mixer", "Vault", "Overlay", "Clips", "Remote", "Keys" };   // v2.11: Hallow Keys
-        // installed apps only; for the running ones, their menu items (asked in parallel, 300 ms each; an app that doesn't answer just gets Open / Exit)
+        // v2.11: Hallow Keys; v2.13: Hallow Guard and Hallow Assist. The known apps keep this order (and get "Start" while they're closed).
+        public static readonly string[] Apps = { "Mixer", "Vault", "Overlay", "Clips", "Remote", "Keys", "Guard", "Assist" };
+        // v2.13: never a submenu of their own - Hub itself, Setup (an installer) and Toolkit (it has "Open Hallow Toolkit")
+        static readonly string[] NotHosted = { "Hub", "Setup", "Toolkit" };
+        public static bool Hostable(string app) { return !NotHosted.Contains(app, StringComparer.OrdinalIgnoreCase); }
+
+        // v2.13: Hub's "tray-host" answer. "apps" = the apps Hub's menu always knows; "generic" = any other Hallow app whose pipe
+        // answers "menu" gets a submenu too (found by its pipe name), so a new Hallow app can hide its own icon without a Hub update.
+        public static string HostJson(bool on)
+        {
+            return "{\"on\":" + (on ? "true" : "false") + ",\"apps\":[" + string.Join(",", Apps.Select(a => "\"" + a + "\"")) + "],\"generic\":true}";
+        }
+
+        // installed known apps (in their order), then other running Hallow apps that answer "menu" (A-Z); for the running ones,
+        // their menu items (asked in parallel, 300 ms each; a known app that doesn't answer just gets Open / Exit, an unknown one is left out)
         public static List<FamilyApp> Fetch()
         {
             var list = new List<FamilyApp>();
             foreach (var a in Apps) if (Family.Installed(a)) list.Add(new FamilyApp { App = a, Running = Family.Running(a) });
+            try
+            {
+                foreach (var a in Family.PipeApps().OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+                    if (Hostable(a) && !Apps.Contains(a, StringComparer.OrdinalIgnoreCase) && !list.Any(x => string.Equals(x.App, a, StringComparison.OrdinalIgnoreCase)))
+                        list.Add(new FamilyApp { App = a, Running = true, Known = false });
+            }
+            catch { }
             var threads = new List<Thread>();
             foreach (var fa in list)
             {
@@ -210,7 +267,7 @@ namespace HallowHub
             }
             var until = DateTime.UtcNow.AddMilliseconds(700);
             foreach (var th in threads) th.Join(Math.Max(1, (int)(until - DateTime.UtcNow).TotalMilliseconds));
-            return list;
+            return list.Where(x => x.Known || x.Answered).ToList();
         }
     }
 }

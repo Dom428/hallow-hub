@@ -6,6 +6,11 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.13
+- Hallow Guard and Hallow Assist get their own submenus in the Hallow icon (Quick scan, Watch Downloads / Get help, Disconnect...) and hide their own tray icons. Each app's icon shows next to its name.
+- Any newer Hallow app that answers on its pipe gets a submenu too, without waiting for a Hub update.
+- Hallow Guard's safety score sits next to CPU / RAM / GPU under Your PC right now (click it to open Guard). Settings shows Guard's score, last scan and threats, and whether Hallow Assist is in a session.
+
 WHAT'S NEW IN 2.12
 - Surprise me, your way: right-click the dice for From my backlog (Ctrl+Shift+R), a favorite, or one you haven't played in a month.
 - Links on every game (the bookmark button next to Notes, and the right-click menu): Steam pages, PCGamingWiki, HowLongToBeat and your own.

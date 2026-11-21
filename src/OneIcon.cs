@@ -1,6 +1,8 @@
 ﻿// Hallow Hub v2.4 - One Hallow icon: Hub's tray icon hosts the whole family. Other Hallow apps ask Hub "tray-host" and hide
 // their own icon while Hub says on; Hub's menu gets a submenu per Hallow app (its items from "menu", Open, Exit) and shows
 // their balloons ("notify"). Turn it off in Settings and every app shows its own icon again within a few seconds.
+// v2.13: Guard and Assist join the known apps; "tray-host" also says which apps Hub lists ("apps") and that any other Hallow app
+// answering "menu" is hosted too ("generic"); each submenu shows the app's own icon.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -41,7 +43,7 @@ namespace HallowHub
             {
                 bool on = false;
                 if (!OnUi(() => { on = S.OneIcon && tray != null && tray.Visible; })) return "error busy";
-                return "ok {\"on\":" + (on ? "true" : "false") + "}";
+                return "ok " + FamilyTray.HostJson(on);   // v2.13: + the apps it lists and "generic" (Hallow Guard hides its icon only when listed)
             }
             if (cmd == "notify")
             {
@@ -88,11 +90,11 @@ namespace HallowHub
             var name = "Hallow " + fa.App;
             if (!fa.Running)
             {
-                var st = new WF.ToolStripMenuItem("Start " + name);
+                var st = new WF.ToolStripMenuItem("Start " + name) { Image = AppImage(fa.App) };
                 st.Click += (s, e) => { try { Process.Start(new ProcessStartInfo(Family.Exe(fa.App), "--tray") { UseShellExecute = true }); } catch (Exception ex) { Status("Couldn't start " + name + ": " + ex.Message); } };
                 return st;
             }
-            var sub = new WF.ToolStripMenuItem(name);
+            var sub = new WF.ToolStripMenuItem(name) { Image = AppImage(fa.App) };
             var open = new WF.ToolStripMenuItem("Open"); open.Font = new System.Drawing.Font(open.Font, System.Drawing.FontStyle.Bold);
             open.Click += (s, e) => FamilyMenuSend(fa.App, "open");
             sub.DropDownItems.Add(open);
@@ -115,6 +117,23 @@ namespace HallowHub
             exit.Click += (s, e) => FamilyMenuSend(fa.App, "quit");
             sub.DropDownItems.Add(exit);
             return sub;
+        }
+
+        // v2.13: each app's own icon next to its name (from its exe; none when it isn't installed in the usual place)
+        static readonly Dictionary<string, System.Drawing.Bitmap> appImages = new Dictionary<string, System.Drawing.Bitmap>(StringComparer.OrdinalIgnoreCase);
+        static System.Drawing.Image AppImage(string app)
+        {
+            System.Drawing.Bitmap b;
+            lock (appImages)
+            {
+                if (!appImages.TryGetValue(app, out b))
+                {
+                    b = null;
+                    try { if (Family.Installed(app)) using (var ic = System.Drawing.Icon.ExtractAssociatedIcon(Family.Exe(app))) using (var big = ic.ToBitmap()) b = new System.Drawing.Bitmap(big, 16, 16); } catch { b = null; }
+                    appImages[app] = b;
+                }
+                return b == null ? null : (System.Drawing.Image)b.Clone();
+            }
         }
 
         void FamilyMenuSend(string app, string line)

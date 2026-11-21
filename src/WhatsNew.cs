@@ -13,6 +13,7 @@ namespace HallowHub
     {
         // Newest first. One or two short lines per version.
         public static readonly Tuple<string, string[]>[] Notes = {
+            Tuple.Create("2.13", new[] { "Hallow Guard and Hallow Assist get their own submenus in the Hallow icon (and hide their own tray icons) - every app shows its icon there now", "Hallow Guard's safety score sits next to CPU / RAM / GPU (click it to open Guard); Settings shows Guard's last scan and whether Assist is in a session" }),
             Tuple.Create("2.12", new[] { "Surprise me, your way: right-click the dice for From my backlog (Ctrl+Shift+R), a favorite, or one you haven't played in a month", "Links on every game: Steam pages, PCGamingWiki, HowLongToBeat and your own", "Close apps when a game starts (opened again after) - the When this game starts card lists everything that happens", "Stats: Your library - play status split, backlog, finished games and your ratings" }),
             Tuple.Create("2.11", new[] { "Hallow Keys (the new password manager) gets its own submenu in the Hallow icon - Lock now, Generate password, Open, Exit" }),
             Tuple.Create("2.10", new[] { "Play status (Playing, Beaten, Completed, On hold, Abandoned, Plan to play) and your own stars under Play - as filters and sorts", "Search finds genres, developers, notes and collections too - and genre:, dev:, status:, col:, note:, store: narrow it down" }),

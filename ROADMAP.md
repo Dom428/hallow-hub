@@ -25,6 +25,7 @@
 | **2.10** | Play status and your own rating (filters and sorts), search across genres, developer, notes, collections and status |
 | **2.11** | Hallow Keys in the Hallow icon (its submenu, Start when installed) |
 | **2.12** | Surprise me from your backlog, links per game (Steam, PCGamingWiki, HowLongToBeat, your own), close apps when a game starts, Your library on Stats, pipe open / quit |
+| **2.13** | Hallow Guard and Hallow Assist in the Hallow icon (tray-host lists them; any Hallow app that answers `menu` is hosted), app icons in the menu, Guard's safety score next to the PC check, Guard / Assist status in Settings |
 
 ## Next
 

@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.12.0.0")]
-[assembly: AssemblyFileVersion("2.12.0.0")]
+[assembly: AssemblyVersion("2.13.0.0")]
+[assembly: AssemblyFileVersion("2.13.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.12";
+        public const string Version = "2.13";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -1078,7 +1078,8 @@ namespace HallowHub
             if (was != now || (presets == null) != (was == "")) ShowHero();
             if (linkInfo != null)
                 linkInfo.Text = "Hallow Mixer: " + (presets == null ? "not running (start it to pick presets per game)" : "connected - " + presets.Count + " presets") + "\n" +
-                    "Hallow Toolkit: " + (Toolkit.Script == null ? "not installed" : Toolkit.CanSession ? "found - game sessions available" : "found - update to 5.2 for game sessions");
+                    "Hallow Toolkit: " + (Toolkit.Script == null ? "not installed" : Toolkit.CanSession ? "found - game sessions available" : "found - update to 5.2 for game sessions") +
+                    FamilyAppLines();   // v2.13: Hallow Guard and Hallow Assist, when installed
             UpdateStatus();
         }
 
@@ -1406,6 +1407,9 @@ namespace HallowHub
             Snap.Save(this, System.IO.Path.Combine(dir, "settings.png"), 1180, 780);
             try { var cf = Crash.Newest(); if (cf != null) Snap.Save(new CrashWindow(cf), System.IO.Path.Combine(dir, "crash.png"), 460, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "crash.err.txt"), ex.ToString()); }
             try { File.WriteAllText(System.IO.Path.Combine(dir, "traymenu.txt"), FamilyMenuText()); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "traymenu.err.txt"), ex.ToString()); }
+            // v2.13: the Hallow icon's menu as a picture, and Settings / the PC check with Hallow Guard and Hallow Assist
+            try { SnapTrayMenu(System.IO.Path.Combine(dir, "traymenu.png")); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "traymenu.err.txt"), ex.ToString()); }
+            try { CheckLinks(); Snap.Save(this, System.IO.Path.Combine(dir, "settings-213.png"), 1180, 900); File.WriteAllText(System.IO.Path.Combine(dir, "linkinfo.txt"), linkInfo.Text + "\r\ntray-host (icon showing): ok " + FamilyTray.HostJson(true)); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "settings213.err.txt"), ex.ToString()); }
             settingsPanel.Visibility = Visibility.Collapsed;
             FillStats(); statsPanel.Visibility = Visibility.Visible;
             Snap.Save(this, System.IO.Path.Combine(dir, "stats.png"), 1180, 780);

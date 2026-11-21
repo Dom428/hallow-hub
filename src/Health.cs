@@ -84,6 +84,7 @@ namespace HallowHub
                 var drive = PlayCopy(sel).Drive;
                 try { if (drive != null) { var di = new DriveInfo(drive); if (di.IsReady) { var gb = di.AvailableFreeSpace / 1073741824.0; pill("hard-drive", drive + " " + gb.ToString("0") + " GB free", gb < 10 ? 2 : gb < 30 ? 1 : 0); } } } catch { }
             }
+            AddGuardPill();   // v2.13: Hallow Guard's safety score
             if (pcPills.Children.Count == 0) pcPills.Children.Add(new TextBlock { Text = "Checking...", FontSize = 11, Foreground = (Brush)FindResource("Muted") });
         }
 
