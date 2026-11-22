@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.17.0.0")]
-[assembly: AssemblyFileVersion("2.17.0.0")]
+[assembly: AssemblyVersion("2.18.0.0")]
+[assembly: AssemblyFileVersion("2.18.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.17";
+        public const string Version = "2.18";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -230,6 +230,7 @@ namespace HallowHub
             wishBtn = new Button { Content = "Wishlist", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your Steam wishlist and what's on sale" };
             wishBtn.Click += (s, e) => OpenWishlist(); UpdateWishButton();   // v2.7
             right.Children.Add(wishBtn);
+            right.Children.Add(BuildSteamAccountButton());   // v2.18: switch Steam accounts
             familyBtn = BuildFamilyButton(); right.Children.Add(familyBtn);   // v2.17: the Hallow family page
             right.Children.Add(statsBtn);
             storageBtn = new ToggleButton { Content = "Storage", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Storage: what's on each drive, and what you could free up" };
@@ -1420,7 +1421,7 @@ namespace HallowHub
             trayGames = new WF.ToolStripMenuItem("Play"); menu.Items.Add(trayGames); menu.Items.Add(bigItem);
             menu.Items.Add(new WF.ToolStripSeparator());
             var quit = quitItem = new WF.ToolStripMenuItem("Quit"); quit.Click += (s, e) => Quit(); menu.Items.Add(quit);
-            menu.Opening += (s, e) => { UpdateTrayMenu(); UpdateFamilyMenu(menu); };   // v2.4: the Hallow family's submenus
+            menu.Opening += (s, e) => { UpdateTrayMenu(); UpdateFamilyMenu(menu); UpdateTraySteamMenu(menu); };   // v2.18: Steam account   // v2.4: the Hallow family's submenus
             tray.ContextMenuStrip = menu;
             tray.MouseClick += (s, e) => { if (e.Button == WF.MouseButtons.Left) Dispatcher.BeginInvoke(new Action(ShowQuick)); };   // v2.0: quick launcher
             tray.MouseDoubleClick += (s, e) => { if (e.Button == WF.MouseButtons.Left) Dispatcher.BeginInvoke(new Action(() => { if (quick != null) quick.Close(); ShowFromTray(); })); };
