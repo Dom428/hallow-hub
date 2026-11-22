@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.16.0.0")]
-[assembly: AssemblyFileVersion("2.16.0.0")]
+[assembly: AssemblyVersion("2.17.0.0")]
+[assembly: AssemblyFileVersion("2.17.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.16";
+        public const string Version = "2.17";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -216,10 +216,10 @@ namespace HallowHub
             var refresh = new Button { Content = "Refresh", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Look for newly installed games" };
             refresh.Click += (s, e) => { Rescan(); Status("Library refreshed - " + games.Count + " games."); }; right.Children.Add(refresh);
             gearBtn = new ToggleButton { Content = "Settings", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), ToolTip = "Settings" };
-            gearBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
+            gearBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; if (familyBtn != null) familyBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
             gearBtn.Unchecked += (s, e) => settingsPanel.Visibility = Visibility.Collapsed;
             statsBtn = new ToggleButton { Content = "Stats", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your playtime" };
-            statsBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
+            statsBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; if (familyBtn != null) familyBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
             statsBtn.Unchecked += (s, e) => statsPanel.Visibility = Visibility.Collapsed;
             var bigBtn = new Button { Content = "Big Picture", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Big Picture: full screen for the couch (F11, or View on a controller)" };
             bigBtn.Click += (s, e) => OpenBigPicture();
@@ -230,9 +230,10 @@ namespace HallowHub
             wishBtn = new Button { Content = "Wishlist", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your Steam wishlist and what's on sale" };
             wishBtn.Click += (s, e) => OpenWishlist(); UpdateWishButton();   // v2.7
             right.Children.Add(wishBtn);
+            familyBtn = BuildFamilyButton(); right.Children.Add(familyBtn);   // v2.17: the Hallow family page
             right.Children.Add(statsBtn);
             storageBtn = new ToggleButton { Content = "Storage", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Storage: what's on each drive, and what you could free up" };
-            storageBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; statsBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
+            storageBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; statsBtn.IsChecked = false; if (familyBtn != null) familyBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
             storageBtn.Unchecked += (s, e) => storagePanel.Visibility = Visibility.Collapsed;
             right.Children.Add(storageBtn);
             right.Children.Add(gearBtn);
@@ -381,6 +382,7 @@ namespace HallowHub
             settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
             statsPanel = BuildStats(); outer.Children.Add(statsPanel);
             storagePanel = BuildStorage(); outer.Children.Add(storagePanel);
+            familyPanel = BuildFamilyPage(); outer.Children.Add(familyPanel);   // v2.17
             newsPanel = BuildNews(); outer.Children.Add(newsPanel);
             wishPanel = BuildWishlist(); outer.Children.Add(wishPanel);
             aboutPanel = BuildAbout(); outer.Children.Add(aboutPanel);
@@ -1224,6 +1226,7 @@ namespace HallowHub
             if (aboutPanel.Visibility == Visibility.Visible) { aboutPanel.Visibility = Visibility.Collapsed; return true; }
             if (statsBtn.IsChecked == true) { statsBtn.IsChecked = false; return true; }
             if (storageBtn.IsChecked == true) { storageBtn.IsChecked = false; return true; }
+            if (familyBtn.IsChecked == true) { familyBtn.IsChecked = false; return true; }
             if (gearBtn.IsChecked == true) { gearBtn.IsChecked = false; return true; }
             if (search.Text.Length > 0) { search.Text = ""; return true; }
             return false;
@@ -1652,6 +1655,16 @@ namespace HallowHub
                 ShowFamily(true); Snap.Save(this, System.IO.Path.Combine(dir, "family-tiles.png"), 1180, 780); Snap.Save(this, System.IO.Path.Combine(dir, "family-tiles-wide.png"), 1500, 780);
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "v214.err.txt"), ex.ToString()); }
+            // v2.17: the Family page - every Hallow app with its live line and quick actions (and the whole page on a tall window)
+            try
+            {
+                familyBtn.IsChecked = true;
+                Snap.Save(this, System.IO.Path.Combine(dir, "family.png"), 1180, 900);
+                var keepMax = familyScroll.MaxHeight; familyScroll.MaxHeight = 3000; Snap.Save(this, System.IO.Path.Combine(dir, "family-all.png"), 1180, 1300); familyScroll.MaxHeight = keepMax;
+                familyBtn.IsChecked = false;
+                File.WriteAllText(System.IO.Path.Combine(dir, "family-cards.txt"), FamilyCardsText());
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "family.err.txt"), ex.ToString()); }
             // v2.15: more windows (What's new, Emulators, notes), and light / dark switched live - by the Look setting and by rewriting the TEST theme.json
             try
             {

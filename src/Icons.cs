@@ -24,6 +24,8 @@ namespace HallowHub
             { "Back up now", "floppy-disk" }, { "News", "newspaper" }, { "About", "circle-info" }, { "Emulators...", "compact-disc" }, { "Emulators", "compact-disc" }, { "Add emulator", "plus" }, { "Browse...", "folder-open" }, { "Wishlist", "cart-shopping" }, { "Check now", "arrows-rotate" }, { "Back up library...", "file-export" }, { "Import library...", "file-import" }, { "Read more", "arrow-up-right-from-square" }, { "Show details", "note-sticky" }, { "Backing up...", "spinner" }, { "Restore...", "rotate-left" },
             { "OK", "check" }, { "Cancel", "xmark" }, { "Got it", "check" }, { "Store page", "arrow-up-right-from-square" },
             { "Links", "bookmark" }, { "Add link", "plus" }, { "Add a running app", "power-off" },
+            { "Family", "people-group" }, { "Open", "arrow-up-right-from-square" }, { "Install", "download" }, { "Pause all", "pause" }, { "Resume all", "play" },   // v2.17: the Family page
+            { "Connect fastest", "bolt" }, { "Disconnect", "power-off" }, { "Lock now", "lock" }, { "Set address...", "location-dot" }, { "Change address...", "pen" }, { "How to set up", "circle-info" },
         };
         // label starts with -> icon
         static readonly string[][] Prefixes = {

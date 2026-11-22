@@ -50,13 +50,15 @@ namespace HallowHub
                 if (!HallowLook.Refresh() && !force) return;
                 Program.ReloadTheme(Application.Current, this);   // v2.16: other open windows (dialogs, Big Picture) restyle live
                 accentCache.Clear();
-                bool settingsOpen = gearBtn != null && gearBtn.IsChecked == true;
+                bool settingsOpen = gearBtn != null && gearBtn.IsChecked == true, familyOpen = familyBtn != null && familyBtn.IsChecked == true;
+                if (familyTimer != null) familyTimer.Stop();
                 Background = (Brush)FindResource("Bg"); Foreground = (Brush)FindResource("Text"); HallowLook.TitleBar(this);   // v2.15
                 if (notesPop != null) notesPop.IsOpen = false; if (linksPop != null) linksPop.IsOpen = false; notesPop = null; linksPop = null;   // rebuilt with the new colours
                 Content = Build();
                 RebuildChips(); RebuildGrid(); ShowHero(); ShowPc(); CheckLinks();
                 familySig = null; ShowFamily(true); statusUntil = DateTime.MinValue; UpdateStatus();
                 if (settingsOpen) gearBtn.IsChecked = true;
+                if (familyOpen) familyBtn.IsChecked = true;   // v2.17
             }
             catch { }
         }

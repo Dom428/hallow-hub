@@ -29,6 +29,7 @@
 | **2.14** | Power plan while a game runs (per game or all games, back after; powercfg /setactive only), family cards for Hallow Guard (score, weekly change, hardening), Hallow Shield (blocked today / week) and Hallow Assist (your PCs, Connect) |
 | **2.15** | Light and dark mode: follows the family mode from Hallow Toolkit (light / dark / same as Windows, live), Settings > Look (Follow Hallow / Light / Dark), light palette with a darkened accent for text, no glows, title bar to match |
 | **2.16** | Light mode readability fixes: green / amber / lilac and the accent as text darkened to >= 4.5:1 on every light panel (accent darkened against Panel 2, same rule as Hallow Toolkit 5.16), filled accents that read under 4.5:1 (violet) get a darker fill with white text, open dialogs restyle live on a mode or accent change |
+| **2.17** | The whole family: a Family page with every Hallow app (Play / Protect / Everyday) - installed / running / not installed, version, a live line from each status.json through a privacy filter (counts and states only), quick actions over the pipes (VPN Connect fastest / Disconnect on IKEv2 only, Torrents Pause / Resume all, Financials Lock now, Open, Settings), Install hands off to Hallow Setup or the releases page, Hallow Places health from your own address; newer apps in a fixed order in the Hallow icon with Start a Hallow app |
 
 ## Next
 
@@ -54,6 +55,13 @@ What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
 - HowLongToBeat times (Playnite add-on) - **not buildable**: no public API (2.12 adds a HowLongToBeat link that opens the site's search in your browser)
 ### Fixes from real use
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
+
+### Family page: what the apps could share later (2.17 shows less where a field doesn't exist)
+- Hallow Setup: a command-line way to install one app (Hub opens Setup and you tick the app), and a fixed install folder Hub can find
+- Hallow VPN: say whether the next connect / disconnect needs Windows (UAC) instead of Hub working it out from `protocol`; a `connect` that doesn't change the remembered target
+- Hallow Browser: an `open settings` pipe command, and Shield's blocked count for Hallow Browser itself (Shield's bridge only names Chrome, Edge, Brave, Opera, Vivaldi, Chromium and Firefox)
+- Hallow Places: a PC-side status (it's a server with only `/healthz`; Hub asks for its address)
+- Hallow Mixer: a status.json (the card can only say running / not running); Hallow Remote and Hallow Keys: `open settings`
 
 ### Later
 - Friends and achievements: need each store's sign-in or an API key, so only if it can be done without Hub holding your passwords

@@ -6,6 +6,13 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.17
+- The whole family: the new Family button (next to Stats) shows every Hallow app, grouped as Play, Protect and Everyday - installed, running or not installed, its version, and a live line from the app (VPN connected and the kill switch, torrents downloading, unread mail, browser tabs, Shield blocked today, Home Assistant connected...). Counts and states only - never subjects, names, places, amounts or addresses.
+- Quick actions on the cards, only when you click: Connect fastest / Disconnect (Hallow VPN on IKEv2 - a NordLynx connect asks Windows, so that stays in Hallow VPN), Pause all / Resume all (Hallow Torrents), Lock now (Hallow Financials), Open and Settings. Nothing pops up.
+- A missing app shows Install: it opens Hallow Setup, or the app's GitHub releases page - Hub downloads nothing itself.
+- Hallow Places: type your server's address on its card and Hub shows whether it's reachable (only its health check is read).
+- The Hallow icon lists the newer apps in a fixed order, and the ones you have that aren't running are under Start a Hallow app.
+
 WHAT'S NEW IN 2.16
 - Light mode readability fixes: green, amber and lilac text and the accent where it's text are darker, so every small text reads clearly on every light panel. A filled accent that would be hard to read (like violet) gets a deeper shade with white text.
 - Windows that are already open (game settings, emulators, What's new) switch light / dark and the accent straight away.

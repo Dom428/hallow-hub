@@ -73,6 +73,7 @@ namespace HallowHub
             List<FamilyApp> apps; try { apps = FamilyTray.Fetch(); } catch { return; }
             var add = new List<WF.ToolStripItem>();
             foreach (var fa in apps) add.Add(FamilyMenuFor(fa));
+            try { var st = StartMenuFor(FamilyTray.Startable()); if (st != null) add.Add(st); } catch { }   // v2.17
             if (Toolkit.Script != null)
             {
                 var tk = new WF.ToolStripMenuItem("Open Hallow Toolkit");
@@ -119,6 +120,21 @@ namespace HallowHub
             return sub;
         }
 
+        // v2.17: the newer apps you have that aren't running, under one submenu (Browser starts with its window, the others in the tray)
+        WF.ToolStripMenuItem StartMenuFor(List<string> apps)
+        {
+            if (apps == null || apps.Count == 0) return null;
+            var sub = new WF.ToolStripMenuItem("Start a Hallow app");
+            foreach (var a in apps)
+            {
+                var app = a; var name = "Hallow " + app;
+                var mi = new WF.ToolStripMenuItem(name) { Image = AppImage(app) };
+                mi.Click += (s, e) => { try { Process.Start(new ProcessStartInfo(Family.Exe(app), FamilyTray.StartArgs(app)) { UseShellExecute = true }); } catch (Exception ex) { Status("Couldn't start " + name + ": " + ex.Message); } };
+                sub.DropDownItems.Add(mi);
+            }
+            return sub;
+        }
+
         // v2.13: each app's own icon next to its name (from its exe; none when it isn't installed in the usual place)
         static readonly Dictionary<string, System.Drawing.Bitmap> appImages = new Dictionary<string, System.Drawing.Bitmap>(StringComparer.OrdinalIgnoreCase);
         static System.Drawing.Image AppImage(string app)
@@ -162,6 +178,7 @@ namespace HallowHub
                 if (mi != null) foreach (WF.ToolStripItem c in mi.DropDownItems) dump(c, ind + "    ");
             };
             foreach (var fa in FamilyTray.Fetch()) dump(FamilyMenuFor(fa), "");
+            var st = StartMenuFor(FamilyTray.Startable()); if (st != null) dump(st, "");   // v2.17
             return sb.ToString();
         }
     }

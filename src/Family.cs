@@ -223,6 +223,13 @@ namespace HallowHub
     {
         // v2.11: Hallow Keys; v2.13: Hallow Guard and Hallow Assist. The known apps keep this order (and get "Start" while they're closed).
         public static readonly string[] Apps = { "Mixer", "Vault", "Overlay", "Clips", "Remote", "Keys", "Guard", "Assist" };
+        // v2.17: the newer apps - in this order after the known ones while they run (so they don't jump around A-Z); the installed ones
+        // that aren't running go under one "Start a Hallow app" submenu instead of a Start line each
+        public static readonly string[] Newer = { "VPN", "Torrents", "Browser", "Tasks", "Email", "Financials", "Home" };
+        public static bool IsNewer(string app) { return Newer.Contains(app, StringComparer.OrdinalIgnoreCase); }
+        public static List<string> Startable() { return Newer.Where(a => Family.Installed(a) && !Family.Running(a)).ToList(); }
+        // Browser has no tray icon - it starts with its window; the others start in the tray
+        public static string StartArgs(string app) { return string.Equals(app, "Browser", StringComparison.OrdinalIgnoreCase) ? "" : "--tray"; }
         // v2.13: never a submenu of their own - Hub itself, Setup (an installer) and Toolkit (it has "Open Hallow Toolkit")
         static readonly string[] NotHosted = { "Hub", "Setup", "Toolkit" };
         public static bool Hostable(string app) { return !NotHosted.Contains(app, StringComparer.OrdinalIgnoreCase); }
@@ -231,7 +238,7 @@ namespace HallowHub
         // answers "menu" gets a submenu too (found by its pipe name), so a new Hallow app can hide its own icon without a Hub update.
         public static string HostJson(bool on)
         {
-            return "{\"on\":" + (on ? "true" : "false") + ",\"apps\":[" + string.Join(",", Apps.Select(a => "\"" + a + "\"")) + "],\"generic\":true}";
+            return "{\"on\":" + (on ? "true" : "false") + ",\"apps\":[" + string.Join(",", Apps.Concat(Newer).Select(a => "\"" + a + "\"")) + "],\"generic\":true}";
         }
 
         // installed known apps (in their order), then other running Hallow apps that answer "menu" (A-Z); for the running ones,
@@ -240,10 +247,11 @@ namespace HallowHub
         {
             var list = new List<FamilyApp>();
             foreach (var a in Apps) if (Family.Installed(a)) list.Add(new FamilyApp { App = a, Running = Family.Running(a) });
+            foreach (var a in Newer) if (Family.Running(a)) list.Add(new FamilyApp { App = a, Running = true });   // v2.17: running newer apps, in their order
             try
             {
                 foreach (var a in Family.PipeApps().OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
-                    if (Hostable(a) && !Apps.Contains(a, StringComparer.OrdinalIgnoreCase) && !list.Any(x => string.Equals(x.App, a, StringComparison.OrdinalIgnoreCase)))
+                    if (Hostable(a) && !Apps.Contains(a, StringComparer.OrdinalIgnoreCase) && !IsNewer(a) && !list.Any(x => string.Equals(x.App, a, StringComparison.OrdinalIgnoreCase)))
                         list.Add(new FamilyApp { App = a, Running = true, Known = false });
             }
             catch { }
