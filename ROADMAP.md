@@ -32,6 +32,7 @@
 | **2.17** | The whole family: a Family page with every Hallow app (Play / Protect / Everyday) - installed / running / not installed, version, a live line from each status.json through a privacy filter (counts and states only), quick actions over the pipes (VPN Connect fastest / Disconnect on IKEv2 only, Torrents Pause / Resume all, Financials Lock now, Open, Settings), Install hands off to Hallow Setup or the releases page, Hallow Places health from your own address; newer apps in a fixed order in the Hallow icon with Start a Hallow app |
 | **2.18** | Switch Steam accounts: the accounts Steam remembers (loginusers.vdf) on a Steam button and in the Hallow icon; Steam closed, AutoLoginUser set and Steam reopened (never during a game, no passwords) |
 | **2.19** | Keep the family running after updates: Hub remembers the running Hallow apps (app, exe, last seen) and starts one again with --tray when it went away and its exe changed within 5 minutes (new exe stable for 5 s, one retry); never an app you quit or one that wasn't running; Hallow Browser gets a note only; one note, held during games; Settings switch + per-app opt-out; Start the apps I usually run on the Family page; pipe `family-watch`; percentages without a space (45%) everywhere Hub shows them |
+| **2.20** | The newer apps' newer data on the Family page: the privacy filter reads VPN 1.2.6 `nextProtocol` / `needsUac` (two flags) / `target` (a target word, country or server name only) / `windowsLogin`, Tasks `busyApps` / `busyPercent` / `notResponding`, Home `demo`, Email 1.1 per-account `label` (only when `labelUserChosen` and not `labelHasAddress` / no @, else "Account N") / `unread` / attention (its plain text, else Hub's own words), Gear devices (kind, name, battery, charging, `lastKnown`, `waiting`, time - never `id`) and `game`, Mixer 3.27 `spotifyAdMuted` / `adsMutedToday`; VPN buttons from `needsUac` and `windowsLogin`, `connect fastest --keep-target` for 1.2.6+ (plain `connect fastest` before); Tasks' pipe `quick` on a background thread (used while < 10 s old, asked at most every 2 s); a Gear card in Play with Refresh (`refresh`, its answer in words through the status line; off during a game) and Settings; Tasks' "Not responding..." opens its Processes; Home Demo; Mixer card |
 
 ## Next
 
@@ -61,10 +62,10 @@ What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
 
 ### Family page: what the apps could share later (2.17 shows less where a field doesn't exist)
 - Hallow Setup: a command-line way to install one app (Hub opens Setup and you tick the app), and a fixed install folder Hub can find
-- Hallow VPN: say whether the next connect / disconnect needs Windows (UAC) instead of Hub working it out from `protocol`; a `connect` that doesn't change the remembered target
+- ~~Hallow VPN: say whether the next connect / disconnect needs Windows (UAC); a `connect` that doesn't change the remembered target~~ - **done in 2.20** (VPN 1.2.6 `needsUac`, `--keep-target`)
 - Hallow Browser: an `open settings` pipe command, and Shield's blocked count for Hallow Browser itself (Shield's bridge only names Chrome, Edge, Brave, Opera, Vivaldi, Chromium and Firefox)
 - Hallow Places: a PC-side status (it's a server with only `/healthz`; Hub asks for its address)
-- Hallow Mixer: a status.json (the card can only say running / not running); Hallow Remote and Hallow Keys: `open settings`
+- ~~Hallow Mixer: a status.json~~ - **done in 2.20** (Mixer 3.27: Spotify ads muted); Hallow Remote and Hallow Keys: `open settings`
 
 ### Later
 - Friends and achievements: need each store's sign-in or an API key, so only if it can be done without Hub holding your passwords

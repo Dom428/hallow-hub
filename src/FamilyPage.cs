@@ -28,6 +28,7 @@ namespace HallowHub
     public class CardAction
     {
         public string Label, Kind, Line, Tip, OkText, FailText;   // Kind: pipe (sends Line), start, install, url (opens Line), places-set
+        public Func<string, string> OkFrom;   // v2.20: the status line from the app's "ok {...}" answer (e.g. Gear's refresh: started / too soon / during a game)
         public bool Enabled = true, IconOnly;
     }
     public class AppCard
@@ -47,13 +48,13 @@ namespace HallowHub
     {
         public static readonly string[] Groups = { "Play", "Protect", "Everyday" };
         public static readonly string[][] Layout = {
-            new[] { "Mixer", "Overlay", "Clips", "Vault", "Remote", "Browser" },
+            new[] { "Mixer", "Overlay", "Clips", "Vault", "Remote", "Browser", "Gear" },
             new[] { "Guard", "Shield", "VPN", "Keys", "Assist" },
             new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places" } };
         public static IEnumerable<string> AllApps { get { return Layout.SelectMany(x => x); } }
         // Shield is a browser extension (its bridge writes status.json) and Places a server on the NAS: no exe, no pipe
         public static bool WindowsApp(string app) { return app != "Shield" && app != "Places"; }
-        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home" };   // "open settings" on their pipes
+        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home", "Gear" };   // "open settings" on their pipes
         public static bool HasSettings(string app) { return WithSettings.Contains(app); }
         public static string Icon(string app)
         {
@@ -63,6 +64,7 @@ namespace HallowHub
                 case "Remote": return "mobile-screen"; case "Browser": return "globe"; case "Guard": return "shield-halved"; case "Shield": return "eye-slash";
                 case "VPN": return "lock"; case "Keys": return "key"; case "Assist": return "hand-holding-heart"; case "Tasks": return "gauge-high";
                 case "Torrents": return "magnet"; case "Email": return "envelope"; case "Financials": return "wallet"; case "Home": return "house"; case "Places": return "location-dot";
+                case "Gear": return "keyboard";
             }
             return "gamepad";
         }
@@ -76,6 +78,7 @@ namespace HallowHub
                 case "Keys": return "Your passwords, on your PC"; case "Assist": return "Remote help for friends and family"; case "Tasks": return "A better Task Manager";
                 case "Torrents": return "Torrents that only run over your VPN"; case "Email": return "A private email client"; case "Financials": return "Private personal finance";
                 case "Home": return "Pets and smart home through Home Assistant"; case "Places": return "Family location sharing on your NAS";
+                case "Gear": return "Batteries of your mouse, headset and pads";
             }
             return "";
         }
@@ -87,15 +90,17 @@ namespace HallowHub
         // p = a name turned into true/false (a game being played, VPN home mode), accounts / browsers = counts and browser names only.
         static readonly string[] Common = { "version v", "updated t", "lastCrash t" };
         static readonly Dictionary<string, string[]> Allowed = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase) {
-            { "VPN", new[] { "running b", "connected b", "connecting b", "server r:^[a-z]{2}(-[a-z]{2})?[0-9]{1,5}$", "country r:^[A-Za-z][A-Za-z .'()-]{1,39}$", "protocol e:IKEv2|NordLynx", "killSwitch b", "paused b", "game p", "home p", "account b" } },
+            { "VPN", new[] { "running b", "connected b", "connecting b", "server r:^[a-z]{2}(-[a-z]{2})?[0-9]{1,5}$", "country r:^[A-Za-z][A-Za-z .'()-]{1,39}$", "protocol e:IKEv2|NordLynx", "killSwitch b", "paused b", "game p", "home p", "account b",
+                "nextProtocol e:IKEv2|NordLynx", "needsUac uac", "target r:^(?i:fastest|gaming|p2p|[a-z]{2}(-[a-z]{2})?([0-9]{1,5})?)$", "windowsLogin b" } },   // v2.20: VPN 1.2.6
             { "Torrents", new[] { "running b", "total n", "active n", "seeding n", "paused n", "queued n", "done n", "flagged n", "downKBps n", "upKBps n", "vpnLocked b", "held e:vpn|game", "game p" } },
             { "Browser", new[] { "running b", "tabs n", "asleep n", "windows n", "gameMode b", "shield e:extension|fallback|missing|starting", "downloadsRunning n" } },
             { "Email", new[] { "running b", "unread n", "outbox n", "accounts accounts" } },
-            { "Tasks", new[] { "running b", "cpu n", "ram n", "gpu n", "processes n", "sampling b", "game p", "lowered n" } },
+            { "Tasks", new[] { "running b", "cpu n", "ram n", "gpu n", "processes n", "sampling b", "game p", "lowered n", "busyApps n", "busyPercent n", "notResponding n" } },   // v2.20: Tasks 1.2 / 1.4 counts (never names)
             { "Financials", new[] { "running b", "vault b", "locked b" } },
-            { "Home", new[] { "running b", "configured b", "connected b", "entities n", "cameras n", "camerasOnline n", "alerts n" } },
+            { "Home", new[] { "running b", "configured b", "connected b", "entities n", "cameras n", "camerasOnline n", "alerts n", "demo b" } },
             { "Shield", new[] { "blockedToday n", "blockedWeek n", "browsers browsers" } },
-            { "Mixer", new string[0] },
+            { "Mixer", new[] { "spotifyAdMuted b", "adsMutedToday n" } },   // v2.20: Mixer 3.27 (counts only - never what played)
+            { "Gear", new[] { "running b", "game p", "devices gear" } },   // v2.20: model names and batteries only (never a Bluetooth id)
             { "Vault", new[] { "running b", "busy b", "games c" } },
             { "Clips", new[] { "recording b", "seconds n", "clips c" } },
             { "Overlay", new[] { "visible b" } },
@@ -109,7 +114,8 @@ namespace HallowHub
         {
             string[] f; if (!Allowed.TryGetValue(app ?? "", out f)) return new string[0];
             var keys = Common.Concat(f).Select(x => x.Substring(0, x.IndexOf(' '))).ToList();
-            if (keys.Contains("accounts")) keys.Add("accountErrors");
+            if (keys.Contains("accounts")) { keys.Add("accountErrors"); keys.Add("accountList"); }
+            if (keys.Contains("needsUac")) { keys.Remove("needsUac"); keys.Add("uacConnect"); keys.Add("uacDisconnect"); }
             return keys;
         }
         public static Dictionary<string, object> Safe(string app, Dictionary<string, object> raw)
@@ -140,8 +146,11 @@ namespace HallowHub
                     {
                         var a = v as ArrayList; if (a == null) continue;
                         d["accounts"] = (double)a.Count;
-                        d["accountErrors"] = (double)a.Cast<object>().Count(o => { var e = o as Dictionary<string, object>; return e != null && Family.Str(e, "state") == "error"; });
+                        d["accountErrors"] = (double)a.Cast<object>().Count(o => { var e = o as Dictionary<string, object>; return e != null && (Family.Str(e, "state") == "error" || Family.Bool(e, "needsAttention") || AttentionCodes.Contains(Family.Str(e, "attention"))); });
+                        d["accountList"] = EmailAccounts(a);   // v2.20: Email 1.1 - a label only when you chose it and it isn't an address
                     }
+                    else if (kind == "uac") { var u = v as Dictionary<string, object>; if (u != null) { object x; if (u.TryGetValue("connect", out x) && x is bool) d["uacConnect"] = x; if (u.TryGetValue("disconnect", out x) && x is bool) d["uacDisconnect"] = x; } }
+                    else if (kind == "gear") { var a = v as ArrayList; if (a != null) d["devices"] = GearDevices(a); }
                     else if (kind == "browsers")
                     {
                         var a = v as ArrayList; if (a == null) continue;
@@ -187,10 +196,29 @@ namespace HallowHub
         // what else a card needs to know (read by Describe(app), given straight to the pure Describe in tests)
         public class Extra { public bool SetupThere, ShieldThere, BrowserShield; public string PlacesUrl; public PlacesHealth Places; }
 
+        // v2.20: Hallow Tasks 1.2+'s "quick" (a cached sample at most 5 s old) on a background thread, used while it's under 10 s old
+        static Dictionary<string, object> quick; static DateTime quickAt; static bool quickBusy; static readonly object quickLock = new object();
+        static void TasksQuick(Dictionary<string, object> st)
+        {
+            if (!VerAtLeast(Str(st, "version"), 1, 2, 0)) return;
+            lock (quickLock)
+            {
+                if (quick != null && (DateTime.UtcNow - quickAt).TotalSeconds < 10) foreach (var k in new[] { "cpu", "ram", "gpu", "processes", "busyApps", "busyPercent", "notResponding" }) { object v; if (quick.TryGetValue(k, out v)) st[k] = v; }
+                if (quickBusy || (DateTime.UtcNow - quickAt).TotalSeconds < 2) return;
+                quickBusy = true;
+            }
+            new Thread(() =>
+            {
+                Dictionary<string, object> q = null;
+                try { var r = Family.Send("Tasks", "quick", 1000, 2000); if (r != null && r.StartsWith("ok {")) q = Safe("Tasks", new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(r.Substring(3))); } catch { }
+                lock (quickLock) { quickBusy = false; quickAt = DateTime.UtcNow; if (q != null) quick = q; }
+            }) { IsBackground = true, Name = "tasks quick" }.Start();
+        }
         public static AppCard Describe(string app, string placesUrl, PlacesHealth places)
         {
             bool win = WindowsApp(app), inst = win && Family.Installed(app), run = inst && Family.Running(app);
             var st = win || app == "Shield" ? Safe(app, Family.Status(app)) : null;
+            if (app == "Tasks" && run && st != null) TasksQuick(st);   // v2.20
             var x = new Extra { SetupThere = Family.Installed("Setup"), PlacesUrl = placesUrl, Places = places };
             if (app == "Shield") { try { x.ShieldThere = HubWindow.ShieldThere(); } catch { } }
             if (app == "Shield" && Family.Installed("Browser") && Family.Running("Browser")) x.BrowserShield = Str(Safe("Browser", Family.Status("Browser")), "shield") == "extension";
@@ -231,6 +259,8 @@ namespace HallowHub
                 case "Tasks": TasksCard(c, st); break;
                 case "Financials": FinancialsCard(c, st); break;
                 case "Home": HomeCard(c, st); break;
+                case "Gear": GearCard(c, st); break;
+                case "Mixer": MixerCard(c, st); break;
                 default: OlderCard(c, st); break;
             }
             c.Actions.Add(open);
@@ -247,6 +277,12 @@ namespace HallowHub
         {
             var proto = Str(st, "protocol"); bool nl = proto == "NordLynx";
             bool on = Is(st, "connected"), connecting = Is(st, "connecting");
+            // v2.20: Hallow VPN 1.2.6+ says itself what the next connect uses and whether a connect / disconnect makes Windows ask (UAC)
+            bool v126 = Has(st, "nextProtocol") && VerAtLeast(Str(st, "version"), 1, 2, 6);
+            var next = v126 ? Str(st, "nextProtocol") : on || connecting ? null : proto;
+            bool uacC = v126 && st.ContainsKey("uacConnect") ? Is(st, "uacConnect") : next != "IKEv2";
+            bool uacD = v126 && st.ContainsKey("uacDisconnect") ? Is(st, "uacDisconnect") : nl;
+            bool loginNeeded = v126 && Has(st, "windowsLogin") && !Is(st, "windowsLogin");
             if (on)
             {
                 var srv = Str(st, "server"); var country = Str(st, "country");
@@ -259,12 +295,24 @@ namespace HallowHub
             else if (Is(st, "home")) c.Line = "Home mode (Tailscale exit node)";
             else c.Line = "Not connected";
             c.Sub = "Kill switch " + (Is(st, "killSwitch") ? "on" : "off");
+            if (v126 && Has(st, "windowsLogin")) { c.Sub += " \u00B7 Windows login " + (loginNeeded ? "needed" : "saved"); if (loginNeeded && !on && !connecting) c.SubLevel = 2; }
             if (!on && !connecting && Has(st, "account") && !Is(st, "account")) { c.Sub += " - add your Nord account in Hallow VPN"; c.SubLevel = 2; }
-            if ((on || connecting) && !nl)
+            var keep = v126 ? " --keep-target" : "";
+            if ((on || connecting) && !uacD)
                 c.Actions.Add(new CardAction { Label = "Disconnect", Kind = "pipe", Line = "disconnect", Tip = "Disconnect Hallow VPN", OkText = "Hallow VPN is disconnecting.", FailText = "Hallow VPN didn't disconnect" });
-            else if (!on && !connecting && !Is(st, "paused") && !Is(st, "home") && Is(st, "account") && proto == "IKEv2")
-                c.Actions.Add(new CardAction { Label = "Connect fastest", Kind = "pipe", Line = "connect fastest", Tip = "Connect Hallow VPN to the fastest server (IKEv2 - Windows doesn't ask)", OkText = "Hallow VPN is connecting to the fastest server...", FailText = "Hallow VPN didn't connect" });
-            if (nl) c.Tip = "NordLynx asks Windows (UAC) to connect and disconnect, so Hub leaves that to Hallow VPN - click Open.";
+            else if (!on && !connecting && !Is(st, "paused") && !Is(st, "home") && Is(st, "account") && next == "IKEv2" && !uacC && !loginNeeded)
+                c.Actions.Add(new CardAction { Label = "Connect fastest", Kind = "pipe", Line = "connect fastest" + keep,
+                    Tip = "Connect Hallow VPN to the fastest server (IKEv2 - Windows doesn't ask)" + (v126 ? ". Just this once: Hallow VPN's own Connect keeps your server" + (Str(st, "target") != null ? " (" + Str(st, "target") + ")" : "") : ""),
+                    OkText = "Hallow VPN is connecting to the fastest server...", FailText = "Hallow VPN didn't connect" });
+            if ((on || connecting) && uacD) c.Tip = (proto ?? "NordLynx") + " asks Windows (UAC) to disconnect, so Hub leaves that to Hallow VPN - click Open.";
+            else if (!on && !connecting && uacC && next != null) c.Tip = "The next connect uses " + next + ", which asks Windows (UAC) - so Hub leaves it to Hallow VPN. Click Open.";
+            else if (!on && !connecting && loginNeeded) c.Tip = "Windows doesn't have your Nord login saved yet - connect once in Hallow VPN (Windows shows its sign-in box there).";
+            else if (nl) c.Tip = "NordLynx asks Windows (UAC) to connect and disconnect, so Hub leaves that to Hallow VPN - click Open.";
+        }
+        static bool VerAtLeast(string v, int a, int b, int c)
+        {
+            var p = (v ?? "").Split('.'); Func<int, int> n = i => { int x; return p.Length > i && int.TryParse(p[i], out x) ? x : 0; };
+            return n(0) != a ? n(0) > a : n(1) != b ? n(1) > b : n(2) >= c;
         }
         static void TorrentsCard(AppCard c, Dictionary<string, object> st)
         {
@@ -296,23 +344,64 @@ namespace HallowHub
             int unread = Int(st, "unread"), acc = Int(st, "accounts"), err = Int(st, "accountErrors"), outbox = Int(st, "outbox");
             c.Line = unread > 0 ? unread.ToString("#,0", CultureInfo.InvariantCulture) + " unread" : "No unread mail";
             var parts = new List<string>();
+            object lo; var list = st.TryGetValue("accountList", out lo) ? lo as List<Dictionary<string, object>> : null;
+            var needs = list == null ? new List<Dictionary<string, object>>() : list.Where(a => Str(a, "attention") != null).ToList();
+            bool v11 = list != null && list.Any(a => Is(a, "v11"));
             if (Has(st, "accounts")) parts.Add(acc == 0 ? "No accounts yet" : Count(acc, "account", "accounts"));
-            if (err > 0) { parts.Add(err + (err == 1 ? " needs attention" : " need attention")); c.SubLevel = 2; }
+            // v2.20: Email 1.1 says why - "Account 2: Sign-in failed" (your own label only when it isn't an address)
+            if (v11 && needs.Count == 1) { parts.Add(Str(needs[0], "label") + ": " + Str(needs[0], "attention")); c.SubLevel = 2; }
+            else if (err > 0) { parts.Add(err + (err == 1 ? " needs attention" : " need attention")); c.SubLevel = 2; }
             if (outbox > 0) parts.Add(outbox + " waiting to send");
-            c.Sub = parts.Count > 0 ? string.Join(" · ", parts) : null;
+            c.Sub = parts.Count > 0 ? string.Join(" \u00B7 ", parts) : null;
+            if (v11 && list.Count > 0)
+                c.Tip = string.Join("\n", list.Select(a => Str(a, "label") + ": " + Int(a, "unread").ToString("#,0", CultureInfo.InvariantCulture) + " unread" + (Str(a, "attention") != null ? " - " + Str(a, "attention") : "")));
+        }
+        public static readonly string[] AttentionCodes = { "sign-in-failed", "app-password-needed", "server-unreachable", "quota", "error" };
+        static readonly Regex LabelRx = new Regex(@"^[\p{L}\p{N}][\p{L}\p{N} &'()._+-]{0,23}$"), PlainText = new Regex(@"^[A-Za-z0-9][A-Za-z0-9 ,.;'()/-]{0,119}$");
+        public static string AttentionText(string code, string text)
+        {
+            if (text != null && PlainText.IsMatch(text) && !text.Contains("://") && !Regex.IsMatch(text, @"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")) return text;
+            switch (code)
+            {
+                case "sign-in-failed": return "Sign-in failed";
+                case "app-password-needed": return "Needs an app password";
+                case "server-unreachable": return "Can't reach the mail server";
+                case "quota": return "Mailbox full or too many connections";
+                default: return "Isn't syncing";
+            }
+        }
+        // Email 1.1's per-account list: a label only when you chose it and it isn't (or doesn't look like) an address, else "Account 2"
+        static List<Dictionary<string, object>> EmailAccounts(ArrayList a)
+        {
+            var r = new List<Dictionary<string, object>>(); int i = 0;
+            foreach (var o in a)
+            {
+                var e = o as Dictionary<string, object>; i++; if (e == null) continue; if (r.Count >= 12) break;
+                var l = Family.Str(e, "label");
+                bool own = Family.Bool(e, "labelUserChosen") && e.ContainsKey("labelHasAddress") && e["labelHasAddress"] is bool && !Family.Bool(e, "labelHasAddress") && l != null && !l.Contains("@") && LabelRx.IsMatch(l.Trim());
+                var code = Family.Str(e, "attention"); if (code != null && !AttentionCodes.Contains(code)) code = "error";
+                bool need = code != null || Family.Bool(e, "needsAttention") || Family.Str(e, "state") == "error";
+                double un = Family.Num(e, "unread"); if (un < 0 || un > 1e9) un = 0;
+                r.Add(new Dictionary<string, object> { { "label", own ? l.Trim() : "Account " + i }, { "unread", un }, { "attention", need ? AttentionText(code, Family.Str(e, "attentionText")) : null }, { "v11", e.ContainsKey("labelUserChosen") } });
+            }
+            return r;
         }
         static void TasksCard(AppCard c, Dictionary<string, object> st)
         {
             if (Has(st, "cpu"))
             {
-                c.Line = "CPU " + Int(st, "cpu") + "% · RAM " + Int(st, "ram") + "%" + (Has(st, "gpu") ? " · GPU " + Int(st, "gpu") + "%" : "");
+                c.Line = "CPU " + Int(st, "cpu") + "% \u00B7 RAM " + Int(st, "ram") + "%" + (Has(st, "gpu") ? " \u00B7 GPU " + Int(st, "gpu") + "%" : "");
                 var at = When(st, "updated"); if (at != null && (DateTime.Now - at.Value).TotalMinutes > 3) c.Tip = "As of " + at.Value.ToString("HH:mm") + " - Hallow Tasks samples while its window is open";
             }
             else c.Line = "In the tray - not sampling";
             var parts = new List<string>();
+            int hung = Int(st, "notResponding"); if (hung > 0) { parts.Add(hung + " not responding"); c.SubLevel = 2; }   // v2.20: Tasks 1.4
             int pr = Int(st, "processes"); if (pr > 0) parts.Add(Count(pr, "process", "processes"));
+            int busy = Int(st, "busyApps"); if (busy > 0 && Has(st, "cpu")) parts.Add(Count(busy, "busy app", "busy apps"));   // v2.20: Tasks 1.2 (at least busyPercent of the CPU or GPU)
             int lo = Int(st, "lowered"); if (lo > 0 && Is(st, "game")) parts.Add(lo + " lowered for your game");
-            c.Sub = parts.Count > 0 ? string.Join(" · ", parts) : null;
+            c.Sub = parts.Count > 0 ? string.Join(" \u00B7 ", parts) : null;
+            if (busy > 0 && Has(st, "busyPercent")) c.Tip = (c.Tip != null ? c.Tip + "\n" : "") + "Busy = using " + Int(st, "busyPercent") + "% or more of the CPU or GPU";
+            if (hung > 0) c.Actions.Add(new CardAction { Label = "Not responding...", Kind = "pipe", Line = "open processes", Tip = "Open Hallow Tasks' Processes - the app that isn't responding has a Close button there", OkText = "Hallow Tasks is open on Processes.", FailText = "Hallow Tasks didn't open" });
         }
         static void FinancialsCard(AppCard c, Dictionary<string, object> st)
         {
@@ -324,13 +413,76 @@ namespace HallowHub
         }
         static void HomeCard(AppCard c, Dictionary<string, object> st)
         {
-            if (!Is(st, "configured")) { c.Line = "Home Assistant not set up"; c.Sub = "Add its address in Hallow Home's settings"; return; }
-            if (Is(st, "connected")) { c.Line = "Home Assistant connected"; c.LineLevel = 1; } else { c.Line = "Home Assistant not reachable"; c.LineLevel = 2; }
+            if (Is(st, "demo")) c.StateText = "Demo";   // v2.20: Home 1.2's Demo mode (made-up devices)
+            if (!Is(st, "configured") && !Is(st, "demo")) { c.Line = "Home Assistant not set up"; c.Sub = "Add its address in Hallow Home's settings"; return; }
+            if (Is(st, "demo")) c.Line = "Demo mode - made-up devices";
+            else if (Is(st, "connected")) { c.Line = "Home Assistant connected"; c.LineLevel = 1; } else { c.Line = "Home Assistant not reachable"; c.LineLevel = 2; }
             var parts = new List<string>();
             if (Has(st, "entities")) parts.Add(Count(Int(st, "entities"), "device", "devices"));
             if (Int(st, "cameras") > 0) parts.Add(Int(st, "camerasOnline") + "/" + Int(st, "cameras") + " cameras online");
             int al = Int(st, "alerts"); if (al > 0) { parts.Add(Count(al, "alert", "alerts")); c.SubLevel = 2; }
-            c.Sub = parts.Count > 0 ? string.Join(" · ", parts) : null;
+            c.Sub = parts.Count > 0 ? string.Join(" \u00B7 ", parts) : null;
+        }
+        // v2.20: Hallow Mixer 3.27 - "Spotify ad muted", "3 ads muted today"
+        static void MixerCard(AppCard c, Dictionary<string, object> st)
+        {
+            if (Is(st, "spotifyAdMuted")) { c.Line = "Spotify ad muted"; c.LineLevel = 1; } else c.Line = "Running";
+            int n = Int(st, "adsMutedToday"); if (n > 0) c.Sub = Count(n, "ad muted today", "ads muted today");
+        }
+        // v2.20: Hallow Gear - its devices' batteries, "last known - 12 min ago" / "waiting for its battery report", and Refresh
+        static readonly string[] GearKinds = { "mouse", "keyboard", "headset", "earbuds", "controller", "other" };
+        static readonly Regex GearName = new Regex(@"^[\p{L}\p{N}][\p{L}\p{N} &'()._+/-]{0,39}$");
+        static List<Dictionary<string, object>> GearDevices(ArrayList a)
+        {
+            var r = new List<Dictionary<string, object>>();
+            foreach (var o in a)
+            {
+                var e = o as Dictionary<string, object>; if (e == null) continue; if (r.Count >= 16) break;
+                var kind = Family.Str(e, "kind"); if (!GearKinds.Contains(kind)) kind = "other";
+                var name = Family.Str(e, "name"); if (name == null || !GearName.IsMatch(name.Trim())) name = null; else name = name.Trim();
+                object b; double? bat = e.TryGetValue("battery", out b) && b != null && !(b is string) && !(b is bool) ? (double?)Math.Max(0, Math.Min(100, Family.Num(e, "battery"))) : null;
+                DateTime? at = Family.Time(e, "updated") ?? Family.Time(e, "lastSeen");
+                r.Add(new Dictionary<string, object> { { "kind", kind }, { "name", name }, { "battery", bat }, { "charging", Family.Bool(e, "charging") }, { "connected", Family.Bool(e, "connected") },
+                    { "asleep", Family.Bool(e, "asleep") }, { "lastKnown", Family.Bool(e, "lastKnown") }, { "waiting", Family.Bool(e, "waiting") }, { "at", at } });
+            }
+            return r;
+        }
+        public static string Ago(DateTime at, DateTime now)
+        {
+            var m = (int)Math.Max(0, Math.Floor((now - at).TotalMinutes));
+            return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? (m / 60) + " h ago" : (m / 1440) + (m < 2880 ? " day ago" : " days ago");
+        }
+        static void GearCard(AppCard c, Dictionary<string, object> st)
+        {
+            object o; var devs = st.TryGetValue("devices", out o) ? o as List<Dictionary<string, object>> : null; bool game = Is(st, "game");
+            if (devs == null || devs.Count == 0) { c.Line = "No devices found"; }
+            else
+            {
+                Func<Dictionary<string, object>, string> nm = d => Str(d, "name") ?? char.ToUpper(Str(d, "kind")[0]) + Str(d, "kind").Substring(1);
+                var withBat = devs.Where(d => d["battery"] != null).OrderBy(d => (double)d["battery"]).ToList();
+                c.Line = withBat.Count == 0 ? Count(devs.Count, "device", "devices") : string.Join(" \u00B7 ", withBat.Take(2).Select(d => nm(d) + " " + Math.Round((double)d["battery"]) + "%"));
+                if (withBat.Count > 0 && (double)withBat[0]["battery"] <= 20 && !Is(withBat[0], "charging")) c.LineLevel = 2;
+                var waiting = devs.FirstOrDefault(d => Is(d, "waiting")); var known = withBat.FirstOrDefault(d => Is(d, "lastKnown"));
+                if (waiting != null) c.Sub = nm(waiting) + ": waiting for its battery report" + (game ? " (game running)" : "");
+                else if (known != null) { var at = When(known, "at"); c.Sub = nm(known) + ": last known" + (at != null ? " \u00B7 " + Ago(at.Value, DateTime.Now) : ""); }
+                else if (devs.Count > 2) c.Sub = Count(devs.Count, "device", "devices");
+                c.Tip = string.Join("\n", devs.Select(d => nm(d) + ": " + (d["battery"] != null ? Math.Round((double)d["battery"]) + "%" : "battery not known") + (Is(d, "charging") ? ", charging" : "") + (Is(d, "waiting") ? ", waiting for its battery report" : Is(d, "lastKnown") ? ", last known" : "")));
+            }
+            c.Actions.Add(new CardAction { Label = "Refresh", Kind = "pipe", Line = "refresh", Enabled = !game, Tip = game ? "Hallow Gear doesn't read batteries during a game - it does after" : "Read the batteries now (at most once every 30 s)",
+                OkText = "Hallow Gear is reading the batteries.", FailText = "Hallow Gear didn't refresh", OkFrom = GearRefreshText });
+        }
+        public static string GearRefreshText(string reply)
+        {
+            try
+            {
+                var j = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(reply.Substring(3));
+                if (Family.Bool(j, "refreshing")) return "Hallow Gear is reading the batteries.";
+                var why = Family.Str(j, "reason"); var wait = (int)Family.Num(j, "retryIn");
+                if (why == "too-soon") return "Hallow Gear read them just now - try again" + (wait > 0 && wait <= 60 ? " in " + wait + " s." : " in a moment.");
+                if (why == "game") return "Hallow Gear doesn't read batteries during a game - it does after.";
+            }
+            catch { }
+            return "Hallow Gear is reading the batteries.";
         }
         static void OlderCard(AppCard c, Dictionary<string, object> st)
         {
@@ -576,7 +728,7 @@ namespace HallowHub
                         var r = Family.Send(c.App, a.Line);
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
-                            Status(Family.Ok(r) ? a.OkText : (a.FailText ?? name + " didn't take that") + (r == null ? " (it isn't answering)" : r.StartsWith("error ") ? " (" + r.Substring(6) + ")" : ""));
+                            Status(Family.Ok(r) ? (a.OkFrom != null ? a.OkFrom(r) : a.OkText) : (a.FailText ?? name + " didn't take that") + (r == null ? " (it isn't answering)" : r.StartsWith("error ") ? " (" + r.Substring(6) + ")" : ""));
                             bt.IsEnabled = true; FillFamily(false);
                             var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) }; t.Tick += (s, e) => { t.Stop(); FillFamily(false); }; t.Start();
                         }));

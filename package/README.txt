@@ -6,6 +6,11 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.20
+- The Family page catches up: Hallow VPN offers Connect / Disconnect only when Windows won't ask and says why otherwise (NordLynx, or "Windows login needed"), and Connect fastest no longer changes the server you picked in Hallow VPN.
+- Hallow Tasks' live numbers, busy apps and "Not responding" (with a button to its Processes); Hallow Email says which account needs attention and why; Hallow Home shows Demo mode.
+- A Hallow Gear card: the lowest batteries, "last known - 12 min ago", "waiting for its battery report" and Refresh; Hallow Mixer's "Spotify ad muted" and ads muted today.
+
 WHAT'S NEW IN 2.19
 - Keep the family running after updates: when a Hallow app that was running is updated, Hub starts it again in the tray (once more if it exits straight away) and tells you once - "Updated and restarted: Hallow Gear 1.3.1" - held while you play.
 - An app you closed yourself stays closed, apps that weren't running are never started, and Hallow Browser is never reopened - Hub just says it was updated.
