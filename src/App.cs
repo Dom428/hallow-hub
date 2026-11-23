@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.18.0.0")]
-[assembly: AssemblyFileVersion("2.18.0.0")]
+[assembly: AssemblyVersion("2.19.0.0")]
+[assembly: AssemblyFileVersion("2.19.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.18";
+        public const string Version = "2.19";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -167,7 +167,7 @@ namespace HallowHub
             {
                 SetupTray();
                 poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-                poll.Tick += (s, e) => { try { tracker.Poll(AllCopies().ToList()); CheckReminders(); } catch { } if (starting != null && (DateTime.Now - startingAt).TotalSeconds > 90) { starting = null; ShowHero(); } };
+                poll.Tick += (s, e) => { try { tracker.Poll(AllCopies().ToList()); CheckReminders(); } catch { } try { FlushRestartNotes(); } catch { } if (starting != null && (DateTime.Now - startingAt).TotalSeconds > 90) { starting = null; ShowHero(); } };
                 poll.Start();
                 PreviewKeyDown += OnKey;
                 var padTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) }; padTimer.Tick += (s, e) => { try { TickPad(); } catch { } }; padTimer.Start();
@@ -177,7 +177,7 @@ namespace HallowHub
                 Dispatcher.BeginInvoke(new Action(() => { try { tracker.Poll(AllCopies().ToList()); } catch { } CheckLinks(); RefreshPc(); WriteRecent(); }), DispatcherPriority.ApplicationIdle);
                 IsVisibleChanged += (s, e) => { if (IsVisible) RefreshPc(); };
                 if (!startHidden) Show();
-                StartWatching(); StartFamilyServer(); WatchTheme(); PowerAfterStart();
+                StartWatching(); StartFamilyServer(); WatchTheme(); PowerAfterStart(); StartRestarter();   // v2.19: keep the family running after updates
                 DateTime lastCheck;
                 if (!DateTime.TryParse(S.LastUpdateCheck, out lastCheck) || (DateTime.Now - lastCheck).TotalHours > 20) CheckForUpdate(false);
                 if (string.IsNullOrEmpty(S.LastSeenVersion)) { S.LastSeenVersion = Program.Version; S.Save(); }
@@ -576,6 +576,7 @@ namespace HallowHub
             startupBox = sw("Start with Windows (in the tray)", StartsWithWindows(), v => SetStartWithWindows(v));
             sw("Show hidden games", S.ShowHidden, v => { S.ShowHidden = v; RebuildGrid(); });
             sw("One Hallow icon: the other Hallow apps use this tray icon (their menus are in Hub's menu)", S.OneIcon, v => { S.OneIcon = v; Status(v ? "One Hallow icon is on - the other Hallow apps hide their own tray icons in a few seconds." : "One Hallow icon is off - every Hallow app shows its own tray icon again in a few seconds."); });
+            AddRestartSettings(sp);   // v2.19
             sw("Use the Hallow accent (the colour picked in Hallow Toolkit)", S.UseHallowAccent, v => { S.UseHallowAccent = v; HallowLook.UseShared = v; S.Save(); Dispatcher.BeginInvoke(new Action(() => ApplyAccent(false))); });
             // v2.15: Look - Follow Hallow (the family mode from Hallow Toolkit) / Light / Dark
             var lk = new DockPanel { Margin = new Thickness(0, 6, 0, 6) };
@@ -1447,7 +1448,7 @@ namespace HallowHub
         }
         void Quit()
         {
-            exiting = true; S.Save(); WriteFamilyStatus(false);
+            exiting = true; S.Save(); WriteFamilyStatus(false); if (restarter != null) restarter.Save(true);
             if (sessionFor != null) { Toolkit.Session(false); sessionFor = null; }
             PowerRestoreNow(true);   // v2.14
             if (tray != null) { tray.Visible = false; tray.Dispose(); }
@@ -1666,6 +1667,23 @@ namespace HallowHub
                 File.WriteAllText(System.IO.Path.Combine(dir, "family-cards.txt"), FamilyCardsText());
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "family.err.txt"), ex.ToString()); }
+            // v2.19: Restart family apps after updates (Settings, with one app opted out) and Start the apps I usually run (Family page)
+            try
+            {
+                var inst = FamilyRestarter.Installed(); var keepOpt = S.RestartOptOut; var keepOn = S.RestartAfterUpdates;
+                S.RestartAfterUpdates = true; S.RestartOptOut = new List<string>(); if (inst.Count > 1) S.RestartOptOut.Add(inst[1].Key);
+                var outer = (Grid)Content; outer.Children.Remove(settingsPanel); settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
+                settingsPanel.Visibility = Visibility.Visible; Snap.Save(this, System.IO.Path.Combine(dir, "settings-restart.png"), 1180, 1300); settingsPanel.Visibility = Visibility.Collapsed;
+                var lines = new List<string> { "installed (watched): " + string.Join(", ", inst.Select(i => i.Key)), "opted out: " + string.Join(", ", S.RestartOptOut) };
+                usualForSnap = inst.Select(i => i.Key).Where(a => !FamilyRestarter.NoteOnly.Contains(a)).Take(3).ToList();
+                familyBtn.IsChecked = true; Snap.Save(this, System.IO.Path.Combine(dir, "family-restart.png"), 1180, 900);
+                lines.Add("usual button: " + (usualBtn != null ? usualBtn.Visibility + " | " + usualBtn.Content + " | " + usualBtn.ToolTip : "missing").Replace("\n", " / "));
+                familyBtn.IsChecked = false; usualForSnap = null;
+                File.WriteAllText(System.IO.Path.Combine(dir, "restart.txt"), string.Join("\r\n", lines));
+                S.RestartOptOut = keepOpt; S.RestartAfterUpdates = keepOn;
+                outer.Children.Remove(settingsPanel); settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "restart.err.txt"), ex.ToString()); }
             // v2.15: more windows (What's new, Emulators, notes), and light / dark switched live - by the Look setting and by rewriting the TEST theme.json
             try
             {

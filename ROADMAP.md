@@ -30,6 +30,8 @@
 | **2.15** | Light and dark mode: follows the family mode from Hallow Toolkit (light / dark / same as Windows, live), Settings > Look (Follow Hallow / Light / Dark), light palette with a darkened accent for text, no glows, title bar to match |
 | **2.16** | Light mode readability fixes: green / amber / lilac and the accent as text darkened to >= 4.5:1 on every light panel (accent darkened against Panel 2, same rule as Hallow Toolkit 5.16), filled accents that read under 4.5:1 (violet) get a darker fill with white text, open dialogs restyle live on a mode or accent change |
 | **2.17** | The whole family: a Family page with every Hallow app (Play / Protect / Everyday) - installed / running / not installed, version, a live line from each status.json through a privacy filter (counts and states only), quick actions over the pipes (VPN Connect fastest / Disconnect on IKEv2 only, Torrents Pause / Resume all, Financials Lock now, Open, Settings), Install hands off to Hallow Setup or the releases page, Hallow Places health from your own address; newer apps in a fixed order in the Hallow icon with Start a Hallow app |
+| **2.18** | Switch Steam accounts: the accounts Steam remembers (loginusers.vdf) on a Steam button and in the Hallow icon; Steam closed, AutoLoginUser set and Steam reopened (never during a game, no passwords) |
+| **2.19** | Keep the family running after updates: Hub remembers the running Hallow apps (app, exe, last seen) and starts one again with --tray when it went away and its exe changed within 5 minutes (new exe stable for 5 s, one retry); never an app you quit or one that wasn't running; Hallow Browser gets a note only; one note, held during games; Settings switch + per-app opt-out; Start the apps I usually run on the Family page; pipe `family-watch`; percentages without a space (45%) everywhere Hub shows them |
 
 ## Next
 
@@ -54,6 +56,7 @@ What Playnite, GOG Galaxy 2.0 and LaunchBox do that Hub doesn't (yet):
 - Videos, 3D boxes and arcade cabinets (LaunchBox Big Box) - **not planned**: needs large media downloads
 - HowLongToBeat times (Playnite add-on) - **not buildable**: no public API (2.12 adds a HowLongToBeat link that opens the site's search in your browser)
 ### Fixes from real use
+- Family apps stayed closed after updates installed from a sandboxed session (they may be stopped there but not started) - **done in 2.19**: Hub, running on your PC, starts them again
 - Things found while playing with Hub (Big Picture animations, companion apps, launch options and the play flow haven't been tried with real games yet)
 
 ### Family page: what the apps could share later (2.17 shows less where a field doesn't exist)

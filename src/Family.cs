@@ -130,6 +130,8 @@ namespace HallowHub
             finally { try { c.Dispose(); } catch { } }
             return reply == null ? null : reply.Trim();
         }
+        // v2.19: percentages are written without a space ("45%", not "45 %") in everything Hub shows - also text other apps hand it
+        public static string Pct(string s) { return s == null ? null : System.Text.RegularExpressions.Regex.Replace(s, "(\\d)[ \u00A0\u202F]+%", "$1%"); }
         public static bool Ok(string reply) { return reply != null && (reply == "ok" || reply.StartsWith("ok ")); }
 
         // small JSON helpers (readers tolerate missing fields)

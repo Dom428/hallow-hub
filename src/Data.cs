@@ -130,9 +130,11 @@ namespace HallowHub
         [DataMember] public string PowerRestore = "";                    // v2.14: "game|plan before|plan set" while Hub has switched the plan
         [DataMember] public string Look = "hallow";                      // v2.15: Look - hallow (follow the Hallow family light / dark mode), light or dark
         [DataMember] public string PlacesUrl = "";                       // v2.17: your Hallow Places server (only its /healthz is read; "" = not set up)
+        [DataMember] public bool RestartAfterUpdates = true;             // v2.19: start a family app again (in the tray) after it was updated while running
+        [DataMember] public List<string> RestartOptOut = new List<string>();   // v2.19: ...except these apps
         [OnDeserializing] void D(StreamingContext c)
         {
-            PlacesUrl = "";
+            PlacesUrl = ""; RestartAfterUpdates = true; RestartOptOut = new List<string>();
             Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1; WeeklyRecap = true; LastRecap = "";
             FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; Look = "hallow"; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>(); Emulators = new List<Emulator>(); FStatus = ""; PowerPlanAll = ""; PowerRestore = "";
         }

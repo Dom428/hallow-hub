@@ -466,6 +466,7 @@ namespace HallowHub
             var close = new Button { Content = "x", Tag = "icon", Style = (Style)FindResource("Btn"), Width = 30, Height = 28, Padding = new Thickness(0), ToolTip = "Close" };
             close.Click += (s, e) => familyBtn.IsChecked = false;
             DockPanel.SetDock(close, Dock.Right); sh.Children.Add(close);
+            var ub = BuildUsualButton(); DockPanel.SetDock(ub, Dock.Right); sh.Children.Add(ub);   // v2.19
             var ci = Icons.Make("people-group", 17, B("#F07820")); ci.Margin = new Thickness(0, 0, 10, 0); DockPanel.SetDock(ci, Dock.Left); sh.Children.Add(ci);
             sh.Children.Add(new TextBlock { Text = "The Hallow family", FontWeight = FontWeights.Bold, FontSize = 17, VerticalAlignment = VerticalAlignment.Center });
             sp.Children.Add(sh);
@@ -483,7 +484,7 @@ namespace HallowHub
             var list = new List<AppCard>();
             foreach (var a in FamilyBoard.AllApps)
             {
-                try { list.Add(FamilyBoard.Describe(a, S.PlacesUrl, placesHealth)); }
+                try { var c = FamilyBoard.Describe(a, S.PlacesUrl, placesHealth); c.Line = Family.Pct(c.Line); c.Sub = Family.Pct(c.Sub); c.Tip = Family.Pct(c.Tip); c.StateText = Family.Pct(c.StateText); list.Add(c); }
                 catch { list.Add(new AppCard { App = a, Title = "Hallow " + a, Icon = FamilyBoard.Icon(a), State = "stopped", StateText = "-", Line = "Couldn't read its status" }); }
             }
             return list;
@@ -492,6 +493,7 @@ namespace HallowHub
         void FillFamily(bool force)
         {
             if (familyBody == null || (placesEditing && !force)) return;
+            UpdateUsualButton();   // v2.19
             var cards = FamilyCards();
             var sig = string.Join("\n", cards.Select(c => c.State + "|" + c.AllText()));
             if (!force && sig == familyPageSig) return;

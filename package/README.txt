@@ -6,6 +6,12 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.19
+- Keep the family running after updates: when a Hallow app that was running is updated, Hub starts it again in the tray (once more if it exits straight away) and tells you once - "Updated and restarted: Hallow Gear 1.3.1" - held while you play.
+- An app you closed yourself stays closed, apps that weren't running are never started, and Hallow Browser is never reopened - Hub just says it was updated.
+- Settings > Restart family apps after updates (on), with a chip per app to leave one out. The Family page has Start the apps I usually run.
+- Percentages are written without a space everywhere Hub shows them (45%).
+
 WHAT'S NEW IN 2.17
 - The whole family: the new Family button (next to Stats) shows every Hallow app, grouped as Play, Protect and Everyday - installed, running or not installed, its version, and a live line from the app (VPN connected and the kill switch, torrents downloading, unread mail, browser tabs, Shield blocked today, Home Assistant connected...). Counts and states only - never subjects, names, places, amounts or addresses.
 - Quick actions on the cards, only when you click: Connect fastest / Disconnect (Hallow VPN on IKEv2 - a NordLynx connect asks Windows, so that stays in Hallow VPN), Pause all / Resume all (Hallow Torrents), Lock now (Hallow Financials), Open and Settings. Nothing pops up.

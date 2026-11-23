@@ -39,6 +39,7 @@ namespace HallowHub
                 }));
                 return "ok";
             }
+            if (cmd == "family-watch") { string j = null; if (!OnUi(() => { j = FamilyWatchJson(); })) return "error busy"; return "ok " + j; }   // v2.19
             if (cmd == "tray-host")
             {
                 bool on = false;
@@ -49,7 +50,7 @@ namespace HallowHub
             {
                 var p = arg.Split('\t');
                 if (p.Length < 3 || p[2].Trim().Length == 0) return "error usage: notify <app><tab><title><tab><text>";
-                var app = Clip(p[0].Trim(), 20); var title = Clip(p[1].Trim(), 60); var text = Clip(p[2].Trim(), 240);
+                var app = Clip(p[0].Trim(), 20); var title = Family.Pct(Clip(p[1].Trim(), 60)); var text = Family.Pct(Clip(p[2].Trim(), 240));
                 if (title.Length == 0) title = "Hallow " + app;
                 bool shown = false;
                 if (!OnUi(() => { if (tray != null && tray.Visible) { tray.ShowBalloonTip(6000, title, text, WF.ToolTipIcon.None); shown = true; } })) return "error busy";
@@ -105,7 +106,7 @@ namespace HallowHub
             {
                 var id = Family.Str(d, "id"); if (string.IsNullOrEmpty(id)) continue;
                 if (id == "-") { sub.DropDownItems.Add(new WF.ToolStripSeparator()); continue; }
-                var mi = new WF.ToolStripMenuItem(Family.Str(d, "label") ?? id);
+                var mi = new WF.ToolStripMenuItem(Family.Pct(Family.Str(d, "label")) ?? id);
                 object v;
                 if (d.TryGetValue("checked", out v) && v is bool) mi.Checked = (bool)v;
                 if (d.TryGetValue("enabled", out v) && v is bool) mi.Enabled = (bool)v;
