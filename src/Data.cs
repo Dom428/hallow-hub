@@ -132,9 +132,12 @@ namespace HallowHub
         [DataMember] public string PlacesUrl = "";                       // v2.17: your Hallow Places server (only its /healthz is read; "" = not set up)
         [DataMember] public bool RestartAfterUpdates = true;             // v2.19: start a family app again (in the tray) after it was updated while running
         [DataMember] public List<string> RestartOptOut = new List<string>();   // v2.19: ...except these apps
+        [DataMember] public bool CheckupWeekly = true;                   // v2.21: a quiet Family checkup once a week (never during a game)
+        [DataMember] public string CheckupLast = "";                     // v2.21: when the last checkup ran (ISO)
+        [DataMember] public int CheckupProblems, CheckupWarnings;        // v2.21: what it found
         [OnDeserializing] void D(StreamingContext c)
         {
-            PlacesUrl = ""; RestartAfterUpdates = true; RestartOptOut = new List<string>();
+            PlacesUrl = ""; RestartAfterUpdates = true; RestartOptOut = new List<string>(); CheckupWeekly = true; CheckupLast = "";
             Games = new Dictionary<string, GameData>(); Custom = new List<Game>(); Sort = "recent"; Filter = "all"; Selected = ""; TrayOnClose = true; WinW = -1; WinH = -1; LastSeenVersion = ""; LastUpdateCheck = ""; Collections = new List<string>(); View = "grid"; CardScale = 1; WeeklyRecap = true; LastRecap = "";
             FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; Look = "hallow"; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>(); Emulators = new List<Emulator>(); FStatus = ""; PowerPlanAll = ""; PowerRestore = "";
         }

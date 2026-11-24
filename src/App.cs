@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.20.0.0")]
-[assembly: AssemblyFileVersion("2.20.0.0")]
+[assembly: AssemblyVersion("2.21.0.0")]
+[assembly: AssemblyFileVersion("2.21.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.20";
+        public const string Version = "2.21";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -58,6 +58,7 @@ namespace HallowHub
                 else showEvent.Set();
                 return;
             }
+            try { Checkup.ApplyHubPending(System.IO.Path.Combine(HubSettings.Dir, "bring-back.json")); } catch { }   // v2.21: Hub's own settings from Claude's sandbox (Bring settings back)
             { var hs0 = HubSettings.Load(); HallowLook.UseShared = hs0.UseHallowAccent; HallowLook.LookOverride = hs0.Look; HallowLook.Refresh(); }
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; Crash.Hook(app); LoadTheme(app);
             var w = new HubWindow(args.Contains("--tray") || play != null);
@@ -178,6 +179,7 @@ namespace HallowHub
                 IsVisibleChanged += (s, e) => { if (IsVisible) RefreshPc(); };
                 if (!startHidden) Show();
                 StartWatching(); StartFamilyServer(); WatchTheme(); PowerAfterStart(); StartRestarter();   // v2.19: keep the family running after updates
+                StartCheckupTimer();   // v2.21: the weekly Family checkup
                 DateTime lastCheck;
                 if (!DateTime.TryParse(S.LastUpdateCheck, out lastCheck) || (DateTime.Now - lastCheck).TotalHours > 20) CheckForUpdate(false);
                 if (string.IsNullOrEmpty(S.LastSeenVersion)) { S.LastSeenVersion = Program.Version; S.Save(); }
@@ -577,6 +579,7 @@ namespace HallowHub
             sw("Show hidden games", S.ShowHidden, v => { S.ShowHidden = v; RebuildGrid(); });
             sw("One Hallow icon: the other Hallow apps use this tray icon (their menus are in Hub's menu)", S.OneIcon, v => { S.OneIcon = v; Status(v ? "One Hallow icon is on - the other Hallow apps hide their own tray icons in a few seconds." : "One Hallow icon is off - every Hallow app shows its own tray icon again in a few seconds."); });
             AddRestartSettings(sp);   // v2.19
+            sw("Family checkup once a week (quietly - one note only when something needs a look, never during a game)", S.CheckupWeekly, v => S.CheckupWeekly = v);   // v2.21
             sw("Use the Hallow accent (the colour picked in Hallow Toolkit)", S.UseHallowAccent, v => { S.UseHallowAccent = v; HallowLook.UseShared = v; S.Save(); Dispatcher.BeginInvoke(new Action(() => ApplyAccent(false))); });
             // v2.15: Look - Follow Hallow (the family mode from Hallow Toolkit) / Light / Dark
             var lk = new DockPanel { Margin = new Thickness(0, 6, 0, 6) };
@@ -1684,6 +1687,8 @@ namespace HallowHub
                 outer.Children.Remove(settingsPanel); settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
             }
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "restart.err.txt"), ex.ToString()); }
+            // v2.21: the Family checkup (test family only)
+            try { SnapCheckup(dir); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "checkup.err.txt"), ex.ToString()); }
             // v2.15: more windows (What's new, Emulators, notes), and light / dark switched live - by the Look setting and by rewriting the TEST theme.json
             try
             {

@@ -6,6 +6,12 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.21
+- Family checkup: Family page > Run checkup looks at the whole family - updates (handed to Hallow Setup), the apps you usually run, settings stuck in Claude's sandbox, Hallow VPN's credentials, your Keys vault, Gear, notifications, backups, Ransomware protection blocks and Start with Windows.
+- Each line is OK, look at this or a problem, with a one-click fix where it's safe (Update, Start, Back up now, Turn on...) or the steps.
+- Bring settings back: quits the apps concerned, backs up your folders to "Hallow data backup" in your user folder (not Documents), copies only the newer files from Claude's sandbox, and starts them again.
+- A quiet weekly checkup (Settings, on) - never during a game, one note only when something needs a look.
+
 WHAT'S NEW IN 2.20
 - The Family page catches up: Hallow VPN offers Connect / Disconnect only when Windows won't ask and says why otherwise (NordLynx, or "Windows login needed"), and Connect fastest no longer changes the server you picked in Hallow VPN.
 - Hallow Tasks' live numbers, busy apps and "Not responding" (with a button to its Processes); Hallow Email says which account needs attention and why; Hallow Home shows Demo mode.
