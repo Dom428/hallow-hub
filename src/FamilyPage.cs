@@ -620,13 +620,15 @@ namespace HallowHub
             DockPanel.SetDock(close, Dock.Right); sh.Children.Add(close);
             var ub = BuildUsualButton(); DockPanel.SetDock(ub, Dock.Right); sh.Children.Add(ub);   // v2.19
             var cb = BuildCheckupButton(); DockPanel.SetDock(cb, Dock.Right); sh.Children.Add(cb);   // v2.21
+            var rb = BuildRealChecksButton(); DockPanel.SetDock(rb, Dock.Right); sh.Children.Add(rb);   // v2.22
             var ci = Icons.Make("people-group", 17, B("#F07820")); ci.Margin = new Thickness(0, 0, 10, 0); DockPanel.SetDock(ci, Dock.Left); sh.Children.Add(ci);
             sh.Children.Add(new TextBlock { Text = "The Hallow family", FontWeight = FontWeights.Bold, FontSize = 17, VerticalAlignment = VerticalAlignment.Center });
             sp.Children.Add(sh);
             sp.Children.Add(new TextBlock { Text = "Every Hallow app at a glance - live from their status files, counts and states only. Buttons act only when you click them.", Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, Margin = new Thickness(0, 0, 0, 6), TextWrapping = TextWrapping.Wrap });
             familyBody = new StackPanel();
             checkupHost = new StackPanel();   // v2.21: the Family checkup, above the cards
-            var both = new StackPanel(); both.Children.Add(checkupHost); both.Children.Add(familyBody);
+            realHost = new StackPanel();   // v2.22: real-world checks
+            var both = new StackPanel(); both.Children.Add(checkupHost); both.Children.Add(realHost); both.Children.Add(familyBody);
             familyScroll = new ScrollViewer { Content = both, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Margin = new Thickness(0, 0, -12, 0), Padding = new Thickness(0, 0, 12, 0) };
             SizeChanged += (s, e) => { if (familyScroll != null) familyScroll.MaxHeight = Math.Max(240, ActualHeight - 170); };
             familyScroll.MaxHeight = Math.Max(240, Height - 170);

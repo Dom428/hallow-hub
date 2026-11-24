@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.22
+- Real-world checks: Family page > Real-world checks lists what only your real PC, games and phone can prove - NordLynx, the leak tests, VPN for torrents, the Authenticator on your phone, NordPass from the Chrome Web Store, Spotify ad muting, kill-sound clips and the 1% low line.
+- Each one turns green by itself when the app shows it worked, or mark it with Worked / Didn't work. Try it opens the right app on the right page.
+
 WHAT'S NEW IN 2.21
 - Family checkup: Family page > Run checkup looks at the whole family - updates (handed to Hallow Setup), the apps you usually run, settings stuck in Claude's sandbox, Hallow VPN's credentials, your Keys vault, Gear, notifications, backups, Ransomware protection blocks and Start with Windows.
 - Each line is OK, look at this or a problem, with a one-click fix where it's safe (Update, Start, Back up now, Turn on...) or the steps.

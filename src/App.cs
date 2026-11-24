@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.21.0.0")]
-[assembly: AssemblyFileVersion("2.21.0.0")]
+[assembly: AssemblyVersion("2.22.0.0")]
+[assembly: AssemblyFileVersion("2.22.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.21";
+        public const string Version = "2.22";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -180,6 +180,7 @@ namespace HallowHub
                 if (!startHidden) Show();
                 StartWatching(); StartFamilyServer(); WatchTheme(); PowerAfterStart(); StartRestarter();   // v2.19: keep the family running after updates
                 StartCheckupTimer();   // v2.21: the weekly Family checkup
+                StartRealChecksTimer();   // v2.22: real-world checks turn green by themselves
                 DateTime lastCheck;
                 if (!DateTime.TryParse(S.LastUpdateCheck, out lastCheck) || (DateTime.Now - lastCheck).TotalHours > 20) CheckForUpdate(false);
                 if (string.IsNullOrEmpty(S.LastSeenVersion)) { S.LastSeenVersion = Program.Version; S.Save(); }
@@ -1689,6 +1690,7 @@ namespace HallowHub
             catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "restart.err.txt"), ex.ToString()); }
             // v2.21: the Family checkup (test family only)
             try { SnapCheckup(dir); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "checkup.err.txt"), ex.ToString()); }
+            try { SnapRealChecks(dir); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "realchecks.err.txt"), ex.ToString()); }
             // v2.15: more windows (What's new, Emulators, notes), and light / dark switched live - by the Look setting and by rewriting the TEST theme.json
             try
             {

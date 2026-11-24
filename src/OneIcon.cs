@@ -39,6 +39,7 @@ namespace HallowHub
                 }));
                 return "ok";
             }
+            if (cmd == "realchecks") return RealChecksCommand();   // v2.22: the real-world checks (ids, states, what was seen)
             if (cmd == "checkup") return CheckupCommand(arg);   // v2.21: the last Family checkup (counts, ids, levels), or "checkup run"
             if (cmd == "family-watch") { string j = null; if (!OnUi(() => { j = FamilyWatchJson(); })) return "error busy"; return "ok " + j; }   // v2.19
             if (cmd == "tray-host")
