@@ -227,12 +227,14 @@ namespace HallowHub
         public static readonly string[] Apps = { "Mixer", "Vault", "Overlay", "Clips", "Remote", "Keys", "Guard", "Assist" };
         // v2.17: the newer apps - in this order after the known ones while they run (so they don't jump around A-Z); the installed ones
         // that aren't running go under one "Start a Hallow app" submenu instead of a Start line each
-        public static readonly string[] Newer = { "VPN", "Torrents", "Browser", "Tasks", "Email", "Financials", "Home", "Capture", "Display", "Find", "Files", "Net", "Paint", "Notes", "Uninstall" };   // v2.23: Capture, Display; v2.24: Find; v2.25: Files; v2.26: Net, Paint, Notes, Uninstall
+        public static readonly string[] Newer = { "VPN", "Torrents", "Browser", "Tasks", "Email", "Financials", "Home", "Capture", "Display", "Find", "Files", "Net", "Paint", "Notes", "Uninstall", "Doctor", "Updates", "Switch", "Clock", "Fonts" };   // v2.23: Capture, Display; v2.24: Find; v2.25: Files; v2.26: Net, Paint, Notes, Uninstall; v2.27: Doctor, Updates, Switch, Clock, Fonts
         public static bool IsNewer(string app) { return Newer.Contains(app, StringComparer.OrdinalIgnoreCase); }
         public static List<string> Startable() { return Newer.Where(a => Family.Installed(a) && !Family.Running(a)).ToList(); }
         // Browser and Files (v2.25) have no tray icon - they start with their window (Files restores its last tabs); the others start in the tray
         // (v2.26: Paint, Notes and Uninstall too - windowed, no tray; Notes reopens its session, Paint the pictures it kept in recovery)
-        public static readonly string[] Windowed = { "Browser", "Files", "Paint", "Notes", "Uninstall" };
+        // (v2.27: Doctor and Fonts too - normal windows, no tray icon. Updates, Switch and Clock start in the tray with --tray; Switch and Clock hide
+        // their own icon in Hub's when Hub hosts it, Updates' --tray is its quiet tray mode with a daily check)
+        public static readonly string[] Windowed = { "Browser", "Files", "Paint", "Notes", "Uninstall", "Doctor", "Fonts" };
         public static bool IsWindowed(string app) { return Windowed.Contains(app, StringComparer.OrdinalIgnoreCase); }
         public static string StartArgs(string app) { return IsWindowed(app) ? "" : "--tray"; }
         // v2.13: never a submenu of their own - Hub itself, Setup (an installer) and Toolkit (it has "Open Hallow Toolkit")

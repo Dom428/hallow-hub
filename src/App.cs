@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.26.0.0")]
-[assembly: AssemblyFileVersion("2.26.0.0")]
+[assembly: AssemblyVersion("2.27.0.0")]
+[assembly: AssemblyFileVersion("2.27.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.26";
+        public const string Version = "2.27";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -1666,7 +1666,7 @@ namespace HallowHub
             {
                 familyBtn.IsChecked = true;
                 Snap.Save(this, System.IO.Path.Combine(dir, "family.png"), 1180, 900);
-                var keepMax = familyScroll.MaxHeight; familyScroll.MaxHeight = 3000; Snap.Save(this, System.IO.Path.Combine(dir, "family-all.png"), 1180, 1680); familyScroll.MaxHeight = keepMax;   // v2.23: taller - Capture and Display add a row (v2.24: the restore had slipped into the comment; v2.26: 1680 - Uninstall starts another row)
+                var keepMax = familyScroll.MaxHeight; familyScroll.MaxHeight = 3000; Snap.Save(this, System.IO.Path.Combine(dir, "family-all.png"), 1180, 1960); familyScroll.MaxHeight = keepMax;   // v2.23: taller - Capture and Display add a row (v2.24: the restore had slipped into the comment; v2.26: 1680 - Uninstall starts another row; v2.27: 1960 - Doctor / Updates and Clock / Fonts add a row each)
                 familyBtn.IsChecked = false;
                 File.WriteAllText(System.IO.Path.Combine(dir, "family-cards.txt"), FamilyCardsText());
             }

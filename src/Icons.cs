@@ -31,6 +31,7 @@ namespace HallowHub
             { "Search", "magnifying-glass" }, { "Rebuild index", "arrows-rotate" },                                                                    // v2.24: Hallow Find's card
             { "New window", "plus" }, { "Downloads", "download" },                                                                                    // v2.25: Hallow Files' card
             { "Diagnose", "stethoscope" }, { "New image", "image" }, { "Open a picture...", "folder-open" }, { "New tab", "plus" }, { "Open a file...", "folder-open" }, { "Orphans", "broom" },   // v2.26: Net, Paint, Notes and Uninstall's cards
+            { "Crashes", "triangle-exclamation" }, { "PC health", "heart-pulse" }, { "Switch windows", "window-restore" }, { "5-min timer", "hourglass-half" }, { "Dismiss", "bell" }, { "Snooze", "moon" }, { "Duplicates", "layer-group" },   // v2.27: Doctor, Switch, Clock and Fonts' cards (Updates' "Check now" is above)
         };
         // label starts with -> icon
         static readonly string[][] Prefixes = {

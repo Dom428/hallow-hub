@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.27
+- Five new family members on the Family page: Hallow Doctor and Hallow Updates (Protect) - blue screens and what they have in common, app updates waiting, with Crashes and Check now; Hallow Switch, Hallow Clock and Hallow Fonts (Everyday) - its hotkey and who has Alt+Tab, running timers and the next alarm, font families and duplicates, with Switch windows, 5-min timer / Dismiss and Duplicates.
+- Counts and states only - never a driver, an app name, a window title, a timer label or a font name. Launch checklists never close Doctor, Updates, Clock or Fonts. Doctor and Fonts are windowed apps (Hub opens their window again after an update and never nags you to start them with Windows); Updates, Switch and Clock start in the tray.
+
 WHAT'S NEW IN 2.26
 - Four new family members on the Family page: Hallow Net (Play) - ping, packet loss, download speed and the last check's answer (your Wi-Fi, your internet or the game), with Diagnose; Hallow Paint, Hallow Notes and Hallow Uninstall (Everyday) - pictures / tabs open and how many aren't saved, apps installed and orphans found, with New image, New tab, Orphans, Open and Settings.
 - Numbers and counts only - never an IP address, a Wi-Fi name, an app name, a file name or your text. Launch checklists never close any of the four. Paint, Notes and Uninstall are windowed apps (Hub opens their window again after an update and never nags you to start them with Windows); Net starts in the tray.

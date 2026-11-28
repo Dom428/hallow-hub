@@ -52,12 +52,12 @@ namespace HallowHub
         public static readonly string[] Groups = { "Play", "Protect", "Everyday" };
         public static readonly string[][] Layout = {
             new[] { "Mixer", "Overlay", "Clips", "Vault", "Remote", "Browser", "Gear", "Net" },   // v2.26: Net (it watches your game's connection)
-            new[] { "Guard", "Shield", "VPN", "Keys", "Assist" },
-            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places", "Capture", "Display", "Find", "Files", "Paint", "Notes", "Uninstall" } };   // v2.23: Capture and Display; v2.24: Find; v2.25: Files; v2.26: Paint, Notes, Uninstall
+            new[] { "Guard", "Shield", "VPN", "Keys", "Assist", "Doctor", "Updates" },   // v2.27: Doctor (crashes and PC health), Updates (every app patched)
+            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places", "Capture", "Display", "Find", "Switch", "Files", "Paint", "Notes", "Uninstall", "Clock", "Fonts" } };   // v2.23: Capture and Display; v2.24: Find; v2.25: Files; v2.26: Paint, Notes, Uninstall; v2.27: Switch (next to Find), Clock, Fonts
         public static IEnumerable<string> AllApps { get { return Layout.SelectMany(x => x); } }
         // Shield is a browser extension (its bridge writes status.json) and Places a server on the NAS: no exe, no pipe
         public static bool WindowsApp(string app) { return app != "Shield" && app != "Places"; }
-        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home", "Gear", "Display", "Files", "Net", "Uninstall" };   // "open settings" on their pipes (v2.25: Files; v2.26: Net and Uninstall - Paint and Notes take "invoke settings")
+        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home", "Gear", "Display", "Files", "Net", "Uninstall", "Doctor", "Updates", "Switch", "Clock", "Fonts" };   // "open settings" on their pipes (v2.25: Files; v2.26: Net and Uninstall - Paint and Notes take "invoke settings"; v2.27: Doctor, Updates, Switch, Clock, Fonts)
         public static bool HasSettings(string app) { return WithSettings.Contains(app); }
         public static string Icon(string app)
         {
@@ -69,6 +69,7 @@ namespace HallowHub
                 case "Torrents": return "magnet"; case "Email": return "envelope"; case "Financials": return "wallet"; case "Home": return "house"; case "Places": return "location-dot";
                 case "Gear": return "keyboard"; case "Capture": return "camera"; case "Display": return "display"; case "Find": return "magnifying-glass"; case "Files": return "folder-open";
                 case "Net": return "gauge-high"; case "Paint": return "tool-brush"; case "Notes": return "file-lines"; case "Uninstall": return "broom";   // v2.26
+                case "Doctor": return "stethoscope"; case "Updates": return "arrows-rotate"; case "Switch": return "window-restore"; case "Clock": return "clock"; case "Fonts": return "font";   // v2.27
             }
             return "gamepad";
         }
@@ -88,6 +89,9 @@ namespace HallowHub
                 case "Net": return "Speeds, apps, ping - and whether it's your Wi-Fi, your internet or the game";   // v2.26
                 case "Paint": return "A better Paint: layers, adjustments, quick edits"; case "Notes": return "A fast text and code editor: tabs, highlighting, find in files";
                 case "Uninstall": return "Removes apps completely, leftovers included";
+                case "Doctor": return "A crash and PC-health checkup in plain words"; case "Updates": return "Every app update in one place, through winget";   // v2.27
+                case "Switch": return "A better Alt+Tab: live thumbnails, type to search"; case "Clock": return "Timers, alarms and reminders that work around your games";
+                case "Fonts": return "A better font manager: previews, compare, installs just for you";
             }
             return "";
         }
@@ -127,6 +131,23 @@ namespace HallowHub
             { "Notes", new[] { "running b", "windows n", "tabs n", "unsavedTabs n", "untitledTabs n", "compareTabs n", "largeFiles n", "splitView b", "macroRecording b", "findInFilesRunning b", "findIndex b" } },
             // v2.26: Hallow Uninstall - counts and states only, never an app name, a folder, a path or a registry key
             { "Uninstall", new[] { "running b", "installedApps n", "storeApps n", "orphans n", "orphanFolders n", "orphanDriversServices n", "orphanTasksStartup n", "historyEntries n", "scanning b", "busy b" } },
+            // v2.27: Hallow Doctor - counts and its own words only (verdict, confidence and the memory test are fixed lists): never a driver,
+            // a dump, a stop code, a path or a name
+            { "Doctor", new[] { "running b", "blueScreens n", "unexpectedShutdowns n", "daysBack n", "lastBlueScreen t", "dumpsCopied n", "dumpsAnalysed n", "cdbInstalled b", "suspectDrivers n",
+                "verdict e:windows-own|same-driver|hardware|power|recent|none", "confidence e:likely|possible|weak-hint|none", "wheaErrors n", "memTest e:pass|fail|unknown|none", "healthWarnings n", "openSteps n", "loading b", "busy b" } },
+            // v2.27: Hallow Updates - counts and states only, never an app name, id, version or path
+            { "Updates", new[] { "running b", "wingetFound b", "updatesAvailable n", "wingetUpdates n", "storeUpdates n", "hallowUpdates n", "ignored n", "pinned n", "agreementsNeeded b", "checking b",
+                "lastCheck t", "updating b", "queued n", "doneThisRun n", "failedThisRun n", "paused b", "waitingForGame b", "gameRunning b", "historyEntries n", "trayMode b" } },
+            // v2.27: Hallow Switch - counts and states only (window titles and app names never leave it; its pipe has no list command).
+            // hotkey is a key name like "Alt+`" - the short-name rule (s) doesn't allow the backtick, so it has its own pattern
+            { "Switch", new[] { "running b", "windows n", "monitors n", "switches n", "hotkey r:^[A-Za-z0-9+`]{1,24}$", "hotkeyFallback b", "replaceAltTab b", "altTabHook b", "altTabPausedForGame b",
+                "altTabGaveUp b", "altTabFallbacks n", "gameRunning b" } },
+            // v2.27: Hallow Clock - numbers only, never a timer / alarm label, a reminder's words or a game's name (Hub never asks for its "list")
+            { "Clock", new[] { "running b", "timers n", "timersRunning n", "nextTimerSeconds n", "alarms n", "alarmsOn n", "nextAlarmMinutes n", "reminders n", "ringing n", "stopwatchRunning b", "laps n",
+                "worldClocks n", "gaming b", "overlay b" } },
+            // v2.27: Hallow Fonts - counts only, never a font name, a file name or a path
+            { "Fonts", new[] { "running b", "families n", "styles n", "files n", "systemFiles n", "userFiles n", "variableFamilies n", "recentlyInstalled n", "duplicateGroups n", "favourites n", "collections n",
+                "comparing n", "installedThisSession n", "uninstalledThisSession n", "loading b", "busy b" } },
             { "Vault", new[] { "running b", "busy b", "games c" } },
             { "Clips", new[] { "recording b", "seconds n", "clips c" } },
             { "Overlay", new[] { "visible b" } },
@@ -297,13 +318,20 @@ namespace HallowHub
                 case "Paint": PaintCard(c, st); break;
                 case "Notes": NotesCard(c, st); break;
                 case "Uninstall": UninstallCard(c, st); break;
+                case "Doctor": DoctorCard(c, st); break;
+                case "Updates": UpdatesCard(c, st); break;
+                case "Switch": SwitchCard(c, st); break;
+                case "Clock": ClockCard(c, st); break;
+                case "Fonts": FontsCard(c, st); break;
                 default: OlderCard(c, st); break;
             }
             if (app == "Find") { open.Line = "open settings"; open.Tip = "Open Hallow Find (its settings and index)"; }   // v2.24: Search already opens the search bar
             if (app == "Uninstall") open.Tip = "Open Hallow Uninstall (your installed apps)";   // v2.26: a bare "open" is its Installed page
             // v2.25: Files' New window already does what Open would (a new window on Home); v2.26: Paint and Notes have their own
             // Open... (their open dialog - a bare "open" means "open this file" to them) and Settings ("invoke settings")
-            if (app != "Files" && app != "Paint" && app != "Notes") c.Actions.Add(open);
+            // (v2.27: Switch's "Switch windows" is its "open" - the switcher; Updates' Open goes to the updates waiting)
+            if (app == "Updates") { open.Line = "open updates"; open.Tip = "Open Hallow Updates (the updates waiting)"; }
+            if (app != "Files" && app != "Paint" && app != "Notes" && app != "Switch") c.Actions.Add(open);
             if (HasSettings(app)) c.Actions.Add(new CardAction { Label = "Settings", Kind = "pipe", Line = "open settings", IconOnly = true, Tip = "Hallow " + app + "'s settings", OkText = "Opened Hallow " + app + "'s settings.", FailText = "Hallow " + app + " didn't open its settings" });
             return c;
         }
@@ -784,6 +812,165 @@ namespace HallowHub
             c.Actions.Add(new CardAction { Label = "Orphans", Kind = "pipe", Line = "open orphans",
                 Tip = "Orphans - folders, drivers, services, tasks and startup entries no installed app owns (opens Hallow Uninstall's Orphans page)",
                 OkText = "Opened the orphans in Hallow Uninstall.", FailText = "Hallow Uninstall didn't open its Orphans page" });
+        }
+
+        // v2.27: Hallow Doctor - the blue screens and unexpected shutdowns it found and what they have in common, in its own words.
+        // Counts and fixed words only: never a driver, a dump, a stop code or a path (they stay in Hallow Doctor).
+        public static string DoctorVerdictText(string v)
+        {
+            switch (v)
+            {
+                case "windows-own": return "RAM or a driver"; case "same-driver": return "the same driver in the crashes"; case "hardware": return "the hardware reported errors";
+                case "power": return "power or a hard freeze"; case "recent": return "a driver installed just before";
+            }
+            return null;
+        }
+        static void DoctorCard(AppCard c, Dictionary<string, object> st)
+        {
+            int bs = Int(st, "blueScreens"), hard = Int(st, "unexpectedShutdowns"), days = Int(st, "daysBack"), steps = Int(st, "openSteps"), warn = Int(st, "healthWarnings");
+            int copied = Int(st, "dumpsCopied"), analysed = Int(st, "dumpsAnalysed"), whea = Int(st, "wheaErrors");
+            bool busy = Is(st, "busy"), loading = Is(st, "loading");
+            var period = days > 0 ? " in " + Count(days, "day", "days") : "";
+            if (!Has(st, "blueScreens")) c.Line = loading ? "Reading the event logs..." : "Running";
+            else if (bs > 0) { c.Line = Count(bs, "blue screen", "blue screens") + period; c.LineLevel = 2; }
+            else if (hard > 0) { c.Line = Count(hard, "unexpected shutdown", "unexpected shutdowns") + period; c.LineLevel = 2; }
+            else { c.Line = "No crashes" + period; c.LineLevel = 1; }
+            var verdict = DoctorVerdictText(Str(st, "verdict")); var conf = Str(st, "confidence");
+            if (busy) c.Sub = "Copying or analysing crash dumps...";
+            else if (verdict != null) { c.Sub = (conf == "likely" ? "Likely: " : conf == "possible" ? "Possibly: " : "A hint: ") + verdict; c.SubLevel = conf == "likely" ? 2 : 0; }
+            else if (bs > 0 && analysed == 0) c.Sub = "Crash dumps not analysed yet";
+            else if (steps > 0) c.Sub = Count(steps, "next step", "next steps") + " to try";
+            else if (warn > 0) { c.Sub = Count(warn, "PC health warning", "PC health warnings"); c.SubLevel = 2; }
+            var tip = new List<string>();
+            if (Has(st, "blueScreens")) tip.Add("Blue screens: " + bs + ", unexpected shutdowns: " + hard + (days > 0 ? " (the last " + Count(days, "day", "days") + ")" : ""));
+            var last = When(st, "lastBlueScreen"); if (last != null) tip.Add("Last blue screen: " + Ago(last.Value, DateTime.Now));
+            if (copied > 0 || analysed > 0) tip.Add("Crash dumps: " + copied + " copied, " + analysed + " analysed" + (Has(st, "cdbInstalled") && !Is(st, "cdbInstalled") ? " (cdb isn't installed)" : ""));
+            if (whea > 0) tip.Add(Count(whea, "hardware error", "hardware errors") + " (WHEA) in the event log");
+            var mem = Str(st, "memTest"); if (mem == "pass") tip.Add("Windows Memory Diagnostic: passed"); else if (mem == "fail") tip.Add("Windows Memory Diagnostic: found errors");
+            if (warn > 0) tip.Add(Count(warn, "PC health warning", "PC health warnings") + " (disks, temperatures, BIOS, RAM speed)");
+            if (steps > 0) tip.Add(Count(steps, "next step", "next steps") + " open in Hallow Doctor");
+            tip.Add("Driver names and dumps stay in Hallow Doctor - Hub only sees counts");
+            c.Tip = string.Join("\n", tip);
+            c.Actions.Add(new CardAction { Label = "Crashes", Kind = "pipe", Line = "open crashes", Tip = "Crashes - every blue screen and unexpected shutdown, and what they have in common (opens Hallow Doctor)",
+                OkText = "Opened the crashes in Hallow Doctor.", FailText = "Hallow Doctor didn't open its Crashes page" });
+            c.Actions.Add(new CardAction { Label = "PC health", Kind = "pipe", Line = "open health", IconOnly = true, Tip = "PC health - disks, temperatures, BIOS and RAM (opens Hallow Doctor)",
+                OkText = "Opened PC health in Hallow Doctor.", FailText = "Hallow Doctor didn't open its PC health page" });
+        }
+
+        // v2.27: Hallow Updates - how many app updates are waiting and what it's doing (counts and states only - never an app name, id or version)
+        static void UpdatesCard(AppCard c, Dictionary<string, object> st)
+        {
+            int n = Int(st, "updatesAvailable"), q = Int(st, "queued"), done = Int(st, "doneThisRun"), bad = Int(st, "failedThisRun");
+            bool updating = Is(st, "updating"), checking = Is(st, "checking"), noWinget = Has(st, "wingetFound") && !Is(st, "wingetFound");
+            if (noWinget) { c.Line = "winget (App Installer) is missing"; c.LineLevel = 2; }
+            else if (!Has(st, "updatesAvailable")) c.Line = checking ? "Looking for updates..." : "Running";
+            else if (n == 0) { c.Line = "Everything is up to date"; c.LineLevel = 1; }
+            else { c.Line = Count(n, "update", "updates") + " available"; c.LineLevel = 2; }
+            if (updating && Is(st, "waitingForGame")) c.Sub = "Updating after your game closes";
+            else if (updating && Is(st, "paused")) c.Sub = "Updates paused" + (q > 0 ? " - " + q + " left" : "");
+            else if (updating) c.Sub = "Updating" + (q > 0 ? " - " + q + " left" : "...");
+            else if (Is(st, "agreementsNeeded")) { c.Sub = "A source agreement needs your OK"; c.SubLevel = 2; }
+            else if (checking) c.Sub = "Checking...";
+            else if (bad > 0) { c.Sub = Count(bad, "update", "updates") + " failed this time"; c.SubLevel = 2; }
+            else { var last = When(st, "lastCheck"); if (last != null) c.Sub = "Checked " + Ago(last.Value, DateTime.Now); }
+            var tip = new List<string>();
+            if (n > 0) tip.Add("From winget: " + Int(st, "wingetUpdates") + ", Microsoft Store: " + Int(st, "storeUpdates") + ", Hallow apps: " + Int(st, "hallowUpdates"));
+            if (done > 0) tip.Add(Count(done, "update", "updates") + " installed this time");
+            int ign = Int(st, "ignored"), pin = Int(st, "pinned"); if (ign > 0 || pin > 0) tip.Add("Hidden: " + ign + " ignored, " + pin + " pinned");
+            int hist = Int(st, "historyEntries"); if (hist > 0) tip.Add(Count(hist, "update", "updates") + " in its History");
+            tip.Add("Never during a game - it waits until the game closes" + (Is(st, "trayMode") ? "; in the tray it checks once a day" : ""));
+            tip.Add("App names stay in Hallow Updates - Hub only sees counts");
+            c.Tip = string.Join("\n", tip);
+            c.Actions.Add(new CardAction { Label = "Check now", Kind = "pipe", Line = "check", Enabled = !checking && !updating && !noWinget,
+                Tip = checking || updating ? "Check now - Hallow Updates is busy right now" : "Check now - look for app updates (read only; nothing is installed until you pick it in Hallow Updates)",
+                OkText = "Hallow Updates is looking for updates...", FailText = "Hallow Updates didn't check" });
+        }
+
+        // v2.27: Hallow Switch - its hotkey and who has Alt+Tab. Hub never turns the Alt+Tab hook on (Switch's pipe refuses it anyway).
+        static void SwitchCard(AppCard c, Dictionary<string, object> st)
+        {
+            var hk = Str(st, "hotkey");
+            c.Line = hk != null ? hk + " to switch windows" : "Running";
+            if (Is(st, "replaceAltTab") && Is(st, "altTabGaveUp")) { c.Sub = "Alt+Tab: switched itself off"; c.SubLevel = 2; }
+            else if (Is(st, "replaceAltTab") && Is(st, "altTabPausedForGame")) c.Sub = "Alt+Tab: paused - game with anti-cheat";
+            else if (Is(st, "replaceAltTab") && Is(st, "altTabHook")) { c.Sub = "Alt+Tab: Hallow Switch"; c.SubLevel = 1; }
+            else if (Has(st, "replaceAltTab")) c.Sub = "Alt+Tab: Windows' own";
+            var tip = new List<string>();
+            if (hk != null) tip.Add(hk + " opens the switcher" + (Is(st, "hotkeyFallback") ? " (its first choice was taken by another app)" : ""));
+            int win = Int(st, "windows"), mon = Int(st, "monitors"), sw = Int(st, "switches");
+            if (win > 0) tip.Add(Count(win, "window", "windows") + (mon > 1 ? " on " + Count(mon, "monitor", "monitors") : "") + " the last time it opened");
+            if (sw > 0) tip.Add(Count(sw, "switch", "switches") + " so far");
+            int fb = Int(st, "altTabFallbacks"); if (fb > 0) tip.Add("Alt+Tab went to Windows' own " + Count(fb, "time", "times") + " (a game or a stuck hook)");
+            tip.Add("Replace Alt+Tab is off unless you turn it on in Hallow Switch's Settings - never from Hub");
+            tip.Add("Window titles and app names stay in Hallow Switch - Hub only sees counts");
+            c.Tip = string.Join("\n", tip);
+            c.Actions.Add(new CardAction { Label = "Switch windows", Kind = "pipe", Line = "open", Tip = "Switch windows - Hallow Switch's live thumbnails (the window list stays in Hallow Switch)",
+                OkText = "Hallow Switch: pick a window.", FailText = "Hallow Switch didn't open" });
+        }
+
+        // v2.27: Hallow Clock - running timers, the next alarm and anything ringing (numbers only - never a label or a reminder's words)
+        public static string ClockLeft(int secs)
+        {
+            if (secs < 0) secs = 0;
+            var t = TimeSpan.FromSeconds(secs);
+            return t.TotalHours >= 1 ? ((int)t.TotalHours).ToString(CultureInfo.InvariantCulture) + ":" + t.Minutes.ToString("00") + ":" + t.Seconds.ToString("00") : t.Minutes.ToString(CultureInfo.InvariantCulture) + ":" + t.Seconds.ToString("00");
+        }
+        public static string ClockIn(int minutes)
+        {
+            if (minutes < 60) return Math.Max(1, minutes) + " min";
+            if (minutes < 1440) return (minutes / 60) + " h" + (minutes % 60 > 0 ? " " + (minutes % 60) + " min" : "");
+            return (minutes / 1440) + " d" + (minutes % 1440 / 60 > 0 ? " " + (minutes % 1440 / 60) + " h" : "");
+        }
+        static void ClockCard(AppCard c, Dictionary<string, object> st)
+        {
+            int ringing = Int(st, "ringing"), tr = Int(st, "timersRunning"), alarmsOn = Int(st, "alarmsOn"), rem = Int(st, "reminders"), laps = Int(st, "laps");
+            if (ringing > 0) { c.Line = ringing == 1 ? "Ringing now" : ringing + " ringing now"; c.LineLevel = 2; }
+            else if (tr > 0) c.Line = Count(tr, "timer", "timers") + " running" + (Has(st, "nextTimerSeconds") ? " - " + ClockLeft(Int(st, "nextTimerSeconds")) + " left" : "");
+            else if (Is(st, "stopwatchRunning")) c.Line = "Stopwatch running" + (laps > 0 ? " - " + Count(laps, "lap", "laps") : "");
+            else c.Line = Has(st, "timers") ? "No timer running" : "Running";
+            var parts = new List<string>();
+            if (alarmsOn > 0) parts.Add(Has(st, "nextAlarmMinutes") ? "Next alarm in " + ClockIn(Int(st, "nextAlarmMinutes")) : Count(alarmsOn, "alarm on", "alarms on"));
+            if (rem > 0) parts.Add(Count(rem, "reminder", "reminders"));
+            if (parts.Count > 0) c.Sub = string.Join(" · ", parts);
+            var tip = new List<string>();
+            if (Has(st, "timers")) tip.Add("Timers: " + Int(st, "timers") + " (" + tr + " running), alarms: " + Int(st, "alarms") + " (" + alarmsOn + " on), reminders: " + rem);
+            if (Is(st, "stopwatchRunning") && (ringing > 0 || tr > 0)) tip.Add("The stopwatch is running too");
+            if (Is(st, "gaming")) tip.Add("A game is running: alerts never pop up over it" + (Is(st, "overlay") ? " - they show in the mini timer overlay" : ""));
+            else if (Is(st, "overlay")) tip.Add("Mini timer overlay on");
+            tip.Add("Labels and reminder words stay in Hallow Clock - Hub only sees numbers");
+            c.Tip = string.Join("\n", tip);
+            if (ringing > 0)
+            {
+                c.Actions.Add(new CardAction { Label = "Dismiss", Kind = "pipe", Line = "dismiss", Tip = "Dismiss - stop everything that's ringing", OkText = "Hallow Clock: dismissed.", FailText = "Hallow Clock didn't dismiss" });
+                c.Actions.Add(new CardAction { Label = "Snooze", Kind = "pipe", Line = "snooze", IconOnly = true, Tip = "Snooze everything that's ringing", OkText = "Hallow Clock: snoozed.", FailText = "Hallow Clock didn't snooze", OkFrom = ClockSnoozeText });
+            }
+            else c.Actions.Add(new CardAction { Label = "5-min timer", Kind = "pipe", Line = "timer 5", Tip = "Start a 5-minute timer in Hallow Clock (it rings even while you play - never over the game)",
+                OkText = "Hallow Clock started a 5-minute timer.", FailText = "Hallow Clock didn't start a timer" });
+        }
+        public static string ClockSnoozeText(string reply)
+        {
+            try { var j = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(reply.Substring(3)); var m = (int)Family.Num(j, "minutes"); if (m > 0 && m <= 60) return "Hallow Clock: snoozed for " + m + " min."; }
+            catch { }
+            return null;
+        }
+
+        // v2.27: Hallow Fonts - families and styles installed and duplicates to clean up (counts only - never a font name or a file)
+        static void FontsCard(AppCard c, Dictionary<string, object> st)
+        {
+            int fam = Int(st, "families"), sty = Int(st, "styles"), dup = Int(st, "duplicateGroups"), user = Int(st, "userFiles");
+            if (!Has(st, "families") || (Is(st, "loading") && fam == 0)) c.Line = Is(st, "loading") ? "Reading your fonts..." : "Running";
+            else c.Line = Count(fam, "font family", "font families") + (sty > 0 ? " · " + Count(sty, "style", "styles") : "");
+            if (Is(st, "busy")) { c.Sub = "Installing or removing fonts - let it finish"; c.SubLevel = 2; }
+            else if (dup > 0) { c.Sub = Count(dup, "duplicate", "duplicates") + " to clean up"; c.SubLevel = 2; }
+            else if (user > 0) c.Sub = Count(user, "font", "fonts") + " installed just for you";
+            var tip = new List<string>();
+            if (Has(st, "files")) tip.Add("Font files: " + Int(st, "files") + " (Windows: " + Int(st, "systemFiles") + ", just for you: " + user + ")");
+            int vf = Int(st, "variableFamilies"), rec = Int(st, "recentlyInstalled"); if (vf > 0) tip.Add(Count(vf, "variable family", "variable families")); if (rec > 0) tip.Add(Count(rec, "family", "families") + " installed in the last 30 days");
+            int fav = Int(st, "favourites"), col = Int(st, "collections"); if (fav > 0 || col > 0) tip.Add(Count(fav, "favourite", "favourites") + ", " + Count(col, "collection", "collections"));
+            tip.Add("Windows' own fonts are never removed; font names stay in Hallow Fonts - Hub only sees counts");
+            c.Tip = string.Join("\n", tip);
+            c.Actions.Add(new CardAction { Label = "Duplicates", Kind = "pipe", Line = "open duplicates", Tip = "Duplicates - the same font in more than one file; Hallow Fonts keeps the newest (opens it - nothing is removed until you click there)",
+                OkText = "Opened the duplicates in Hallow Fonts.", FailText = "Hallow Fonts didn't open its Duplicates page" });
         }
         static void OlderCard(AppCard c, Dictionary<string, object> st)
         {

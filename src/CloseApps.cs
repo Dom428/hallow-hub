@@ -37,9 +37,21 @@ namespace HallowHub
             //   but text typed since the last backup (a few seconds) could still be lost - so never
             // - Hallow Uninstall: while it removes an app (that app's own uninstaller may be running too) X puts "Close anyway?" in front of
             //   the game, and closing it then stops a removal halfway; it even refuses "quit" while busy - so never
-            "hallownet", "hallowpaint", "hallownotes", "hallowuninstall" };
+            "hallownet", "hallowpaint", "hallownotes", "hallowuninstall",
+            // v2.27, never closed by a launch either:
+            // - Hallow Doctor: while it copies crash dumps (its elevated helper) or cdb analyses them it refuses "quit" ("error busy");
+            //   closing its window then would leave half-copied dumps and an unfinished analysis
+            // - Hallow Updates: while winget installs an update, closing it can stop an installer halfway - and it already waits for the
+            //   game to close before it installs anything ("quit" is refused with "error busy updating")
+            // - Hallow Clock: its timers, alarms and reminders ring while you play (quietly - never over the game); closing it at the start
+            //   of a game would silence exactly those
+            // - Hallow Fonts: an install or removal (copy, register, AddFontResource, WM_FONTCHANGE) must not stop halfway; it refuses
+            //   "quit" while busy
+            "hallowdoctor", "hallowupdates", "hallowclock", "hallowfonts" };
         // v2.24: Hallow Find is deliberately not here - it has nothing a game launch could lose (its index is a cache saved every 10 min
         // and on quit, its walk already pauses while a game runs, and "close like X" only hides its settings window)
+        // v2.27: Hallow Switch neither - "close like X" only hides its Settings window, and it pauses its Alt+Tab hook by itself for games
+        // with anti-cheat
 
         public static bool Allowed(string exeOrName)
         {
