@@ -50,11 +50,11 @@ namespace HallowHub
         public static readonly string[][] Layout = {
             new[] { "Mixer", "Overlay", "Clips", "Vault", "Remote", "Browser", "Gear" },
             new[] { "Guard", "Shield", "VPN", "Keys", "Assist" },
-            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places" } };
+            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places", "Capture", "Display" } };   // v2.23: Capture and Display
         public static IEnumerable<string> AllApps { get { return Layout.SelectMany(x => x); } }
         // Shield is a browser extension (its bridge writes status.json) and Places a server on the NAS: no exe, no pipe
         public static bool WindowsApp(string app) { return app != "Shield" && app != "Places"; }
-        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home", "Gear" };   // "open settings" on their pipes
+        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home", "Gear", "Display" };   // "open settings" on their pipes
         public static bool HasSettings(string app) { return WithSettings.Contains(app); }
         public static string Icon(string app)
         {
@@ -64,7 +64,7 @@ namespace HallowHub
                 case "Remote": return "mobile-screen"; case "Browser": return "globe"; case "Guard": return "shield-halved"; case "Shield": return "eye-slash";
                 case "VPN": return "lock"; case "Keys": return "key"; case "Assist": return "hand-holding-heart"; case "Tasks": return "gauge-high";
                 case "Torrents": return "magnet"; case "Email": return "envelope"; case "Financials": return "wallet"; case "Home": return "house"; case "Places": return "location-dot";
-                case "Gear": return "keyboard";
+                case "Gear": return "keyboard"; case "Capture": return "camera"; case "Display": return "display";
             }
             return "gamepad";
         }
@@ -78,7 +78,8 @@ namespace HallowHub
                 case "Keys": return "Your passwords, on your PC"; case "Assist": return "Remote help for friends and family"; case "Tasks": return "A better Task Manager";
                 case "Torrents": return "Torrents that only run over your VPN"; case "Email": return "A private email client"; case "Financials": return "Private personal finance";
                 case "Home": return "Pets and smart home through Home Assistant"; case "Places": return "Family location sharing on your NAS";
-                case "Gear": return "Batteries of your mouse, headset and pads";
+                case "Gear": return "Batteries of your mouse, headset and pads"; case "Capture": return "Screenshots and a private clipboard history";
+                case "Display": return "Brightness, game display profiles and window layouts";
             }
             return "";
         }
@@ -87,7 +88,9 @@ namespace HallowHub
 
         // ---- the privacy filter: the only fields of each app's status that Hub reads. b = true/false, n = a number (0 or more),
         // v = a version, t = a time, e:a|b = one of these words, r:<regex> = a short word that matches, c = how many in a list,
-        // p = a name turned into true/false (a game being played, VPN home mode), accounts / browsers = counts and browser names only.
+        // p = a name turned into true/false (a game being played, VPN home mode), accounts / browsers = counts and browser names only,
+        // s = a short display name (v2.23: Display's game - letters, digits and a little punctuation, no path, no address, 40 at most).
+        static readonly Regex ShortName = new Regex(@"^[\p{L}\p{N}][\p{L}\p{N} &'()._:+!,-]{0,39}$");
         static readonly string[] Common = { "version v", "updated t", "lastCrash t" };
         static readonly Dictionary<string, string[]> Allowed = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase) {
             { "VPN", new[] { "running b", "connected b", "connecting b", "server r:^[a-z]{2}(-[a-z]{2})?[0-9]{1,5}$", "country r:^[A-Za-z][A-Za-z .'()-]{1,39}$", "protocol e:IKEv2|NordLynx", "killSwitch b", "paused b", "game p", "home p", "account b",
@@ -101,6 +104,8 @@ namespace HallowHub
             { "Shield", new[] { "blockedToday n", "blockedWeek n", "browsers browsers" } },
             { "Mixer", new[] { "spotifyAdMuted b", "adsMutedToday n" } },   // v2.20: Mixer 3.27 (counts only - never what played)
             { "Gear", new[] { "running b", "game p", "devices gear" } },   // v2.20: model names and batteries only (never a Bluetooth id)
+            { "Capture", new[] { "running b", "capturesToday n", "historyCount n", "paused b" } },   // v2.23: counts only - never clipboard content or a file name
+            { "Display", new[] { "running b", "profileActive s", "game s", "profileCount n", "layoutKnown b", "testRunning b" } },   // v2.23: never window titles or programs
             { "Vault", new[] { "running b", "busy b", "games c" } },
             { "Clips", new[] { "recording b", "seconds n", "clips c" } },
             { "Overlay", new[] { "visible b" } },
@@ -140,6 +145,7 @@ namespace HallowHub
                     else if (kind == "t") { DateTime t; if (s != null && s.Length <= 40 && DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out t)) d[key] = t; }
                     else if (kind.StartsWith("e:")) { if (s != null && kind.Substring(2).Split('|').Contains(s)) d[key] = s; }
                     else if (kind.StartsWith("r:")) { if (s != null && s.Length <= 40 && Regex.IsMatch(s, kind.Substring(2))) d[key] = s; }
+                    else if (kind == "s") { if (s != null && ShortName.IsMatch(s.Trim()) && !s.Contains("@") && !s.Contains("://")) d[key] = s.Trim(); }
                     else if (kind == "p") d[key] = v is bool ? (bool)v : v != null && !(s != null && s.Trim().Length == 0);
                     else if (kind == "c") { var a = v as ArrayList; if (a != null) d[key] = (double)a.Count; }
                     else if (kind == "accounts")
@@ -261,6 +267,8 @@ namespace HallowHub
                 case "Home": HomeCard(c, st); break;
                 case "Gear": GearCard(c, st); break;
                 case "Mixer": MixerCard(c, st); break;
+                case "Capture": CaptureCard(c, st); break;
+                case "Display": DisplayCard(c, st); break;
                 default: OlderCard(c, st); break;
             }
             c.Actions.Add(open);
@@ -483,6 +491,61 @@ namespace HallowHub
             }
             catch { }
             return "Hallow Gear is reading the batteries.";
+        }
+        // v2.23: Hallow Capture - "3 captures today", the clipboard history's size and whether it's paused (counts only, never what was copied)
+        static void CaptureCard(AppCard c, Dictionary<string, object> st)
+        {
+            int today = Int(st, "capturesToday"), hist = Int(st, "historyCount"); bool paused = Is(st, "paused");
+            c.Line = Has(st, "capturesToday") ? (today == 0 ? "No captures today" : Count(today, "capture", "captures") + " today") : "Running";
+            c.Sub = paused ? "Clipboard history paused" : Has(st, "historyCount") ? "Clipboard history: " + Count(hist, "item", "items") : null;
+            if (paused) c.SubLevel = 2;
+            c.Actions.Add(new CardAction { Label = "Capture a region", Kind = "pipe", Line = "capture region", Tip = "Freeze the screen and drag over what you want (Hallow Capture's region overlay)",
+                OkText = "Hallow Capture: drag over the part you want.", FailText = "Hallow Capture didn't start a capture" });
+            c.Actions.Add(new CardAction { Label = "Clipboard history", Kind = "pipe", Line = "open history", IconOnly = true, Tip = "Clipboard history - open it in Hallow Capture (it stays on this PC; Hub never sees what's in it)",
+                OkText = "Opened the clipboard history.", FailText = "Hallow Capture didn't open the clipboard history" });
+            c.Actions.Add(new CardAction { Label = paused ? "Resume history" : "Pause history", Kind = "pipe", Line = paused ? "pause off" : "pause on", IconOnly = true,
+                Tip = paused ? "Resume history - keep a clipboard history again" : "Pause history - stop keeping what you copy until you resume",
+                OkText = paused ? "Hallow Capture keeps a clipboard history again." : "Hallow Capture's clipboard history is paused.", FailText = "Hallow Capture didn't answer", OkFrom = CapturePauseText });
+        }
+        public static string CapturePauseText(string reply)
+        {
+            try { var j = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(reply.Substring(3)); if (j.ContainsKey("paused")) return Family.Bool(j, "paused") ? "Hallow Capture's clipboard history is paused." : "Hallow Capture keeps a clipboard history again."; }
+            catch { }
+            return null;
+        }
+        // v2.23: Hallow Display - the game profile in use (or how many it has), a test running, and window layouts for this monitor setup
+        static void DisplayCard(AppCard c, Dictionary<string, object> st)
+        {
+            var active = Str(st, "profileActive"); var game = Str(st, "game"); int profiles = Int(st, "profileCount");
+            if (Is(st, "testRunning")) { c.Line = "Trying a display setting..."; c.LineLevel = 2; }
+            else if (active != null) { c.Line = "Game profile: " + active; c.LineLevel = 1; }
+            else if (game != null) c.Line = "Playing " + game + " - no profile";
+            else c.Line = Has(st, "profileCount") ? (profiles == 0 ? "No game profiles yet" : Count(profiles, "game profile", "game profiles")) : "Running";
+            c.Sub = Has(st, "layoutKnown") ? (Is(st, "layoutKnown") ? "Window layout saved for these monitors" : "No window layout for these monitors yet") : null;
+            c.Actions.Add(new CardAction { Label = "Put windows back", Kind = "pipe", Line = "layout restore", Enabled = !Has(st, "layoutKnown") || Is(st, "layoutKnown"),
+                Tip = Has(st, "layoutKnown") && !Is(st, "layoutKnown") ? "Save a layout for this monitor setup in Hallow Display first" : "Move your windows back to where they were for this monitor setup",
+                OkText = "Hallow Display put your windows back.", FailText = "Hallow Display couldn't put the windows back", OkFrom = DisplayLayoutText });
+            c.Actions.Add(new CardAction { Label = "Night mode", Kind = "pipe", Line = "night", IconOnly = true, Tip = "Night mode - turn Hallow Display's warmer colours on or off",
+                OkText = "Hallow Display switched night mode.", FailText = "Hallow Display didn't switch night mode", OkFrom = DisplayNightText });
+            if (active != null || Is(st, "testRunning"))
+                c.Actions.Add(new CardAction { Label = "Stop game profile", Kind = "pipe", Line = "profile restore", IconOnly = true, Tip = "Stop game profile - put your normal resolution, refresh rate, HDR and brightness back now",
+                    OkText = "Hallow Display put your normal display settings back.", FailText = "Hallow Display didn't stop the profile" });
+        }
+        public static string DisplayNightText(string reply)
+        {
+            try { var j = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(reply.Substring(3)); if (j.ContainsKey("night")) return "Hallow Display: night mode " + (Family.Bool(j, "night") ? "on." : "off."); }
+            catch { }
+            return null;
+        }
+        public static string DisplayLayoutText(string reply)
+        {
+            try
+            {
+                var j = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(reply.Substring(3)); int moved = (int)Family.Num(j, "moved");
+                return "Hallow Display put " + (moved == 0 ? "nothing to move - your windows were already in place." : Count(moved, "window", "windows") + " back.");
+            }
+            catch { }
+            return null;
         }
         static void OlderCard(AppCard c, Dictionary<string, object> st)
         {
@@ -733,7 +796,7 @@ namespace HallowHub
                         var r = Family.Send(c.App, a.Line);
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
-                            Status(Family.Ok(r) ? (a.OkFrom != null ? a.OkFrom(r) : a.OkText) : (a.FailText ?? name + " didn't take that") + (r == null ? " (it isn't answering)" : r.StartsWith("error ") ? " (" + r.Substring(6) + ")" : ""));
+                            Status(Family.Ok(r) ? (a.OkFrom != null ? a.OkFrom(r) ?? a.OkText : a.OkText) : (a.FailText ?? name + " didn't take that") + (r == null ? " (it isn't answering)" : r.StartsWith("error ") ? " (" + r.Substring(6) + ")" : ""));
                             bt.IsEnabled = true; FillFamily(false);
                             var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) }; t.Tick += (s, e) => { t.Stop(); FillFamily(false); }; t.Start();
                         }));

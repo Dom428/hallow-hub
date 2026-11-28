@@ -26,6 +26,8 @@ namespace HallowHub
             { "Links", "bookmark" }, { "Add link", "plus" }, { "Add a running app", "power-off" },
             { "Family", "people-group" }, { "Open", "arrow-up-right-from-square" }, { "Install", "download" }, { "Pause all", "pause" }, { "Resume all", "play" },   // v2.17: the Family page
             { "Connect fastest", "bolt" }, { "Disconnect", "power-off" }, { "Lock now", "lock" }, { "Set address...", "location-dot" }, { "Change address...", "pen" }, { "How to set up", "circle-info" },
+            { "Capture a region", "camera" }, { "Clipboard history", "clock-rotate-left" }, { "Pause history", "pause" }, { "Resume history", "play" },   // v2.23: Hallow Capture's card
+            { "Put windows back", "display" }, { "Night mode", "moon" }, { "Stop game profile", "rotate-left" },                                    // v2.23: Hallow Display's card
         };
         // label starts with -> icon
         static readonly string[][] Prefixes = {

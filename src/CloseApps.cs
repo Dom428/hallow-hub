@@ -23,7 +23,8 @@ namespace HallowHub
             "securityhealthsystray", "msmpeng", "audiodg", "taskmgr", "conhost", "cmd", "powershell", "pwsh", "windowsterminal", "openconsole", "mmc", "systemsettings",
             "steam", "steamwebhelper", "steamservice", "battle.net", "agent", "epicgameslauncher", "epicwebhelper", "eadesktop", "eabackgroundservice", "ealauncher",
             "ubisoftconnect", "upc", "uplaywebcore", "galaxyclient", "galaxyclienthelper", "riotclientservices", "riotclientux", "riotclientcrashhandler", "xboxpcapp", "gamingservices", "gamebar",
-            "hallowhub", "hallowmixer", "hallowoverlay", "hallowclips", "hallowvault", "hallowkeys", "hallowremote", "hallowsetup", "hallowtoolkit", "hallowguard", "hallowassist" };
+            "hallowhub", "hallowmixer", "hallowoverlay", "hallowclips", "hallowvault", "hallowkeys", "hallowremote", "hallowsetup", "hallowtoolkit", "hallowguard", "hallowassist",
+            "hallowcapture", "hallowdisplay" };   // v2.23 (Display must get "quit" so it puts display changes back - never closed like a window)
 
         public static bool Allowed(string exeOrName)
         {

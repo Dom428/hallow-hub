@@ -633,6 +633,8 @@ namespace HallowHub
         }
 
         // ---- 8. Start with Windows for the apps you run every day (Hub, Gear and the usual ones)
+        // v2.23: apps whose Start with Windows is only Hallow Setup's switch (no Settings switch of their own)
+        static readonly string[] NoOwnStartup = { "Capture", "Display" };
         public static List<CheckItem> StartupCheck(CheckEnv env, List<KeyValuePair<string, string>> inst)
         {
             var r = new List<CheckItem>();
@@ -646,9 +648,11 @@ namespace HallowHub
                 bool? on = null; try { on = env.StartsWithWindows(a); } catch { }
                 if (on != false) continue;
                 off.Add(a);
-                var it = new CheckItem("startup-" + a.ToLowerInvariant(), "Start with Windows", 1, "Hallow " + a + " doesn't start with Windows", a == "Hub" ? "Hub's own setting - turn it on here." : "Hallow " + a + " > Settings > Start with Windows (Task Manager > Startup apps can switch it off too).");
+                bool setupOnly = NoOwnStartup.Contains(a, StringComparer.OrdinalIgnoreCase);   // v2.23
+                var it = new CheckItem("startup-" + a.ToLowerInvariant(), "Start with Windows", 1, "Hallow " + a + " doesn't start with Windows", a == "Hub" ? "Hub's own setting - turn it on here." :
+                    setupOnly ? "Hallow Setup > Hallow " + a + " > Start with Windows (Task Manager > Startup apps can switch it off too)." : "Hallow " + a + " > Settings > Start with Windows (Task Manager > Startup apps can switch it off too).");
                 if (a == "Hub") it.Fix("Turn on", "hub-startup", "Hub", null, "Hallow Hub starts in the tray when you sign in");
-                else it.Fix("Open its settings", "open", a, "open settings", "Opens Hallow " + a + "'s settings - turn on Start with Windows there");
+                else if (!setupOnly) it.Fix("Open its settings", "open", a, "open settings", "Opens Hallow " + a + "'s settings - turn on Start with Windows there");
                 r.Add(it);
             }
             if (off.Count == 0) r.Add(new CheckItem("startup", "Start with Windows", 0, daily.Count == 1 ? "Hallow Hub starts with Windows" : "Your " + daily.Count + " everyday Hallow apps start with Windows", null));

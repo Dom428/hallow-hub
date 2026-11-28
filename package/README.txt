@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.23
+- Hallow Capture and Hallow Display join the Family page (Everyday). Capture: captures today, how many items the clipboard history keeps and whether it's paused, with Capture a region, Clipboard history and Pause / Resume history. Display: the game profile in use and whether these monitors have a saved window layout, with Put windows back, Night mode and Stop game profile.
+- Counts and states only - never what you copied, a file name or a window title. Both have a fixed place in the Hallow icon and start in the tray from Start a Hallow app. Launch checklists never close them (Hallow Display puts its display changes back only when it's asked to quit).
+
 WHAT'S NEW IN 2.22
 - Real-world checks: Family page > Real-world checks lists what only your real PC, games and phone can prove - NordLynx, the leak tests, VPN for torrents, the Authenticator on your phone, NordPass from the Chrome Web Store, Spotify ad muting, kill-sound clips and the 1% low line.
 - Each one turns green by itself when the app shows it worked, or mark it with Worked / Didn't work. Try it opens the right app on the right page.

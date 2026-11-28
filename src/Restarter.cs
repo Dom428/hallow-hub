@@ -92,6 +92,7 @@ namespace HallowHub
         public readonly string StatePath;
         public List<string> Usual = new List<string>();             // the apps that were running when Hub last stopped (sign-out / shutdown included)
         public static readonly string[] NoteOnly = { "Browser" };   // no tray: never reopened, only "it was updated"
+        // Hub never force-stops a family app: Bring settings back asks it to "quit" over its pipe first (Hallow Display then puts its display changes back)
         static readonly string[] NotWatched = { "Hub", "Setup", "Toolkit" };
 
         readonly Dictionary<string, WatchedApp> apps = new Dictionary<string, WatchedApp>(StringComparer.OrdinalIgnoreCase);
