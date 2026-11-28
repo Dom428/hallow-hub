@@ -29,9 +29,9 @@ namespace HallowHub
         Border ListRow(Game g)
         {
             var d = S.For(g.Id);
-            var row = new Border { Height = 64, Margin = new Thickness(7, 0, 7, 8), CornerRadius = new CornerRadius(12), BorderThickness = new Thickness(2), BorderBrush = Brushes.Transparent,
+            var row = new Border { Height = 64, Margin = new Thickness(8, 0, 8, 8), CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(2), BorderBrush = Brushes.Transparent,
                 Background = (Brush)FindResource("Panel"), Cursor = Cursors.Hand, Tag = g, RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1, 1) };
-            row.SetBinding(FrameworkElement.WidthProperty, new Binding("ViewportWidth") { Source = gridScroll, Converter = new Minus { By = 16 } });
+            row.SetBinding(FrameworkElement.WidthProperty, new Binding("ViewportWidth") { Source = gridScroll, Converter = new Minus { By = 2 * PadX + 16 } });
             var dp = new DockPanel { Margin = new Thickness(6, 0, 14, 0) };
             var art = Img(g.Header, 260) ?? Img(g.Cover, 160);
             var thumb = new Border { Width = 116, Height = 50, CornerRadius = new CornerRadius(8), Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center,
@@ -58,7 +58,7 @@ namespace HallowHub
             Paint(row, false);
             row.MouseEnter += (s, e) => Paint(row, true);
             row.MouseLeave += (s, e) => Paint(row, false);
-            row.MouseLeftButtonUp += (s, e) => Select(g);
+            row.MouseLeftButtonUp += (s, e) => Open(g);
             row.MouseLeftButtonDown += (s, e) => { if (e.ClickCount == 2) { Select(g); Play(g); } };
             row.ContextMenu = Menu(g);
             return row;

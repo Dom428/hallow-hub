@@ -70,7 +70,7 @@ namespace HallowHub
             for (; i < pool.Count - 1; i++) { r -= weights[i]; if (r <= 0) break; }
             var pick = pool[i];
             if (!Visible().Contains(pick)) { S.Filter = "all"; if (search != null) search.Text = ""; RebuildChips(); RebuildGrid(); }
-            Select(pick); Reveal(pick);
+            Open(pick);   // v2.28: up to its banner and Play
             var lastP = LastOf(pick); var st = S.For(pick.Id).Status;
             Status(lead + "How about " + pick.Name + "? " + (lastP == null ? "You haven't played it yet." : "Last played " + HubSettings.Ago(lastP).ToLowerInvariant() + ".") +
                 (mode == "backlog" && st == "plan" ? " (on your Plan to play list)" : "") + "  Press Enter (or A) to play.");

@@ -6,6 +6,13 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.28
+- A cleaner, calmer look, like a game-library launcher. Page tabs along the top: Library, Hallow apps (the family page), Stats, Storage and Sales (when sale alerts are on). Search, Add game, More (...) and Settings are on the right; More has Big Picture, Surprise me, Storage, Emulators, your Steam account, Refresh and Check for updates.
+- A game list on the left: Favorites, Recently played, your collections and All games, with a filter box. A green dot means playing, blue means updating (with the percentage), amber means an update is waiting. It folds away on small windows - the list button next to LIBRARY brings it back (and hides it on big ones).
+- The selected game's art fades into the page, with one big Play, when you last played it and your play time next to it. Favorite, Game settings, Notes and Links are quiet buttons; the ... button next to them has the rest (News, About, open folder, pin, hide, shortcut, uninstall...). Clicking a game in the list, the shelf or the covers opens it at the top.
+- When this game starts (Hallow Mixer preset, game session, apps to close) and Your PC right now open under Play - the line says what happens in short.
+- Cleaner covers (no frames or glows - the selected one has a thin outline), a Continue playing shelf, a slim toolbar with the quick filters under it, slim scroll bars, and a bottom bar with updates in progress and today's playtime. Every page (Hallow apps, Stats, Storage, Settings...) opens full size under the tabs.
+
 WHAT'S NEW IN 2.27
 - Five new family members on the Family page: Hallow Doctor and Hallow Updates (Protect) - blue screens and what they have in common, app updates waiting, with Crashes and Check now; Hallow Switch, Hallow Clock and Hallow Fonts (Everyday) - its hotkey and who has Alt+Tab, running timers and the next alarm, font families and duplicates, with Switch windows, 5-min timer / Dismiss and Duplicates.
 - Counts and states only - never a driver, an app name, a window title, a timer label or a font name. Launch checklists never close Doctor, Updates, Clock or Fonts. Doctor and Fonts are windowed apps (Hub opens their window again after an update and never nags you to start them with Windows); Updates, Switch and Clock start in the tray.
@@ -174,7 +181,7 @@ WHAT'S NEW IN 1.1
 WHAT IT DOES
 - Finds your Steam, Battle.net and Epic Games games by itself, with their real artwork
   (from Steam's own cache - nothing is downloaded). Add anything else with "Add game".
-- Play from one place. Double-click a cover, or select it and press Play.
+- Play from one place. Double-click a cover (or a name in the game list on the left), or select it and press Play.
 - Counts your playtime - for any game running from its folder, however you start it.
   Today / this week / total, and "last played".
 - When a game starts, it can:

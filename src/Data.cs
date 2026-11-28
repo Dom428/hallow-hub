@@ -107,6 +107,7 @@ namespace HallowHub
         [DataMember] public string View = "grid";      // v1.7: grid or list
         [DataMember] public double CardScale = 1;      // v1.7: cover size (0.8 small, 1 medium, 1.25 large)
         [DataMember] public bool StillBanner;          // v1.7: turn off the slow banner movement
+        [DataMember] public bool SideClosed, StartOpen;   // v2.28: the game list on the left closed; "When this game starts" opened
         [DataMember] public bool DiscordOnStart, DiscordRecap;   // v1.8: post to Discord (through Hallow Toolkit's link) - both off unless you turn them on
         [DataMember] public bool WeeklyRecap = true;              // v1.8: a recap of last week on Mondays
         [DataMember] public string LastRecap = "";
@@ -142,7 +143,7 @@ namespace HallowHub
             FStores = new List<string>(); FSize = ""; FLast = ""; FTime = ""; OneIcon = true; UseHallowAccent = true; Look = "hallow"; LastCrashShown = ""; SteamProfile = ""; SaleTargets = new Dictionary<string, double>(); LastSaleCheck = ""; SaleTold = new List<string>(); FTags = new List<string>(); Emulators = new List<Emulator>(); FStatus = ""; PowerPlanAll = ""; PowerRestore = "";
         }
 
-        public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }
+        public static string Dir { get { return TestLibrary.On ? Path.Combine(TestLibrary.Root, "HallowHub") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HallowHub"); } }   // v2.28: tests use their own folder
         static string FilePath { get { return Path.Combine(Dir, "hub.json"); } }
         public static bool Frozen;   // snapshots: never write
 
@@ -153,6 +154,7 @@ namespace HallowHub
 
         public static HubSettings Load()
         {
+            if (TestLibrary.On && !File.Exists(FilePath)) return TestLibrary.Settings();   // v2.28: made-up playtime for tests
             try
             {
                 if (File.Exists(FilePath))

@@ -21,6 +21,13 @@ namespace HallowHub
         public static List<Game> Scan(List<Game> custom, List<Emulator> emulators)
         {
             var list = new List<Game>();
+            if (TestLibrary.On)   // v2.28: tests and --snap - the made-up library only, never your launchers
+            {
+                list.AddRange(TestLibrary.Games());
+                foreach (var c in custom) if (c != null && !string.IsNullOrEmpty(c.Launch)) { c.IconExe = c.Launch; c.Alts = new List<Game>(); c.Parent = null; list.Add(c); }
+                try { list.AddRange(Roms.Scan(emulators)); } catch { }
+                return Merge(list.GroupBy(g => g.Id).Select(x => x.First()).ToList());
+            }
             try { list.AddRange(Steam()); } catch { }
             try { list.AddRange(BattleNet()); } catch { }
             try { list.AddRange(Epic()); } catch { }
@@ -42,6 +49,7 @@ namespace HallowHub
         // ---- Steam: libraryfolders.vdf -> steamapps\appmanifest_*.acf
         public static string SteamPath()
         {
+            if (TestLibrary.On) return null;   // v2.28: tests never read Steam (accounts, libraries)
             using (var k = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam"))
             {
                 var p = k == null ? null : k.GetValue("SteamPath") as string;

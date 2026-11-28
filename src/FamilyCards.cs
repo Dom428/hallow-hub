@@ -54,9 +54,9 @@ namespace HallowHub
             familySig = sig;
             familyRow.Children.Clear(); familyRow.ColumnDefinitions.Clear();
             bool tiles = gw != null || shield != null || pcs != null;
-            if (!(g != null && (vi || ci || oi)) && !tiles) { familyRow.Visibility = Visibility.Collapsed; heroBorder.Height = 330; return; }
+            if (!(g != null && (vi || ci || oi)) && !tiles) { familyRow.Visibility = Visibility.Collapsed; return;   /* v2.28: the banner keeps its height - it scrolls with the library */ }
             if (g == null) { vi = ci = oi = false; }
-            familyRow.Visibility = Visibility.Visible; heroBorder.Height = 300;   // a bit shorter, so the library keeps its room
+            familyRow.Visibility = Visibility.Visible;
             Dictionary<string, object> vault = vi ? Family.Status("Vault") : null;
             var vg = vault == null ? null : Match(Family.List(vault, "games"), g);
             var aliases = g == null ? new List<string>() : NamesOf(g); var vn = Family.Str(vg, "name"); if (vn != null && !aliases.Contains(vn, StringComparer.OrdinalIgnoreCase)) aliases.Add(vn);

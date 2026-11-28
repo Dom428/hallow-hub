@@ -15,6 +15,7 @@ namespace HallowHub
 
         static Dictionary<string, object> Call(string path)
         {
+            if (TestLibrary.On) return null;   // v2.28: tests never talk to the real Hallow Mixer
             try
             {
                 if (!File.Exists(ApiFile)) return null;
@@ -30,6 +31,7 @@ namespace HallowHub
         // The mixer's presets, or null when Hallow Mixer isn't running (or its API is off).
         public static List<string> Presets()
         {
+            if (TestLibrary.On) return new List<string> { "Gaming", "Voice chat", "Music" };
             var st = Call("/state"); object p;
             if (st == null || !st.TryGetValue("presets", out p) || !(p is System.Collections.ArrayList)) return null;
             return ((System.Collections.ArrayList)p).Cast<object>().Select(x => x as string).Where(x => x != null).ToList();
@@ -43,6 +45,7 @@ namespace HallowHub
         {
             get
             {
+                if (TestLibrary.On) return null;
                 var p = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"HallowToolkit\HallowToolkit.ps1");
                 return File.Exists(p) ? p : null;
             }

@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.27.0.0")]
-[assembly: AssemblyFileVersion("2.27.0.0")]
+[assembly: AssemblyVersion("2.28.0.0")]
+[assembly: AssemblyFileVersion("2.28.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.27";
+        public const string Version = "2.28";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -43,6 +43,8 @@ namespace HallowHub
             if (si >= 0 && si + 1 < args.Length)
             {
                 Snap.On = true; HubSettings.Frozen = true;
+                // v2.28: snapshots only ever see test data - a made-up library and family (a temp folder when none was given)
+                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HALLOW_FAMILY_TEST"))) { var tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HallowHubSnap"); Directory.CreateDirectory(tmp); Environment.SetEnvironmentVariable("HALLOW_FAMILY_TEST", tmp); }
                 { var hs0 = HubSettings.Load(); HallowLook.UseShared = hs0.UseHallowAccent; HallowLook.LookOverride = hs0.Look; HallowLook.Refresh(); }
                 var sa = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; LoadTheme(sa);
                 new HubWindow(true).SnapAll(args[si + 1]); return;
@@ -134,7 +136,7 @@ namespace HallowHub
         Button notesBtn, hideBtn; Border heroBorder; WrapPanel heroPills; StackPanel playOn; GradientStop heroTint;
         Grid heroGrid; Image heroImg, heroLogo; TextBlock heroName, heroStats; Button playBtn; ToggleButton favBtn;
         ComboBox presetBox, sortBox; CheckBox sessionBox; TextBlock sessionNote, countText, statusText, searchHint;
-        StackPanel contRow; FrameworkElement contLabel, libLabel; ComboBox sizeBox;
+        Panel contRow; FrameworkElement contLabel, libLabel; ComboBox sizeBox;
         WrapPanel grid, chips; TextBox search; Border settingsPanel; ToggleButton gearBtn; ScrollViewer gridScroll;
         CheckBox startupBox; TextBlock linkInfo; ComboBox lookBox;
         readonly Dictionary<string, Border> cards = new Dictionary<string, Border>();
@@ -198,198 +200,256 @@ namespace HallowHub
         }
 
         // ================================================================ layout
+        // v2.28: a library-launcher layout - tabs on top, the game list on the left, a calm hero, a slim bar at the bottom
+        const double TopH = 56, BottomH = 34, HeroH = 300, PadX = 28;
         UIElement Build()
         {
-            var root = new Grid { Margin = new Thickness(22, 14, 22, 12) };
-            foreach (var h in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
-                root.RowDefinitions.Add(new RowDefinition { Height = h });
+            var root = new Grid();
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(TopH) });
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(BottomH) });
 
-            // ---- header: logo, search, buttons
-            var head = new DockPanel { Margin = new Thickness(0, 0, 0, 14) };
-            var title = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            try { title.Children.Add(new Image { Source = AppIcon(), Width = 30, Height = 30, Margin = new Thickness(0, 0, 10, 0) }); } catch { }
-            title.Children.Add(new TextBlock { Text = "HALLOW", FontSize = 22, FontWeight = FontWeights.Bold, Foreground = B("#F07820"), VerticalAlignment = VerticalAlignment.Center });
-            title.Children.Add(new TextBlock { Text = " HUB", FontSize = 22, FontWeight = FontWeights.Light, VerticalAlignment = VerticalAlignment.Center });
+            // ---- top bar: logo, page tabs; search, Add game, more and Settings on the right
+            var topLine = new Border { BorderBrush = B("#2A2333"), BorderThickness = new Thickness(0, 0, 0, 1) };
+            var head = new DockPanel { Margin = new Thickness(20, 0, 14, 0) };
+            var title = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 18, 0) };
+            try { title.Children.Add(new Image { Source = AppIcon(), Width = 24, Height = 24, Margin = new Thickness(0, 0, 9, 0) }); } catch { }
+            title.Children.Add(new TextBlock { Text = "HALLOW", FontSize = 16, FontWeight = FontWeights.Bold, Foreground = B("#F07820"), VerticalAlignment = VerticalAlignment.Center });
+            title.Children.Add(new TextBlock { Text = " HUB", FontSize = 16, FontWeight = FontWeights.Light, VerticalAlignment = VerticalAlignment.Center });
             DockPanel.SetDock(title, Dock.Left); head.Children.Add(title);
             var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             updateBtn = new Button { Style = (Style)FindResource("Accent"), Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed };
             updateBtn.Click += (s, e) => InstallUpdate(); right.Children.Add(updateBtn);
-            var add = new Button { Content = "Add game", Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Add any game or app by its .exe" };
-            add.Click += (s, e) => AddGame(); right.Children.Add(add);
-            var refresh = new Button { Content = "Refresh", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Look for newly installed games" };
-            refresh.Click += (s, e) => { Rescan(); Status("Library refreshed - " + games.Count + " games."); }; right.Children.Add(refresh);
-            gearBtn = new ToggleButton { Content = "Settings", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), ToolTip = "Settings" };
-            gearBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; if (familyBtn != null) familyBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
-            gearBtn.Unchecked += (s, e) => settingsPanel.Visibility = Visibility.Collapsed;
-            statsBtn = new ToggleButton { Content = "Stats", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your playtime" };
-            statsBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; if (familyBtn != null) familyBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
-            statsBtn.Unchecked += (s, e) => statsPanel.Visibility = Visibility.Collapsed;
-            var bigBtn = new Button { Content = "Big Picture", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Big Picture: full screen for the couch (F11, or View on a controller)" };
-            bigBtn.Click += (s, e) => OpenBigPicture();
-            right.Children.Add(bigBtn);
-            var dice = new Button { Content = "Surprise me", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "What should I play? (Ctrl+R, or X on a controller)\nRight-click: from your backlog, a favorite, or one you haven't played in a while" };
-            dice.Click += (s, e) => Surprise(); dice.ContextMenu = PickMenu();   // v2.12: right-click - from your backlog, a favorite, an old one
-            right.Children.Add(dice);
-            wishBtn = new Button { Content = "Wishlist", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Your Steam wishlist and what's on sale" };
-            wishBtn.Click += (s, e) => OpenWishlist(); UpdateWishButton();   // v2.7
-            right.Children.Add(wishBtn);
-            right.Children.Add(BuildSteamAccountButton());   // v2.18: switch Steam accounts
-            familyBtn = BuildFamilyButton(); right.Children.Add(familyBtn);   // v2.17: the Hallow family page
-            right.Children.Add(statsBtn);
-            storageBtn = new ToggleButton { Content = "Storage", Tag = "icon", Width = 36, Height = 34, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(0, 0, 8, 0), ToolTip = "Storage: what's on each drive, and what you could free up" };
-            storageBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; statsBtn.IsChecked = false; if (familyBtn != null) familyBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
-            storageBtn.Unchecked += (s, e) => storagePanel.Visibility = Visibility.Collapsed;
-            right.Children.Add(storageBtn);
-            right.Children.Add(gearBtn);
-            DockPanel.SetDock(right, Dock.Right); head.Children.Add(right);
-            var sg = new Grid { Width = 360, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            searchBox = new Grid { Width = 240, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
             search = new TextBox { Style = (Style)FindResource("Search") };
             search.TextChanged += (s, e) => { searchHint.Visibility = search.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed; RebuildGrid(); };
-            var si = Icons.Make("magnifying-glass", 14, (Brush)FindResource("Muted")); si.HorizontalAlignment = HorizontalAlignment.Left; si.Margin = new Thickness(13, 0, 0, 0); si.IsHitTestVisible = false;
-            searchHint = new TextBlock { Text = "Search games, genres, notes...", Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(36, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false, FontSize = 13 };
-            sg.Children.Add(search); sg.Children.Add(si); sg.Children.Add(searchHint);
-            head.Children.Add(sg);
-            Grid.SetRow(head, 0); root.Children.Add(head);
+            var si = Icons.Make("magnifying-glass", 13, (Brush)FindResource("Muted")); si.HorizontalAlignment = HorizontalAlignment.Left; si.Margin = new Thickness(13, 0, 0, 0); si.IsHitTestVisible = false;
+            searchHint = new TextBlock { Text = "Search games, genres, notes...", Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(35, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false, FontSize = 12.5, TextTrimming = TextTrimming.CharacterEllipsis };
+            searchBox.Children.Add(search); searchBox.Children.Add(si); searchBox.Children.Add(searchHint);
+            right.Children.Add(searchBox);
+            var add = new Button { Content = "Add game", Style = (Style)FindResource("Btn"), Height = 34, Margin = new Thickness(0, 0, 4, 0), ToolTip = "Add any game or app by its .exe" };
+            add.Click += (s, e) => AddGame(); right.Children.Add(add);
+            var more = new Button { Content = "More", Tag = "icon", Width = 36, Height = 36, Padding = new Thickness(0), Style = (Style)FindResource("Ghost"), ToolTip = "More: Big Picture, Surprise me, Storage, emulators, Steam account, refresh" };
+            more.Click += (s, e) => { var m = MoreMenu(); m.PlacementTarget = more; m.Placement = PlacementMode.Bottom; m.IsOpen = true; };
+            right.Children.Add(more);
+            gearBtn = new ToggleButton { Content = "Settings", Tag = "icon", Width = 36, Height = 36, Padding = new Thickness(0), Style = (Style)FindResource("Ghost"), ToolTip = "Settings" };
+            gearBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; if (statsBtn != null) statsBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; if (familyBtn != null) familyBtn.IsChecked = false; settingsPanel.Visibility = Visibility.Visible; CheckLinks(); };
+            gearBtn.Unchecked += (s, e) => settingsPanel.Visibility = Visibility.Collapsed;
+            right.Children.Add(gearBtn);
+            DockPanel.SetDock(right, Dock.Right); head.Children.Add(right);
+            // the pages, as tabs
+            var tabs = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Stretch };
+            libTab = new ToggleButton { Content = "LIBRARY", Style = (Style)FindResource("Tab"), IsChecked = true, ToolTip = "Your games" };
+            libTab.Click += (s, e) => ShowLibrary();
+            tabs.Children.Add(libTab);
+            familyBtn = BuildFamilyButton();   // v2.17: the Hallow family page
+            familyBtn.Content = "HALLOW APPS"; familyBtn.Style = (Style)FindResource("Tab"); familyBtn.Tag = null;
+            foreach (var p in new[] { WidthProperty, HeightProperty, PaddingProperty, MarginProperty }) familyBtn.ClearValue(p);
+            tabs.Children.Add(familyBtn);
+            statsBtn = new ToggleButton { Content = "STATS", Style = (Style)FindResource("Tab"), ToolTip = "Your playtime" };
+            statsBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; if (storageBtn != null) storageBtn.IsChecked = false; if (familyBtn != null) familyBtn.IsChecked = false; FillStats(); statsPanel.Visibility = Visibility.Visible; };
+            statsBtn.Unchecked += (s, e) => statsPanel.Visibility = Visibility.Collapsed;
+            tabs.Children.Add(statsBtn);
+            storageBtn = new ToggleButton { Content = "STORAGE", Style = (Style)FindResource("Tab"), ToolTip = "Storage: what's on each drive, and what you could free up" };
+            storageBtn.Checked += (s, e) => { newsPanel.Visibility = Visibility.Collapsed; aboutPanel.Visibility = Visibility.Collapsed; wishPanel.Visibility = Visibility.Collapsed; gearBtn.IsChecked = false; statsBtn.IsChecked = false; if (familyBtn != null) familyBtn.IsChecked = false; FillStorage(); storagePanel.Visibility = Visibility.Visible; };
+            storageBtn.Unchecked += (s, e) => storagePanel.Visibility = Visibility.Collapsed;
+            tabs.Children.Add(storageBtn);
+            wishBtn = new Button { Content = "SALES", Style = (Style)FindResource("Tab"), ToolTip = "Your Steam wishlist and what's on sale" };
+            wishBtn.Click += (s, e) => OpenWishlist(); UpdateWishButton();   // v2.7
+            tabs.Children.Add(wishBtn);
+            BuildSteamAccountButton();   // v2.18: switch Steam accounts - now in the More menu
+            head.Children.Add(tabs);
+            topLine.Child = head;
+            Grid.SetRow(topLine, 0); root.Children.Add(topLine);
 
-            // ---- hero: the selected game
-            var hero = heroBorder = new Border { Height = 330, CornerRadius = new CornerRadius(18), Background = (Brush)FindResource("Panel"), Margin = new Thickness(0, 0, 0, 16), BorderThickness = new Thickness(1.5) };
+            // ---- body: the game list on the left, the library on the right
+            var body = new Grid();
+            sideCol = new ColumnDefinition { Width = new GridLength(244) };
+            body.ColumnDefinitions.Add(sideCol); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            sideBar = BuildSidebar(); Grid.SetColumn(sideBar, 0); body.Children.Add(sideBar);
+            var lib = new StackPanel { Margin = new Thickness(0, 0, 0, 20) };
+
+            // ---- hero: the selected game's art, fading into the page
+            var hero = heroBorder = new Border { Height = HeroH, ClipToBounds = true };
             heroGrid = new Grid();
-            hero.SizeChanged += (s, e) => heroGrid.Clip = new RectangleGeometry(new Rect(0, 0, hero.ActualWidth, hero.ActualHeight), 18, 18);
             heroImg = new Image { Stretch = Stretch.UniformToFill, VerticalAlignment = VerticalAlignment.Center };
             heroGrid.Children.Add(heroImg); StartBannerMotion();
+            var bg = ((SolidColorBrush)FindResource("Bg")).Color;
             var fadeL = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 0) };
-            heroTint = new GradientStop(HallowLook.Scrim(240), 0); fadeL.GradientStops.Add(heroTint); fadeL.GradientStops.Add(new GradientStop(HallowLook.Scrim((byte)(HallowLook.Light ? 190 : 150)), 0.5)); fadeL.GradientStops.Add(new GradientStop(HallowLook.Scrim((byte)(HallowLook.Light ? 70 : 40)), 1));
+            heroTint = new GradientStop(Color.FromArgb((byte)(HallowLook.Light ? 215 : 190), bg.R, bg.G, bg.B), 0); fadeL.GradientStops.Add(heroTint);
+            fadeL.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(HallowLook.Light ? 120 : 70), bg.R, bg.G, bg.B), 0.45)); fadeL.GradientStops.Add(new GradientStop(Color.FromArgb(0, bg.R, bg.G, bg.B), 0.8));
             heroGrid.Children.Add(new Rectangle { Fill = fadeL });
             var fadeB = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
-            fadeB.GradientStops.Add(new GradientStop(HallowLook.Scrim(0), 0.45)); fadeB.GradientStops.Add(new GradientStop(HallowLook.Scrim(220), 1));
+            fadeB.GradientStops.Add(new GradientStop(Color.FromArgb(0, bg.R, bg.G, bg.B), 0.35)); fadeB.GradientStops.Add(new GradientStop(Color.FromArgb(200, bg.R, bg.G, bg.B), 0.78)); fadeB.GradientStops.Add(new GradientStop(bg, 1));
             heroGrid.Children.Add(new Rectangle { Fill = fadeB });
-            var info = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(34, 0, 0, 28), MaxWidth = 520 };
-            heroLogo = new Image { MaxHeight = 104, MaxWidth = 400, HorizontalAlignment = HorizontalAlignment.Left, Stretch = Stretch.Uniform, Margin = new Thickness(0, 0, 0, 4) };
+            var info = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(PadX + 4, 0, PadX, 14), MaxWidth = 560 };
+            heroLogo = new Image { MaxHeight = 110, MaxWidth = 420, HorizontalAlignment = HorizontalAlignment.Left, Stretch = Stretch.Uniform, Margin = new Thickness(0, 0, 0, 4) };
             heroName = new TextBlock { FontSize = 34, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap, Foreground = HallowLook.Light ? (Brush)FindResource("Text") : Brushes.White };
-            heroStats = new TextBlock { FontSize = 13, Foreground = B("#D6D0E2"), Margin = new Thickness(0, 12, 0, 0), TextWrapping = TextWrapping.Wrap };
-            heroPills = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
+            heroStats = new TextBlock { FontSize = 13, Foreground = B("#D6D0E2"), Margin = new Thickness(0, 10, 0, 0), TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
+            heroPills = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
             info.Children.Add(heroLogo); info.Children.Add(heroName); info.Children.Add(heroStats); info.Children.Add(heroPills);
-            var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 16, 0, 0) };
-            playBtn = new Button { Content = "Play", Style = (Style)FindResource("Accent"), FontSize = 15, Padding = new Thickness(30, 10, 30, 10), MinWidth = 150 };
-            playBtn.Click += (s, e) => Play(sel);
-            actions.Children.Add(playBtn);
-            favBtn = new ToggleButton { Content = "Favorite", Tag = "icon", Width = 38, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Chip"), Margin = new Thickness(10, 0, 0, 0), ToolTip = "Favorite" };
-            favBtn.Click += (s, e) => { if (sel == null) return; S.For(sel.Id).Favorite = favBtn.IsChecked == true; S.Save(); RefreshCard(sel); if (S.Filter == "fav") RebuildGrid(); };
-            actions.Children.Add(favBtn);
-            var folder = new Button { Content = "Open folder", Tag = "icon", Width = 38, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(6, 0, 0, 0), ToolTip = "Open the game's folder" };
-            folder.Click += (s, e) => OpenFolder(sel);
-            actions.Children.Add(folder);
-            var gset = new Button { Content = "Game settings", Tag = "icon", Width = 38, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(6, 0, 0, 0), ToolTip = "Launch options, run as admin, collections" };
-            gset.Click += (s, e) => GameSettings(sel);
-            actions.Children.Add(gset);
-            notesBtn = new Button { Content = "Notes", Tag = "icon", Width = 38, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(6, 0, 0, 0), ToolTip = "Notes" };
-            notesBtn.Click += (s, e) => ShowNotes(notesBtn);
-            actions.Children.Add(notesBtn);
-            linksBtn = new Button { Content = "Links", Tag = "icon", Width = 38, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(6, 0, 0, 0), ToolTip = "Links: store page, guides, PCGamingWiki, HowLongToBeat and your own" };
-            linksBtn.Click += (s, e) => ShowLinks(linksBtn);   // v2.12
-            actions.Children.Add(linksBtn);
-            hideBtn = new Button { Content = "Hide", Tag = "icon", Width = 38, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(6, 0, 0, 0) };
-            hideBtn.Click += (s, e) => ToggleHide(sel);
-            actions.Children.Add(hideBtn);
-            aboutBtn = new Button { Content = "About", Tag = "icon", Width = 38, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(6, 0, 0, 0), Visibility = Visibility.Collapsed };
-            aboutBtn.Click += (s, e) => OpenAbout();   // v2.8
-            actions.Children.Add(aboutBtn);
-            newsBtn = new Button { Content = "News", Tag = "icon", Width = 38, Height = 42, Padding = new Thickness(0), Style = (Style)FindResource("Btn"), Margin = new Thickness(6, 0, 0, 0), Visibility = Visibility.Collapsed };
-            newsBtn.Click += (s, e) => OpenNews();   // v2.6
-            actions.Children.Add(newsBtn);
-            info.Children.Add(actions);
-            playOn = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
-            info.Children.Add(playOn);
-            info.Children.Add(BuildStatusRow());   // v2.10: play status and your rating
             heroGrid.Children.Add(info);
-            // "when it starts" card
-            var opts = new Border { Background = new SolidColorBrush(HallowLook.Light ? Color.FromArgb(232, 0xFF, 0xFF, 0xFF) : Color.FromArgb(205, 0x1A, 0x15, 0x22)), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14, 18, 16), Width = 310,
-                HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 26, 26),
-                BorderBrush = HallowLook.Light ? (Brush)B("#3A3248") : new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), BorderThickness = new Thickness(1) };
-            var op = new StackPanel();
-            var oh = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
-            var bolt = Icons.Make("bolt", 12, B("#F07820")); bolt.Margin = new Thickness(0, 0, 8, 0); oh.Children.Add(bolt);
-            oh.Children.Add(new TextBlock { Text = "WHEN THIS GAME STARTS", FontSize = 10.5, FontWeight = FontWeights.Bold, Foreground = B("#A98BE0") });
-            op.Children.Add(oh);
-            op.Children.Add(new TextBlock { Text = "Hallow Mixer preset", Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, Margin = new Thickness(0, 0, 0, 4) });
+            hero.Child = heroGrid;
+            lib.Children.Add(hero);
+
+            // ---- the play bar: one big Play, the playtime, a few quiet buttons and a "more" menu
+            var bar1 = new DockPanel { Margin = new Thickness(PadX, 2, PadX, 0), LastChildFill = true };
+            playBtn = new Button { Content = "Play", Style = (Style)FindResource("Accent"), FontSize = 15, Padding = new Thickness(34, 11, 34, 11), MinWidth = 168, VerticalAlignment = VerticalAlignment.Center };
+            playBtn.Click += (s, e) => Play(sel);
+            DockPanel.SetDock(playBtn, Dock.Left); bar1.Children.Add(playBtn);
+            var acts = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            Func<string, string, Button> ghost = (label, tip) => new Button { Content = label, Tag = "icon", Width = 38, Height = 38, Padding = new Thickness(0), Style = (Style)FindResource("Ghost"), Margin = new Thickness(2, 0, 0, 0), ToolTip = tip };
+            favBtn = new ToggleButton { Content = "Favorite", Tag = "icon", Width = 38, Height = 38, Padding = new Thickness(0), Style = (Style)FindResource("Ghost"), ToolTip = "Favorite" };
+            favBtn.Click += (s, e) => { if (sel == null) return; S.For(sel.Id).Favorite = favBtn.IsChecked == true; S.Save(); RefreshCard(sel); ShowHero(); if (S.Filter == "fav") RebuildGrid(); };
+            acts.Children.Add(favBtn);
+            var gset = ghost("Game settings", "Game settings: launch options, run as admin, collections, apps to close");
+            gset.Click += (s, e) => GameSettings(sel); acts.Children.Add(gset);
+            notesBtn = ghost("Notes", "Notes");
+            notesBtn.Click += (s, e) => ShowNotes(notesBtn); acts.Children.Add(notesBtn);
+            linksBtn = ghost("Links", "Links: store page, guides, PCGamingWiki, HowLongToBeat and your own");
+            linksBtn.Click += (s, e) => ShowLinks(linksBtn); acts.Children.Add(linksBtn);   // v2.12
+            var gmore = ghost("More", "More: open folder, news, about, pin, hide, shortcut, uninstall...");
+            gmore.Click += (s, e) => { if (sel == null) return; var m = GameMenu(sel); m.PlacementTarget = gmore; m.Placement = PlacementMode.Bottom; m.IsOpen = true; };
+            acts.Children.Add(gmore);
+            // still made (their state follows the game), reached from the "more" menu now
+            hideBtn = new Button { Content = "Hide" }; hideBtn.Click += (s, e) => ToggleHide(sel);
+            aboutBtn = new Button { Content = "About", Visibility = Visibility.Collapsed }; aboutBtn.Click += (s, e) => OpenAbout();   // v2.8
+            newsBtn = new Button { Content = "News", Visibility = Visibility.Collapsed }; newsBtn.Click += (s, e) => OpenNews();   // v2.6
+            DockPanel.SetDock(acts, Dock.Right); bar1.Children.Add(acts);
+            heroFacts = new WrapPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(26, 0, 12, 0) };
+            bar1.Children.Add(heroFacts);
+            lib.Children.Add(bar1);
+            // status, rating and which copy plays
+            var bar2 = new WrapPanel { Margin = new Thickness(PadX, 12, PadX, 0) };
+            var sr = BuildStatusRow(); ((FrameworkElement)sr).Margin = new Thickness(0, 0, 24, 6); bar2.Children.Add(sr);   // v2.10: play status and your rating
+            playOn = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6), VerticalAlignment = VerticalAlignment.Center };
+            bar2.Children.Add(playOn);
+            lib.Children.Add(bar2);
+
+            // ---- "When this game starts" + "Your PC right now": one quiet section that opens below
+            var startHead = new Border { Background = Brushes.Transparent, Cursor = Cursors.Hand, Margin = new Thickness(PadX, 10, PadX, 0), Padding = new Thickness(0, 6, 0, 6), ToolTip = "Hallow Mixer preset, Hallow Toolkit game session, apps to close and your PC" };
+            var shp = new DockPanel();
+            startChevron = Icons.Make("plus", 10, (Brush)FindResource("Muted")); startChevron.Margin = new Thickness(0, 0, 10, 0); DockPanel.SetDock(startChevron, Dock.Left); shp.Children.Add(startChevron);
+            var shl = new TextBlock { Text = "WHEN THIS GAME STARTS", FontSize = 10.5, FontWeight = FontWeights.Bold, Foreground = (Brush)FindResource("Muted"), VerticalAlignment = VerticalAlignment.Center };
+            DockPanel.SetDock(shl, Dock.Left); shp.Children.Add(shl);
+            startSummary = new TextBlock { FontSize = 11.5, Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(14, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+            shp.Children.Add(startSummary);
+            startHead.Child = shp;
+            startHead.MouseLeftButtonUp += (s, e) => { S.StartOpen = !S.StartOpen; S.Save(); ShowStartSection(); };
+            lib.Children.Add(startHead);
+            startCard = new Border { Background = (Brush)FindResource("Panel"), CornerRadius = new CornerRadius(10), Padding = new Thickness(20, 16, 20, 12), Margin = new Thickness(PadX, 6, PadX, 0) };
+            var cols = new WrapPanel();
+            var c1 = new StackPanel { Width = 250, Margin = new Thickness(0, 0, 32, 8) };
+            c1.Children.Add(new TextBlock { Text = "Hallow Mixer preset", Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, Margin = new Thickness(0, 0, 0, 4) });
             presetBox = new ComboBox { Style = (Style)FindResource("Combo"), Margin = new Thickness(0, 0, 0, 12) };
             presetBox.SelectionChanged += (s, e) =>
             {
                 if (loading || sel == null) return; var it = presetBox.SelectedItem as ComboBoxItem; if (it == null) return;
-                S.For(sel.Id).Preset = (it.Tag as string) ?? ""; S.Save();
+                S.For(sel.Id).Preset = (it.Tag as string) ?? ""; S.Save(); ShowStartSection();
                 Status(S.For(sel.Id).Preset == "" ? sel.Name + " leaves your mixer as it is." : sel.Name + " switches Hallow Mixer to \"" + S.For(sel.Id).Preset + "\" when it starts.");
             };
-            op.Children.Add(presetBox);
+            c1.Children.Add(presetBox);
             sessionBox = new CheckBox { Content = new TextBlock { Text = "Hallow Toolkit game session", TextWrapping = TextWrapping.Wrap }, Style = (Style)FindResource("Switch"), Margin = new Thickness(0) };
             sessionBox.Click += (s, e) =>
             {
-                if (sel == null) return; S.For(sel.Id).GameSession = sessionBox.IsChecked == true; S.Save();
+                if (sel == null) return; S.For(sel.Id).GameSession = sessionBox.IsChecked == true; S.Save(); ShowStartSection();
                 Status(sessionBox.IsChecked == true ? "Game session on for " + sel.Name + ": Boost apps close and High performance power while it runs, back after." : "No game session for " + sel.Name + ".");
             };
-            op.Children.Add(sessionBox);
+            c1.Children.Add(sessionBox);
             sessionNote = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 11, Margin = new Thickness(52, 2, 0, 0), TextWrapping = TextWrapping.Wrap };
-            op.Children.Add(sessionNote);
-            op.Children.Add(BuildChecklist());   // v2.12
-            var pch = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 6) };
-            var pci = Icons.Make("heart-pulse", 11, B("#A98BE0")); pci.Margin = new Thickness(0, 0, 8, 0); pch.Children.Add(pci);
-            pch.Children.Add(new TextBlock { Text = "YOUR PC RIGHT NOW", FontSize = 10.5, FontWeight = FontWeights.Bold, Foreground = B("#A98BE0") });
-            op.Children.Add(pch);
-            pcPills = new WrapPanel(); op.Children.Add(pcPills);
-            opts.Child = op;
-            heroGrid.Children.Add(opts);
-            hero.Child = heroGrid;
-            Grid.SetRow(hero, 1); root.Children.Add(hero);
+            c1.Children.Add(sessionNote);
+            cols.Children.Add(c1);
+            var c2 = new StackPanel { Width = 230, Margin = new Thickness(0, 0, 32, 8) };
+            c2.Children.Add(new TextBlock { Text = "Also", Foreground = (Brush)FindResource("Muted"), FontSize = 11.5 });
+            c2.Children.Add(BuildChecklist());   // v2.12
+            var none = new TextBlock { Text = "Nothing else - add apps to close or open in Game settings.", Foreground = (Brush)FindResource("Muted"), FontSize = 11, Margin = new Thickness(0, 10, 0, 0), TextWrapping = TextWrapping.Wrap, Cursor = Cursors.Hand };
+            none.MouseLeftButtonUp += (s, e) => GameSettings(sel);
+            System.ComponentModel.DependencyPropertyDescriptor.FromProperty(VisibilityProperty, typeof(TextBlock)).AddValueChanged(checklist, (s, e) => none.Visibility = checklist.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible);
+            c2.Children.Add(none);
+            cols.Children.Add(c2);
+            var c3 = new StackPanel { Width = 250, Margin = new Thickness(0, 0, 0, 8) };
+            var pch = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
+            var pci = Icons.Make("heart-pulse", 11, (Brush)FindResource("Muted")); pci.Margin = new Thickness(0, 0, 8, 0); pch.Children.Add(pci);
+            pch.Children.Add(new TextBlock { Text = "Your PC right now", FontSize = 11.5, Foreground = (Brush)FindResource("Muted") });
+            c3.Children.Add(pch);
+            pcPills = new WrapPanel(); c3.Children.Add(pcPills);
+            cols.Children.Add(c3);
+            startCard.Child = cols;
+            lib.Children.Add(startCard);
             // v2.2: Hallow family cards (Saves, Clips, Overlay) - only the apps you have
-            familyRow = new Grid { Margin = new Thickness(0, 0, 0, 14), Visibility = Visibility.Collapsed };
-            Grid.SetRow(familyRow, 2); root.Children.Add(familyRow);
+            familyRow = new Grid { Margin = new Thickness(PadX, 16, PadX, 0), Visibility = Visibility.Collapsed };
+            lib.Children.Add(familyRow);
 
-            // ---- filters + sort
-            var bar = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
-            sortBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 170, VerticalAlignment = VerticalAlignment.Center };
+            // ---- continue playing (the shelf), then the library with a slim toolbar: its title on the left; surprise, filters, size,
+            // view and sort on the right; the quick filters under it
+            contLabel = SectionLabel("CONTINUE PLAYING", "clock"); ((FrameworkElement)contLabel).Margin = new Thickness(PadX, 26, PadX, 10);
+            contRow = new System.Windows.Controls.Primitives.UniformGrid { Rows = 1, Columns = 4, Margin = new Thickness(PadX - 8, 0, PadX - 8, 4) };
+            lib.Children.Add(contLabel); lib.Children.Add(contRow);
+            var bar = new DockPanel { Margin = new Thickness(PadX - 6, 22, PadX, 4) };
+            sortBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 150, VerticalAlignment = VerticalAlignment.Center, ToolTip = "Sort" };
             foreach (var o in new[] { Tuple.Create("recent", "Recently played"), Tuple.Create("played", "Most played"), Tuple.Create("name", "A to Z"), Tuple.Create("size", "Biggest first"), Tuple.Create("store", "By store"), Tuple.Create("rating", "Your rating"), Tuple.Create("status", "Play status") })
                 sortBox.Items.Add(new ComboBoxItem { Content = o.Item2, Tag = o.Item1 });
             sortBox.SelectionChanged += (s, e) => { if (loading) return; var it = sortBox.SelectedItem as ComboBoxItem; if (it != null) { S.Sort = (string)it.Tag; S.Save(); RebuildGrid(); } };
             DockPanel.SetDock(sortBox, Dock.Right); bar.Children.Add(sortBox);
-            var fbtn = BuildFilterButton(); DockPanel.SetDock(fbtn, Dock.Right); bar.Children.Add(fbtn);
-            var viewBar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
-            sizeBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 96, Margin = new Thickness(0, 0, 8, 0), ToolTip = "Cover size" };
+            var viewBar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+            sizeBox = new ComboBox { Style = (Style)FindResource("Combo"), Width = 92, Margin = new Thickness(0, 0, 4, 0), ToolTip = "Cover size" };
             foreach (var o in new[] { Tuple.Create(0.8, "Small"), Tuple.Create(1.0, "Medium"), Tuple.Create(1.25, "Large") }) sizeBox.Items.Add(new ComboBoxItem { Content = o.Item2, Tag = o.Item1 });
             sizeBox.SelectedItem = sizeBox.Items.Cast<ComboBoxItem>().OrderBy(i => Math.Abs((double)i.Tag - S.CardScale)).First();
             sizeBox.SelectionChanged += (s, e) => { var it = sizeBox.SelectedItem as ComboBoxItem; if (it == null || loading) return; S.CardScale = (double)it.Tag; S.Save(); RebuildGrid(); };
-            var gridV = new ToggleButton { Content = "Grid view", Tag = "icon", Width = 34, Height = 30, Padding = new Thickness(0), Style = (Style)FindResource("Chip"), Margin = new Thickness(0, 0, 4, 0), ToolTip = "Covers", IsChecked = S.View != "list" };
-            var listV = new ToggleButton { Content = "List view", Tag = "icon", Width = 34, Height = 30, Padding = new Thickness(0), Style = (Style)FindResource("Chip"), ToolTip = "List", IsChecked = S.View == "list" };
+            var gridV = new ToggleButton { Content = "Grid view", Tag = "icon", Width = 32, Height = 30, Padding = new Thickness(0), Style = (Style)FindResource("Ghost"), ToolTip = "Covers", IsChecked = S.View != "list" };
+            var listV = new ToggleButton { Content = "List view", Tag = "icon", Width = 32, Height = 30, Padding = new Thickness(0), Style = (Style)FindResource("Ghost"), ToolTip = "List", IsChecked = S.View == "list" };
             gridV.Click += (s, e) => { S.View = "grid"; S.Save(); gridV.IsChecked = true; listV.IsChecked = false; sizeBox.Visibility = Visibility.Visible; RebuildGrid(); };
             listV.Click += (s, e) => { S.View = "list"; S.Save(); gridV.IsChecked = false; listV.IsChecked = true; sizeBox.Visibility = Visibility.Collapsed; RebuildGrid(); };
             sizeBox.Visibility = S.View == "list" ? Visibility.Collapsed : Visibility.Visible;
             viewBar.Children.Add(sizeBox); viewBar.Children.Add(gridV); viewBar.Children.Add(listV);
             DockPanel.SetDock(viewBar, Dock.Right); bar.Children.Add(viewBar);
-            countText = new TextBlock { Foreground = (Brush)FindResource("Muted"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 14, 0) };
-            DockPanel.SetDock(countText, Dock.Right); bar.Children.Add(countText);
-            chips = new WrapPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, -6) };   // v2.3: wraps to a second line when there are many filters
-            bar.Children.Add(chips);
-            Grid.SetRow(bar, 3); root.Children.Add(bar);
-
-            // ---- the library
-            grid = new WrapPanel { Margin = new Thickness(-7, 0, -7, 0) };
-            var lib = new StackPanel();
-            contLabel = SectionLabel("CONTINUE PLAYING", "clock");
-            contRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(-7, 0, 0, 6) };
-            libLabel = SectionLabel("LIBRARY", "table-cells-large");
-            lib.Children.Add(contLabel); lib.Children.Add(contRow); lib.Children.Add(libLabel); lib.Children.Add(grid);
+            var fbtn = BuildFilterButton(); filterBtn.Style = (Style)FindResource("Pill"); filterBtn.Margin = new Thickness(0, 0, 4, 0); DockPanel.SetDock(fbtn, Dock.Right); bar.Children.Add(fbtn);
+            var dice = new Button { Content = "Surprise me", Tag = "icon", Width = 32, Height = 30, Padding = new Thickness(0), Style = (Style)FindResource("Ghost"), Margin = new Thickness(0, 0, 4, 0), ToolTip = "What should I play? (Ctrl+R, or X on a controller)\nRight-click: from your backlog, a favorite, or one you haven't played in a while" };
+            dice.Click += (s, e) => Surprise(); dice.ContextMenu = PickMenu();   // v2.12: right-click - from your backlog, a favorite, an old one
+            DockPanel.SetDock(dice, Dock.Right); bar.Children.Add(dice);
+            sideToggle = new Button { Content = "Game list", Tag = "icon", Width = 32, Height = 30, Padding = new Thickness(0), Style = (Style)FindResource("Ghost"), Margin = new Thickness(0, 0, 6, 0), ToolTip = "Show or hide the game list" };
+            sideToggle.Click += (s, e) => ToggleSidebar();
+            DockPanel.SetDock(sideToggle, Dock.Left); bar.Children.Add(sideToggle);
+            var lt = new TextBlock { Text = "LIBRARY", FontSize = 11, FontWeight = FontWeights.Bold, Foreground = (Brush)FindResource("Muted"), VerticalAlignment = VerticalAlignment.Center };
+            DockPanel.SetDock(lt, Dock.Left); bar.Children.Add(lt);
+            countText = new TextBlock { Foreground = (Brush)FindResource("Muted"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 12, 0), FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis };
+            bar.Children.Add(countText);
+            lib.Children.Add(bar);
+            chips = new WrapPanel { Margin = new Thickness(PadX - 6, 4, PadX, 6) };   // v2.3: wraps to a second line when there are many filters
+            lib.Children.Add(chips);
+            grid = new WrapPanel { Margin = new Thickness(PadX - 8, 6, PadX - 8, 0) };
+            libLabel = new Border();   // v2.28: the toolbar says LIBRARY now
+            lib.Children.Add(grid);
             gridScroll = new ScrollViewer { Content = lib, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-            Grid.SetRow(gridScroll, 4); root.Children.Add(gridScroll);
+            Grid.SetColumn(gridScroll, 1); body.Children.Add(gridScroll);
+            Grid.SetRow(body, 1); root.Children.Add(body);
+            root.SizeChanged += (s, e) => FitWidth(e.NewSize.Width);
 
-            statusText = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, Margin = new Thickness(2, 10, 2, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-            Grid.SetRow(statusText, 5); root.Children.Add(statusText);
+            // ---- the bottom bar: what's going on (playing, updates) on the left, today's playtime on the right
+            var foot = new Border { BorderBrush = B("#2A2333"), BorderThickness = new Thickness(0, 1, 0, 0) };
+            var fd = new DockPanel { Margin = new Thickness(20, 0, 20, 0) };
+            todayText = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center };
+            DockPanel.SetDock(todayText, Dock.Right); fd.Children.Add(todayText);
+            dlBox = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 12, 0) };
+            var dli = Icons.Make("download", 11, BI("#5AB4F0")); dli.Margin = new Thickness(0, 0, 8, 0); dlBox.Children.Add(dli);
+            var track = new Border { Width = 90, Height = 4, CornerRadius = new CornerRadius(2), Background = B("#3A3248"), VerticalAlignment = VerticalAlignment.Center };
+            dlFill = new Border { Width = 0, Height = 4, CornerRadius = new CornerRadius(2), Background = BI("#5AB4F0"), HorizontalAlignment = HorizontalAlignment.Left };
+            track.Child = dlFill; dlBox.Children.Add(track);
+            DockPanel.SetDock(dlBox, Dock.Left); fd.Children.Add(dlBox);
+            statusText = new TextBlock { Foreground = (Brush)FindResource("Muted"), FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 0, 16, 0) };
+            fd.Children.Add(statusText);
+            foot.Child = fd;
+            Grid.SetRow(foot, 2); root.Children.Add(foot);
 
             var outer = new Grid(); outer.Children.Add(root);
             settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
-            statsPanel = BuildStats(); outer.Children.Add(statsPanel);
-            storagePanel = BuildStorage(); outer.Children.Add(storagePanel);
-            familyPanel = BuildFamilyPage(); outer.Children.Add(familyPanel);   // v2.17
-            newsPanel = BuildNews(); outer.Children.Add(newsPanel);
-            wishPanel = BuildWishlist(); outer.Children.Add(wishPanel);
-            aboutPanel = BuildAbout(); outer.Children.Add(aboutPanel);
+            statsPanel = BuildStats(); outer.Children.Add(AsPage(statsPanel, false));
+            storagePanel = BuildStorage(); outer.Children.Add(AsPage(storagePanel, false));
+            familyPanel = BuildFamilyPage(); outer.Children.Add(AsPage(familyPanel, false));   // v2.17
+            newsPanel = BuildNews(); outer.Children.Add(AsPage(newsPanel, false));
+            wishPanel = BuildWishlist(); outer.Children.Add(AsPage(wishPanel, false));
+            aboutPanel = BuildAbout(); outer.Children.Add(AsPage(aboutPanel, false));
+            ShowStartSection();
             return outer;
         }
 
@@ -558,7 +618,7 @@ namespace HallowHub
         Border BuildSettings()
         {
             var b = new Border { Background = B("#241E2E"), BorderBrush = B("#3A3248"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14),
-                Padding = new Thickness(18, 14, 18, 16), Width = 420, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
+                Padding = new Thickness(18, 14, 18, 16), Width = 620, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(0, 62, 22, 0), Visibility = Visibility.Collapsed };
             b.Effect = HallowLook.Shadow(24, 0.5, 4);
             var sp = new StackPanel();
@@ -618,7 +678,7 @@ namespace HallowHub
             im.Click += (s, e) => ImportLibrary();
             lib.Children.Add(bk); lib.Children.Add(im); sp.Children.Add(lib);
             var emuBtn = new Button { Content = "Emulators...", Style = (Style)FindResource("Btn"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0), ToolTip = "Your emulators and ROM folders - every ROM becomes a game" };
-            emuBtn.Click += (s, e) => { var w = new EmulatorsWindow(S.Emulators) { Owner = this }; if (w.ShowDialog() == true) { S.Emulators = w.Result; S.Save(); Rescan(); Status(games.Count(x => x.Source == "rom") + " ROMs in your library from " + S.Emulators.Count + (S.Emulators.Count == 1 ? " emulator." : " emulators.")); } };   // v2.9
+            emuBtn.Click += (s, e) => OpenEmulators();   // v2.9
             sp.Children.Add(emuBtn);
             var upd = new Button { Content = "Check for updates", Style = (Style)FindResource("Btn"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
             upd.Click += (s, e) => CheckForUpdate(true); sp.Children.Add(upd);
@@ -629,7 +689,7 @@ namespace HallowHub
             sp.Children.Add(new TextBlock { Text = "Keys: arrows move, Enter plays, Ctrl+F search, Ctrl+R surprise me (Ctrl+Shift+R from your backlog), F5 refresh, F11 Big Picture, Esc back.\nController: d-pad or stick, A play, X surprise me, Y favorite, LB/RB filters, B back, Start stats, View Big Picture.\nTray icon: click for the quick launcher, double-click to open Hub.",
                 Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0), FontSize = 11.5, LineHeight = 18 });
             sp.Children.Add(new TextBlock { Text = "Hallow Hub " + Program.Version + "  -  icons: Font Awesome Free (CC BY 4.0)", Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(0, 12, 0, 0), FontSize = 11 });
-            b.Child = sp; return b;
+            b.Child = sp; return AsPage(b, true);   // v2.28: a page under the tabs (it scrolls)
         }
 
         // ================================================================ v1.1 helpers
@@ -796,14 +856,14 @@ namespace HallowHub
             foreach (var o in opts)
             {
                 var key = o.Item1;
-                object content = o.Item2;
+                object content = new TextBlock { Text = o.Item2 };   // v2.28: words only - quieter
                 if (key.StartsWith("col:"))
                 {
                     var cp = new StackPanel { Orientation = Orientation.Horizontal };
                     var ti = new System.Windows.Shapes.Path { Data = Icons.Get("tag"), Stretch = Stretch.Uniform, Width = 12, Height = 12, Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center };
-                    cp.Children.Add(ti); cp.Children.Add(new TextBlock { Text = o.Item2, VerticalAlignment = VerticalAlignment.Center }); content = cp;
+                    cp.Children.Add(ti); cp.Children.Add(new TextBlock { Text = o.Item2, VerticalAlignment = VerticalAlignment.Center }); content = cp; ti.Width = 10; ti.Height = 10; ti.Margin = new Thickness(0, 0, 6, 0);
                 }
-                var c = new ToggleButton { Content = content, Style = (Style)FindResource("Chip"), Margin = new Thickness(0, 0, 8, 6), IsChecked = S.Filter == key };
+                var c = new ToggleButton { Content = content, Style = (Style)FindResource("Pill"), Margin = new Thickness(0, 0, 4, 4), IsChecked = S.Filter == key };
                 if (key.StartsWith("col:")) ((System.Windows.Shapes.Path)((StackPanel)content).Children[0]).SetBinding(System.Windows.Shapes.Shape.FillProperty, new System.Windows.Data.Binding("Foreground") { Source = c });
                 c.Click += (s, e) => { S.Filter = key; S.Save(); foreach (ToggleButton x in chips.Children) x.IsChecked = x == c; RebuildGrid(); };
                 chips.Children.Add(c);
@@ -838,6 +898,7 @@ namespace HallowHub
             foreach (var g in recent) contRow.Children.Add(Wide(g));
             var show = recent.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             contLabel.Visibility = show; contRow.Visibility = show; libLabel.Visibility = show;
+            RebuildSide();   // v2.28: the game list on the left
         }
 
         static readonly Dictionary<string, ImageSource> imgCache = new Dictionary<string, ImageSource>();
@@ -864,10 +925,11 @@ namespace HallowHub
         Border Card(Game g)
         {
             var d = S.For(g.Id);
-            var card = new Border { Width = 160 * K, Height = 240 * K, Margin = new Thickness(7), CornerRadius = new CornerRadius(14), BorderThickness = new Thickness(2),
+            // v2.28: a clean capsule - 2:3, small corners, no frame; under the mouse it lifts and shows the playtime
+            var card = new Border { Width = 160 * K, Height = 240 * K, Margin = new Thickness(8), CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(2),
                 BorderBrush = Brushes.Transparent, Background = (Brush)FindResource("Panel"), Cursor = Cursors.Hand, Tag = g,
                 RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1, 1), ToolTip = g.Name };
-            var inner = new Grid { Clip = new RectangleGeometry(new Rect(0, 0, 160 * K - 4, 240 * K - 4), 12, 12) };
+            var inner = new Grid { Clip = new RectangleGeometry(new Rect(0, 0, 160 * K - 4, 240 * K - 4), 6, 6) };
             var cover = Img(g.Cover, K > 1.1 ? 420 : 320);
             if (cover != null) inner.Children.Add(new Image { Source = cover, Stretch = Stretch.UniformToFill });
             else
@@ -882,17 +944,19 @@ namespace HallowHub
                 st.Children.Add(new TextBlock { Text = g.Name, FontSize = 15, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Foreground = HallowLook.Light ? (Brush)FindResource("Text") : Brushes.White });
                 inner.Children.Add(st);
             }
+            var over = new Grid { Tag = "hover", Opacity = 0, IsHitTestVisible = false };   // shown under the mouse and on the selected game
+            over.Children.Add(new Rectangle { Fill = new SolidColorBrush(Color.FromArgb(22, 255, 255, 255)) });
             var shade = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
             shade.GradientStops.Add(new GradientStop(Color.FromArgb(0, 0, 0, 0), 0)); shade.GradientStops.Add(new GradientStop(Color.FromArgb(215, 0x10, 0x0C, 0x16), 1));
-            inner.Children.Add(new Rectangle { Fill = shade, Height = 64, VerticalAlignment = VerticalAlignment.Bottom });
+            over.Children.Add(new Rectangle { Fill = shade, Height = 64, VerticalAlignment = VerticalAlignment.Bottom });
             var foot = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(11, 0, 0, 10) };
             var clock = Icons.Make("clock", 11, BD("#D6D0E2")); clock.Margin = new Thickness(0, 0, 6, 0); foot.Children.Add(clock);
             foot.Children.Add(new TextBlock { Text = Total(g) < 1 ? "New" : HubSettings.Duration(Total(g)), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = BD("#ECE8F4") });
-            inner.Children.Add(foot);
-            var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "rom" ? "compact-disc" : g.Source == "xbox" ? "xbox" : "gamepad";
-            var badge = Icons.Make(srcIcon, 12, new SolidColorBrush(Color.FromArgb(200, 0xEC, 0xE8, 0xF4)));
+            over.Children.Add(foot);
+            var badge = Icons.Make(SrcIcon(g), 12, new SolidColorBrush(Color.FromArgb(200, 0xEC, 0xE8, 0xF4)));
             badge.HorizontalAlignment = HorizontalAlignment.Right; badge.VerticalAlignment = VerticalAlignment.Bottom; badge.Margin = new Thickness(0, 0, 11, 11);
-            inner.Children.Add(badge);
+            over.Children.Add(badge);
+            inner.Children.Add(over);
             if (d.Pinned)
             {
                 inner.Children.Add(new Border { Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Background = new SolidColorBrush(Color.FromArgb(200, 0x16, 0x12, 0x1C)),
@@ -919,57 +983,64 @@ namespace HallowHub
             if (d.Hidden) inner.Opacity = 0.45;
             card.Child = inner;
             Paint(card, false);
-            card.MouseEnter += (s, e) => { Zoom(card, 1.04); Paint(card, true); };
+            card.MouseEnter += (s, e) => { Zoom(card, 1.03); Paint(card, true); };
             card.MouseLeave += (s, e) => { Zoom(card, 1.0); Paint(card, false); };
-            card.MouseLeftButtonUp += (s, e) => Select(g);
+            card.MouseLeftButtonUp += (s, e) => Open(g);
             card.MouseLeftButtonDown += (s, e) => { if (e.ClickCount == 2) { Select(g); Play(g); } };
             card.ContextMenu = Menu(g);
             return card;
         }
+        // v2.28: a quiet section title (the icon is kept for the call sites, the text says enough)
         FrameworkElement SectionLabel(string text, string icon)
         {
-            var sp = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(1, 4, 0, 8) };
-            var ic = Icons.Make(icon, 11, B("#A98BE0")); ic.Margin = new Thickness(0, 0, 8, 0); sp.Children.Add(ic);
-            sp.Children.Add(new TextBlock { Text = text, FontSize = 10.5, FontWeight = FontWeights.Bold, Foreground = B("#A98BE0") });
-            return sp;
+            return new TextBlock { Text = text, FontSize = 11, FontWeight = FontWeights.Bold, Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(0, 6, 0, 10) };
         }
-        // a wide "continue playing" card: the game's header art, when you last played and for how long
+        // a wide "continue playing" card: the game's header art, when you last played and for how long (v2.28: the shelf's four
+        // cards share its width, the text sits under the art)
         Border Wide(Game g)
         {
-            var w = new Border { Width = 262, Height = 150, Margin = new Thickness(7, 0, 7, 0), CornerRadius = new CornerRadius(14), Background = (Brush)FindResource("Panel"), Cursor = Cursors.Hand,
-                RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1, 1), BorderThickness = new Thickness(1), BorderBrush = B("#2E2639"), ToolTip = g.Name };
-            var gi = new Grid { Clip = new RectangleGeometry(new Rect(0, 0, 260, 148), 13, 13) };
+            var w = new Border { Height = 156, Margin = new Thickness(8, 0, 8, 0), Background = Brushes.Transparent, Cursor = Cursors.Hand,
+                RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(1, 1), ToolTip = g.Name };
+            var gi = new Grid();
             gi.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); gi.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var pic = new Border { CornerRadius = new CornerRadius(8), Background = (Brush)FindResource("Panel") };
+            var pg = new Grid();
+            pic.SizeChanged += (s, e) => pg.Clip = new RectangleGeometry(new Rect(0, 0, pic.ActualWidth, pic.ActualHeight), 8, 8);
             var art = Img(g.Header, 520) ?? Img(g.Hero, 520) ?? Img(g.Cover, 320);
-            if (art != null) gi.Children.Add(new Image { Source = art, Stretch = Stretch.UniformToFill, VerticalAlignment = VerticalAlignment.Center });
-            else gi.Children.Add(new TextBlock { Text = g.Name, FontSize = 16, FontWeight = FontWeights.Bold, Margin = new Thickness(12), TextWrapping = TextWrapping.Wrap });
-            var ac = Accent(g);
-            var fb = C("#1C1724"); var fk = HallowLook.Light ? 0.10 : 0.12;
-            var foot = new DockPanel { Background = new SolidColorBrush(Color.FromArgb(255, (byte)(fb.R + (ac.R - fb.R) * fk), (byte)(fb.G + (ac.G - fb.G) * fk), (byte)(fb.B + (ac.B - fb.B) * fk))) };
-            var running = IsRunning(g);
-            var left = new TextBlock { Text = running ? "Playing now" : HubSettings.Ago(LastOf(g)), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = running ? B("#6ED28C") : B("#ECE8F4"), Margin = new Thickness(11, 7, 0, 8) };
-            var right = new TextBlock { Text = HubSettings.Duration(Total(g)), FontSize = 11.5, Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(0, 7, 11, 8) };
-            DockPanel.SetDock(right, Dock.Right); foot.Children.Add(right); foot.Children.Add(left);
-            Grid.SetRow(foot, 1); gi.Children.Add(foot);
+            if (art != null) pg.Children.Add(new Image { Source = art, Stretch = Stretch.UniformToFill, VerticalAlignment = VerticalAlignment.Center });
+            else pg.Children.Add(new TextBlock { Text = g.Name, FontSize = 16, FontWeight = FontWeights.Bold, Margin = new Thickness(12), TextWrapping = TextWrapping.Wrap });
+            var veil = new Rectangle { Fill = new SolidColorBrush(Color.FromArgb(22, 255, 255, 255)), Opacity = 0, IsHitTestVisible = false };
+            pg.Children.Add(veil);
             var play = new Border { Width = 36, Height = 36, CornerRadius = new CornerRadius(18), Background = BF("#F07820"), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom,
                 Margin = new Thickness(0, 0, 10, 10), Child = Icons.Make("play", 13, B("#1A0E04")), Opacity = 0, ToolTip = "Play " + g.Name };
             ((FrameworkElement)play.Child).Margin = new Thickness(3, 0, 0, 0);
             play.MouseLeftButtonUp += (s, e) => { e.Handled = true; Select(g); Play(g); };
-            gi.Children.Add(play);
+            pg.Children.Add(play);
+            pic.Child = pg; gi.Children.Add(pic);
+            var foot = new DockPanel { Margin = new Thickness(2, 7, 2, 0) };
+            var running = IsRunning(g);
+            var right = new TextBlock { Text = HubSettings.Duration(Total(g)), FontSize = 11.5, Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(8, 0, 0, 0) };
+            var left = new TextBlock { Text = running ? "Playing now" : HubSettings.Ago(LastOf(g)), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = running ? B("#6ED28C") : (Brush)FindResource("Text"), TextTrimming = TextTrimming.CharacterEllipsis };
+            DockPanel.SetDock(right, Dock.Right); foot.Children.Add(right); foot.Children.Add(left);
+            Grid.SetRow(foot, 1); gi.Children.Add(foot);
             w.Child = gi;
-            w.MouseEnter += (s, e) => { Zoom(w, 1.03); w.BorderBrush = new SolidColorBrush(ac); play.Opacity = 1; };
-            w.MouseLeave += (s, e) => { Zoom(w, 1.0); w.BorderBrush = B("#2E2639"); play.Opacity = 0; };
-            w.MouseLeftButtonUp += (s, e) => Select(g);
+            w.MouseEnter += (s, e) => { Zoom(w, 1.03); veil.Opacity = 1; play.Opacity = 1; };
+            w.MouseLeave += (s, e) => { Zoom(w, 1.0); veil.Opacity = 0; play.Opacity = 0; };
+            w.MouseLeftButtonUp += (s, e) => Open(g);
             w.MouseLeftButtonDown += (s, e) => { if (e.ClickCount == 2) { Select(g); Play(g); } };
             w.ContextMenu = Menu(g);
             return w;
         }
+        // v2.28: the selected game gets a thin outline in the text colour (no glow); under the mouse a capsule brightens and shows its playtime
         void Paint(Border card, bool hot)
         {
             var g = card.Tag as Game;
-            var ac = g == null ? C("#F07820") : Accent(g);
-            card.BorderBrush = g == sel ? new SolidColorBrush(ac) : hot ? B("#55496A") : Brushes.Transparent;
-            card.Effect = g == sel ? HallowLook.Glow(ac, 22, 0.6) : null;
+            card.BorderBrush = g == sel ? B("#ECE8F4") : Brushes.Transparent;
+            card.Effect = null;
+            var inner = card.Child as Panel;
+            bool capsule = false;
+            if (inner != null) foreach (var c in inner.Children.OfType<FrameworkElement>()) if ((c.Tag as string) == "hover") { c.Opacity = hot || g == sel ? 1 : 0; capsule = true; }
+            if (!capsule && hot && g != sel) card.BorderBrush = B("#3A3248");   // list rows
         }
         static void Zoom(Border card, double to)
         {
@@ -1015,6 +1086,7 @@ namespace HallowHub
             var prev = sel; sel = g; S.Selected = g.Id; S.Save();
             Border b; if (prev != null && cards.TryGetValue(prev.Id, out b)) Paint(b, false);
             if (cards.TryGetValue(g.Id, out b)) Paint(b, b.IsMouseOver);
+            PaintSideAll();   // v2.28: the game list
             ShowHero(); ShowPc();
         }
 
@@ -1027,10 +1099,10 @@ namespace HallowHub
                 var g = sel;
                 if (g == null)
                 {
-                    heroImg.Source = null; heroLogo.Source = null; heroName.Text = "Your games show up here"; heroStats.Text = "Hallow Hub finds Steam, Battle.net and Epic Games games by itself. Add anything else with Add game.";
-                    playBtn.Visibility = Visibility.Collapsed; favBtn.Visibility = Visibility.Collapsed; heroPills.Children.Clear(); playOn.Children.Clear(); return;
+                    heroImg.Source = null; heroLogo.Source = null; heroName.Text = "Your games show up here"; heroStats.Text = "Hallow Hub finds Steam, Battle.net and Epic Games games by itself. Add anything else with Add game."; heroStats.Visibility = Visibility.Visible;
+                    playBtn.Visibility = Visibility.Collapsed; favBtn.Visibility = Visibility.Collapsed; heroPills.Children.Clear(); playOn.Children.Clear(); heroFacts.Children.Clear(); return;
                 }
-                playBtn.Visibility = Visibility.Visible; favBtn.Visibility = Visibility.Visible;
+                playBtn.Visibility = Visibility.Visible; favBtn.Visibility = Visibility.Visible; heroStats.Visibility = Visibility.Collapsed;
                 var d = S.For(g.Id);
                 heroImg.Source = Img(g.Hero, 1600) ?? Img(g.Header, 0) ?? Img(g.Cover, 0);
                 heroImg.Effect = g.Hero == null && heroImg.Source != null ? new System.Windows.Media.Effects.BlurEffect { Radius = 30 } : null;
@@ -1042,14 +1114,26 @@ namespace HallowHub
                 heroStats.Text = (total < 1 ? "Not played yet" : HubSettings.Duration(total) + " played") +
                     (recent >= 1 ? "   \u00B7   " + HubSettings.Duration(recent) + " in the last 2 weeks" : "") +
                     "   \u00B7   Last played: " + HubSettings.Ago(LastOf(g));
+                // v2.28: the facts next to Play, as small labelled columns
+                heroFacts.Children.Clear();
+                Action<string, string> fact = (label, value) =>
+                {
+                    var fsp = new StackPanel { Margin = new Thickness(0, 2, 30, 2) };
+                    fsp.Children.Add(new TextBlock { Text = label, FontSize = 10.5, FontWeight = FontWeights.SemiBold, Foreground = (Brush)FindResource("Muted") });
+                    fsp.Children.Add(new TextBlock { Text = value, FontSize = 13.5, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 2, 0, 0) });
+                    heroFacts.Children.Add(fsp);
+                };
+                fact("LAST PLAYED", IsRunning(g) ? "Playing now" : HubSettings.Ago(LastOf(g)));
+                fact("PLAY TIME", total < 1 ? "Not played yet" : HubSettings.Duration(total));
+                if (recent >= 1) fact("LAST 2 WEEKS", HubSettings.Duration(recent));
                 heroPills.Children.Clear();
                 Action<string, string, string> pill = (icon, text, col) =>
                 {
                     var sp2 = new StackPanel { Orientation = Orientation.Horizontal };
                     if (icon != null) { var ic = Icons.Make(icon, 11, B(col)); ic.Margin = new Thickness(0, 0, 6, 0); sp2.Children.Add(ic); }
                     sp2.Children.Add(new TextBlock { Text = text, FontSize = 11.5, Foreground = B(col), FontWeight = FontWeights.SemiBold });
-                    heroPills.Children.Add(new Border { Child = sp2, CornerRadius = new CornerRadius(10), Padding = new Thickness(9, 3, 10, 4), Margin = new Thickness(0, 0, 6, 6),
-                        Background = new SolidColorBrush(HallowLook.Light ? Color.FromArgb(215, 0xFF, 0xFF, 0xFF) : Color.FromArgb(150, 0x1A, 0x15, 0x22)), BorderBrush = HallowLook.Light ? (Brush)B("#3A3248") : new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), BorderThickness = new Thickness(1) });
+                    heroPills.Children.Add(new Border { Child = sp2, CornerRadius = new CornerRadius(6), Padding = new Thickness(8, 3, 9, 4), Margin = new Thickness(0, 0, 6, 6),
+                        Background = new SolidColorBrush(HallowLook.Light ? Color.FromArgb(200, 0xFF, 0xFF, 0xFF) : Color.FromArgb(140, 0x16, 0x12, 0x1C)) });   // v2.28: no outline
                 };
                 var srcIcon = g.Source == "steam" ? "steam" : g.Source == "battlenet" ? "battle-net" : g.Source == "custom" ? "windows" : g.Source == "rom" ? "compact-disc" : g.Source == "xbox" ? "xbox" : "gamepad";
                 pill(srcIcon, (g.Source == "rom" && !string.IsNullOrEmpty(g.Platform) ? g.Platform : g.SourceName) + (g.Alts.Count > 0 ? " + " + string.Join(" + ", g.Alts.Select(a => a.SourceName)) : ""), "#ECE8F4");
@@ -1087,11 +1171,9 @@ namespace HallowHub
                         playOn.Children.Add(tip);
                     }
                 }
-                var ac = Accent(g);
-                heroBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(150, ac.R, ac.G, ac.B));
-                heroBorder.Effect = HallowLook.Glow(ac, 34, 0.35);
-                var sc = HallowLook.Scrim(240); var sk = HallowLook.Light ? 0.08 : 0.14; heroTint.Color = Color.FromArgb(240, (byte)(sc.R + (ac.R - sc.R) * sk), (byte)(sc.G + (ac.G - sc.G) * sk), (byte)(sc.B + (ac.B - sc.B) * sk));
-                favBtn.IsChecked = d.Favorite;
+                favBtn.IsChecked = d.Favorite;   // v2.28: no coloured frame or glow round the banner - the art fades into the page
+                if (d.Favorite) favBtn.Foreground = BI("#F0BE5A"); else favBtn.ClearValue(ForegroundProperty);
+                favBtn.ToolTip = d.Favorite ? "A favorite - click to remove" : "Add to favorites";
                 ShowNewsButton(g); if (newsPanel.Visibility == Visibility.Visible) FillNews();
                 ShowAboutButton(g); if (aboutPanel.Visibility == Visibility.Visible) FillAbout();
                 ShowStatus(g);
@@ -1127,6 +1209,7 @@ namespace HallowHub
                 ShowChecklist(g, d);   // v2.12: what else happens (apps closed and opened)
             }
             finally { loading = false; }
+            ShowStartSection();   // v2.28
             ShowFamily(false);
         }
 
@@ -1145,16 +1228,27 @@ namespace HallowHub
 
         void UpdateStatus()
         {
-            if (statusText == null || statusNote != null && DateTime.Now < statusUntil) return;
+            if (statusText == null) return;
+            // v2.28: the bottom bar - today's playtime on the right, what's going on (playing, updates) on the left
             var week = S.Games.Values.Sum(x => x.MinutesSince(DateTime.Today.AddDays(-6)));
             var today = S.Games.Values.Sum(x => x.MinutesSince(DateTime.Today));
+            if (todayText != null) todayText.Text = "Today " + (today < 1 ? "0 min" : HubSettings.Duration(today)) + "   \u00B7   This week " + (week < 1 ? "0 min" : HubSettings.Duration(week)) + "   \u00B7   " + games.Count + " games installed";
+            var upd = games.Where(x => x.Updating).ToList(); int waiting = games.Count(x => x.NeedsUpdate && !x.Updating);
+            if (dlBox != null)
+            {
+                dlBox.Visibility = upd.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                var pr = upd.Where(x => x.Progress >= 0).Select(x => x.Progress).DefaultIfEmpty(0).First(); dlFill.Width = 90 * Math.Max(0, Math.Min(1, pr));
+            }
+            if (statusNote != null && DateTime.Now < statusUntil) return;
             var run = tracker.Now.Values.Select(r => Main(r.Game).Name).Distinct().ToList();
-            statusText.Text = (run.Count > 0 ? "Playing " + string.Join(", ", run) + "   \u00B7   " : "") +
-                "Today: " + (today < 1 ? "0 min" : HubSettings.Duration(today)) + "   \u00B7   This week: " + (week < 1 ? "0 min" : HubSettings.Duration(week)) +
-                "   \u00B7   " + games.Count + " games installed";
+            var bits = new List<string>();
+            if (run.Count > 0) bits.Add("Playing " + string.Join(", ", run));
+            if (upd.Count > 0) bits.Add("Updating " + upd[0].Name + (upd[0].Progress >= 0 ? " " + (int)(upd[0].Progress * 100) + "%" : "") + (upd.Count > 1 ? " and " + (upd.Count - 1) + " more" : ""));
+            if (waiting > 0) bits.Add(waiting + (waiting == 1 ? " update waiting" : " updates waiting") + " - downloads when you press Play");
+            statusText.Text = bits.Count > 0 ? string.Join("   \u00B7   ", bits) : "Ready";
         }
         string statusNote; DateTime statusUntil;
-        void Status(string msg) { statusNote = msg; statusUntil = DateTime.Now.AddSeconds(8); statusText.Text = msg; }
+        void Status(string msg) { statusNote = msg; statusUntil = DateTime.Now.AddSeconds(8); statusText.Text = msg; if (dlBox != null) dlBox.Visibility = Visibility.Collapsed; }
 
         // ================================================================ actions
         void Play(Game g)
@@ -1221,7 +1315,7 @@ namespace HallowHub
             var list = Visible(); if (list.Count == 0) return;
             int i = sel == null ? -1 : list.IndexOf(sel);
             if (i < 0) { Select(list[0]); Reveal(list[0]); return; }
-            int cols = S.View == "list" ? 1 : Math.Max(1, (int)((grid.ActualWidth + 1) / (160 * K + 14)));
+            int cols = S.View == "list" ? 1 : Math.Max(1, (int)((grid.ActualWidth + 1) / (160 * K + 16)));
             int j = Math.Max(0, Math.Min(list.Count - 1, i + dx + dy * cols));
             if (j != i) { Select(list[j]); Reveal(list[j]); }
         }
@@ -1467,6 +1561,21 @@ namespace HallowHub
             var df = games.FirstOrDefault(x => x.Name.StartsWith("Delta")); if (df != null) { S.For(df.Id).LaunchArgs = "-novid"; Select(df); }
             S.Filter = "all"; RebuildChips(); RebuildGrid(); ShowHero();
             Snap.Save(this, System.IO.Path.Combine(dir, "main.png"), 1180, 780);
+            Snap.Save(this, System.IO.Path.Combine(dir, "main-wide.png"), 1600, 900);
+            // v2.28: the game list opened on a small window, "When this game starts" opened, and what the More menus hold
+            try
+            {
+                Snap.Save(this, System.IO.Path.Combine(dir, "main-narrow.png"), 960, 640); ToggleSidebar(); Snap.Save(this, System.IO.Path.Combine(dir, "main-narrow-list.png"), 960, 640); ToggleSidebar();
+                S.StartOpen = true; ShowStartSection(); Snap.Save(this, System.IO.Path.Combine(dir, "main-start-open.png"), 1180, 1000); S.StartOpen = false; ShowStartSection();
+                Snap.Save(this, System.IO.Path.Combine(dir, "main-tall.png"), 1180, 1400);
+                Func<ItemsControl, string, string> dump = null;
+                dump = (ic, ind) => string.Join("", ic.Items.Cast<object>().Select(o => { var mi = o as MenuItem; return mi == null ? ind + "----\r\n" : ind + mi.Header + "\r\n" + dump(mi, ind + "    "); }));
+                File.WriteAllText(System.IO.Path.Combine(dir, "menus.txt"), "TOP BAR MORE\r\n" + dump(MoreMenu(), "  ") + "\r\nGAME MORE (" + sel.Name + ")\r\n" + dump(GameMenu(sel), "  ") +
+                    "\r\nTABS: " + string.Join(" | ", new ButtonBase[] { libTab, familyBtn, statsBtn, storageBtn, wishBtn }.Select(x => x.Content + (x.Visibility == Visibility.Visible ? "" : " (hidden)"))) +
+                    "\r\nGAME LIST: " + string.Join(" | ", sideList.Children.OfType<FrameworkElement>().Select(x => x is DockPanel ? "[" + string.Join(" ", ((DockPanel)x).Children.OfType<TextBlock>().Select(tb => tb.Text)) + "]" : ((x as Border) != null && (x as Border).Tag is Game ? ((Game)((Border)x).Tag).Name : "?"))) +
+                    "\r\nBOTTOM: " + statusText.Text + "  ||  " + todayText.Text + "\r\nSTART SUMMARY: " + startSummary.Text + "\r\n");
+            }
+            catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "shell.err.txt"), ex.ToString()); }
             settingsPanel.Visibility = Visibility.Visible;
             Snap.Save(this, System.IO.Path.Combine(dir, "settings.png"), 1180, 780);
             try { var cf = Crash.Newest(); if (cf != null) Snap.Save(new CrashWindow(cf), System.IO.Path.Combine(dir, "crash.png"), 460, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "crash.err.txt"), ex.ToString()); }
@@ -1477,6 +1586,7 @@ namespace HallowHub
             settingsPanel.Visibility = Visibility.Collapsed;
             FillStats(); statsPanel.Visibility = Visibility.Visible;
             Snap.Save(this, System.IO.Path.Combine(dir, "stats.png"), 1180, 780);
+            Snap.Save(this, System.IO.Path.Combine(dir, "stats-narrow.png"), 960, 640);   // v2.28
             statsPanel.Visibility = Visibility.Collapsed;
             var keepFilter = S.Filter;
             OpenBigPicture(); if (big != null) { Snap.Save(big, System.IO.Path.Combine(dir, "big.png"), 1600, 900);
@@ -1484,7 +1594,7 @@ namespace HallowHub
                 bigSnapStep(2); Snap.Save(big, System.IO.Path.Combine(dir, "big-storage.png"), 1600, 900);
                 bigSnapStep(3); Snap.Save(big, System.IO.Path.Combine(dir, "big-confirm.png"), 1600, 900); BsHide(); big = null; bsView = null; }
             S.Filter = keepFilter; RebuildChips(); RebuildGrid();
-            ShowQuick(); if (quick != null) { Snap.Save(quick, System.IO.Path.Combine(dir, "quick.png"), 370, 0); quick = null; }
+            ShowQuick(); if (quick != null) { Snap.Save(quick, System.IO.Path.Combine(dir, "quick.png"), 390, 0); quick = null; }
             S.View = "list"; RebuildGrid(); Snap.Save(this, System.IO.Path.Combine(dir, "list.png"), 1180, 900); S.View = "grid"; S.CardScale = 0.8; RebuildGrid(); Snap.Save(this, System.IO.Path.Combine(dir, "small.png"), 1180, 900); S.CardScale = 1; RebuildGrid();
             FillStorage(); storagePanel.Visibility = Visibility.Visible; Snap.Save(this, System.IO.Path.Combine(dir, "storage.png"), 1180, 900); storagePanel.Visibility = Visibility.Collapsed;
             try { var gw = new GameSettingsWindow(df ?? games[0], S.For((df ?? games[0]).Id), S, false); Snap.Save(gw, System.IO.Path.Combine(dir, "gamesettings.png"), 480, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "gs.err.txt"), ex.ToString()); }
@@ -1612,7 +1722,7 @@ namespace HallowHub
                 Snap.Save(this, System.IO.Path.Combine(dir, "stats-library.png"), 1180, 1500); statsPanel.Visibility = Visibility.Collapsed;
                 // close when it starts + the checklist on the When this game starts card
                 var cd = S.For(lg.Id); cd.CloseFirst = new List<string> { @"C:\Program Files\Google\Chrome\Application\chrome.exe", @"C:\Windows\explorer.exe" }; cd.OpenWith = new List<string> { Environment.GetFolderPath(Environment.SpecialFolder.System) + @"\notepad.exe" }; cd.DailyLimit = 120;
-                Select(lg); Snap.Save(this, System.IO.Path.Combine(dir, "checklist.png"), 1180, 780);
+                S.StartOpen = true; Select(lg); Snap.Save(this, System.IO.Path.Combine(dir, "checklist.png"), 1180, 1000); S.StartOpen = false; ShowStartSection();
                 try { var gw2 = new GameSettingsWindow(lg, cd, S, false); Snap.Save(gw2, System.IO.Path.Combine(dir, "gamesettings-212.png"), 480, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "gs212.err.txt"), ex.ToString()); }
                 File.AppendAllText(System.IO.Path.Combine(dir, "picker.txt"), "\r\nchecklist: " + checklist.Text.Replace("\n", " / ") + "\r\nrunning apps that could be closed: " + string.Join(", ", CloseApps.Running().Select(x => x.Value)) +
                     "\r\nallowed explorer/steam/hallowmixer/chrome/notepad: " + CloseApps.Allowed("explorer.exe") + "/" + CloseApps.Allowed("steam") + "/" + CloseApps.Allowed(@"C:\x\HallowMixer.exe") + "/" + CloseApps.Allowed("chrome.exe") + "/" + CloseApps.Allowed("notepad"));
@@ -1642,7 +1752,7 @@ namespace HallowHub
                 {
                     var pg = games.FirstOrDefault(x => x.Name.StartsWith("Delta")) ?? games[0]; var pd = S.For(pg.Id);
                     S.PowerPlanAll = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"; pd.PowerPlan = ""; pd.GameSession = false; Plans(true);
-                    Select(pg); Snap.Save(this, System.IO.Path.Combine(dir, "power-checklist.png"), 1180, 780);
+                    S.StartOpen = true; Select(pg); Snap.Save(this, System.IO.Path.Combine(dir, "power-checklist.png"), 1180, 1000); S.StartOpen = false; ShowStartSection();
                     lines.Add("checklist: " + checklist.Text.Replace("\n", " / "));
                     try { var gw3 = new GameSettingsWindow(pg, pd, S, false); Snap.Save(gw3, System.IO.Path.Combine(dir, "gamesettings-214.png"), 480, 0); } catch (Exception ex) { File.WriteAllText(System.IO.Path.Combine(dir, "gs214.err.txt"), ex.ToString()); }
                     var fg = new Game { Id = "custom:power-test", Name = "Power test game", Source = "custom", InstallDir = @"C:\NoSuchGame", Launch = "" };
@@ -1666,6 +1776,7 @@ namespace HallowHub
             {
                 familyBtn.IsChecked = true;
                 Snap.Save(this, System.IO.Path.Combine(dir, "family.png"), 1180, 900);
+                Snap.Save(this, System.IO.Path.Combine(dir, "family-narrow.png"), 960, 640);   // v2.28
                 var keepMax = familyScroll.MaxHeight; familyScroll.MaxHeight = 3000; Snap.Save(this, System.IO.Path.Combine(dir, "family-all.png"), 1180, 1960); familyScroll.MaxHeight = keepMax;   // v2.23: taller - Capture and Display add a row (v2.24: the restore had slipped into the comment; v2.26: 1680 - Uninstall starts another row; v2.27: 1960 - Doctor / Updates and Clock / Fonts add a row each)
                 familyBtn.IsChecked = false;
                 File.WriteAllText(System.IO.Path.Combine(dir, "family-cards.txt"), FamilyCardsText());

@@ -217,15 +217,142 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <!-- Filter chips: orange while on -->
+    <!-- Filter chips (v2.28: calm - the text colour fills a chip while it's on, so the accent stays for Play) -->
     <Style x:Key="Chip" TargetType="ToggleButton" BasedOn="{StaticResource Btn}">
         <Setter Property="Padding" Value="14,6"/>
         <Style.Resources>
-            <SolidColorBrush x:Key="CheckedBg" Color="#F07820"/>
-            <SolidColorBrush x:Key="CheckedLine" Color="#F59A50"/>
+            <SolidColorBrush x:Key="CheckedBg" Color="#ECE8F4"/>
+            <SolidColorBrush x:Key="CheckedLine" Color="#ECE8F4"/>
         </Style.Resources>
         <Style.Triggers>
-            <Trigger Property="IsChecked" Value="True"><Setter Property="Foreground" Value="#1A0E04"/><Setter Property="FontWeight" Value="SemiBold"/></Trigger>
+            <Trigger Property="IsChecked" Value="True"><Setter Property="Foreground" Value="#16121C"/><Setter Property="FontWeight" Value="SemiBold"/></Trigger>
+        </Style.Triggers>
+    </Style>
+    <!-- v2.28: a quiet chip (library filters): no fill or line until it's on -->
+    <Style x:Key="Pill" TargetType="ToggleButton" BasedOn="{StaticResource Chip}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#CFC8DC"/>
+        <Setter Property="Padding" Value="12,5"/>
+        <Style.Resources>
+            <SolidColorBrush x:Key="CheckedBg" Color="#ECE8F4"/>
+            <SolidColorBrush x:Key="CheckedLine" Color="#ECE8F4"/>
+        </Style.Resources>
+    </Style>
+    <!-- v2.28: top navigation - text tabs, the accent underline on the open one -->
+    <Style x:Key="Tab" TargetType="ButtonBase">
+        <Setter Property="Foreground" Value="#8F88A0"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="Height" Value="56"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ButtonBase">
+                    <Grid Background="Transparent">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <Border x:Name="u" Height="3" VerticalAlignment="Bottom" Margin="12,0,12,0" CornerRadius="1.5" Background="{TemplateBinding BorderBrush}"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="#ECE8F4"/></Trigger>
+                        <Trigger Property="ToggleButton.IsChecked" Value="True"><Setter Property="Foreground" Value="#ECE8F4"/><Setter TargetName="u" Property="Background" Value="#F07820"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- v2.28: a ghost button - no fill or line, a soft veil under the mouse (icon buttons in the top bar and the hero) -->
+    <Style x:Key="Ghost" TargetType="ButtonBase">
+        <Setter Property="Foreground" Value="#CFC8DC"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ButtonBase">
+                    <Grid>
+                        <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="8"/>
+                        <Border x:Name="hl" Background="#FFFFFF" Opacity="0" CornerRadius="8"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
+                            <Path x:Name="ic" Data="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource IconConv}}"
+                                  Visibility="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource IconVis}}"
+                                  Margin="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource IconGap}}"
+                                  Fill="{TemplateBinding Foreground}" Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center"/>
+                            <ContentPresenter x:Name="cp" VerticalAlignment="Center"
+                                  Visibility="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource LabelVis}}"/>
+                        </StackPanel>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="hl" Property="Opacity" Value="0.08"/><Setter Property="Foreground" Value="#ECE8F4"/></Trigger>
+                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="hl" Property="Opacity" Value="0.14"/></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.55"/></Trigger>
+                        <Trigger Property="Tag" Value="icon"><Setter TargetName="cp" Property="Visibility" Value="Collapsed"/><Setter TargetName="ic" Property="Margin" Value="0"/></Trigger>
+                        <Trigger Property="ToggleButton.IsChecked" Value="True"><Setter TargetName="hl" Property="Opacity" Value="0.12"/><Setter Property="Foreground" Value="#ECE8F4"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- v2.28: slim scroll bars - a rounded thumb, no arrows or track -->
+    <Style x:Key="SbThumb" TargetType="Thumb">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border x:Name="t" CornerRadius="3" Background="#3A3248"/>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="t" Property="Background" Value="#55496A"/></Trigger>
+                        <Trigger Property="IsDragging" Value="True"><Setter TargetName="t" Property="Background" Value="#55496A"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="SbPage" TargetType="RepeatButton">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style TargetType="ScrollBar">
+        <Setter Property="Width" Value="10"/>
+        <Setter Property="MinWidth" Value="10"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid Background="Transparent">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.DecreaseRepeatButton><RepeatButton Style="{StaticResource SbPage}" Command="ScrollBar.PageUpCommand"/></Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton><RepeatButton Style="{StaticResource SbPage}" Command="ScrollBar.PageDownCommand"/></Track.IncreaseRepeatButton>
+                            <Track.Thumb><Thumb Style="{StaticResource SbThumb}" Margin="3,2,3,2"/></Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="Height" Value="10"/>
+                <Setter Property="MinHeight" Value="10"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Grid Background="Transparent">
+                                <Track x:Name="PART_Track">
+                                    <Track.DecreaseRepeatButton><RepeatButton Style="{StaticResource SbPage}" Command="ScrollBar.PageLeftCommand"/></Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton><RepeatButton Style="{StaticResource SbPage}" Command="ScrollBar.PageRightCommand"/></Track.IncreaseRepeatButton>
+                                    <Track.Thumb><Thumb Style="{StaticResource SbThumb}" Margin="2,3,2,3"/></Track.Thumb>
+                                </Track>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
         </Style.Triggers>
     </Style>
     <!-- Search box -->
