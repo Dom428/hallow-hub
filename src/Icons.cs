@@ -30,6 +30,7 @@ namespace HallowHub
             { "Put windows back", "display" }, { "Night mode", "moon" }, { "Stop game profile", "rotate-left" },                                    // v2.23: Hallow Display's card
             { "Search", "magnifying-glass" }, { "Rebuild index", "arrows-rotate" },                                                                    // v2.24: Hallow Find's card
             { "New window", "plus" }, { "Downloads", "download" },                                                                                    // v2.25: Hallow Files' card
+            { "Diagnose", "stethoscope" }, { "New image", "image" }, { "Open a picture...", "folder-open" }, { "New tab", "plus" }, { "Open a file...", "folder-open" }, { "Orphans", "broom" },   // v2.26: Net, Paint, Notes and Uninstall's cards
         };
         // label starts with -> icon
         static readonly string[][] Prefixes = {

@@ -638,7 +638,7 @@ namespace HallowHub
 
         // ---- 8. Start with Windows for the apps you run every day (Hub, Gear and the usual ones)
         // v2.23: apps whose Start with Windows is only Hallow Setup's switch (no Settings switch of their own)
-        static readonly string[] NoOwnStartup = { "Capture", "Display", "Find" };   // v2.24: Find
+        static readonly string[] NoOwnStartup = { "Capture", "Display", "Find", "Net" };   // v2.24: Find; v2.26: Net (Hallow Setup writes its "--tray" start)
         public static List<CheckItem> StartupCheck(CheckEnv env, List<KeyValuePair<string, string>> inst)
         {
             var r = new List<CheckItem>();

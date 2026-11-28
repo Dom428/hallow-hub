@@ -2,7 +2,8 @@
 // saw them). When one that was running disappears and its installed exe changes within a few minutes (a new file version, size
 // or write time - it was updated), Hub waits until the new exe has stayed the same for 5 s and starts it again with --tray, once
 // more if it exits straight away. Hallow Browser is never reopened (it has no tray): Hub only says it was updated. v2.25: Hallow
-// Files (no tray either) is started again WITHOUT --tray - a plain start opens its windows with the tabs it saved when it quit.
+// Files (no tray either) is started again WITHOUT --tray - a plain start opens its windows with the tabs it saved when it quit. v2.26: Hallow
+// Paint, Notes and Uninstall the same way (Notes reopens its session, Paint the unsaved pictures it kept in recovery). Hallow Net starts with --tray.
 // It never starts an app you quit yourself (it went away and the exe didn't change), nor one that wasn't running. Settings >
 // "Restart family apps after updates" (on by default) and a per-app opt-out. The note waits while you play.
 using System;
@@ -95,6 +96,7 @@ namespace HallowHub
         public static readonly string[] NoteOnly = { "Browser" };   // no tray: never reopened, only "it was updated"
         // v2.25: not one of "the apps you usually run" (Start the apps I usually run, the checkup's Running and Start with Windows):
         // Hallow Browser and Hallow Files are windows you open when you need them, and neither has a start-with-Windows switch
+        // (v2.26: Hallow Paint, Hallow Notes and Hallow Uninstall too - FamilyTray.Windowed)
         public static bool NotUsual(string app) { return FamilyTray.IsWindowed(app); }
         // Hub never force-stops a family app: Bring settings back asks it to "quit" over its pipe first (Hallow Display then puts its display changes back)
         static readonly string[] NotWatched = { "Hub", "Setup", "Toolkit" };

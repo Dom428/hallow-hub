@@ -30,6 +30,9 @@ namespace HallowHub
         public string Label, Kind, Line, Tip, OkText, FailText;   // Kind: pipe (sends Line), start, install, url (opens Line), places-set
         public Func<string, string> OkFrom;   // v2.20: the status line from the app's "ok {...}" answer (e.g. Gear's refresh: started / too soon / during a game)
         public bool Enabled = true, IconOnly;
+        // v2.26: after an "ok", Hub asks the app for "status" every 2 s (through the privacy filter) until this returns the line to show -
+        // 90 s at most, never in snapshots (Hallow Net's Diagnose: wait until "diagnosing" is false, then say the verdict)
+        public Func<Dictionary<string, object>, string> DoneFrom;
     }
     public class AppCard
     {
@@ -48,13 +51,13 @@ namespace HallowHub
     {
         public static readonly string[] Groups = { "Play", "Protect", "Everyday" };
         public static readonly string[][] Layout = {
-            new[] { "Mixer", "Overlay", "Clips", "Vault", "Remote", "Browser", "Gear" },
+            new[] { "Mixer", "Overlay", "Clips", "Vault", "Remote", "Browser", "Gear", "Net" },   // v2.26: Net (it watches your game's connection)
             new[] { "Guard", "Shield", "VPN", "Keys", "Assist" },
-            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places", "Capture", "Display", "Find", "Files" } };   // v2.23: Capture and Display; v2.24: Find; v2.25: Files
+            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places", "Capture", "Display", "Find", "Files", "Paint", "Notes", "Uninstall" } };   // v2.23: Capture and Display; v2.24: Find; v2.25: Files; v2.26: Paint, Notes, Uninstall
         public static IEnumerable<string> AllApps { get { return Layout.SelectMany(x => x); } }
         // Shield is a browser extension (its bridge writes status.json) and Places a server on the NAS: no exe, no pipe
         public static bool WindowsApp(string app) { return app != "Shield" && app != "Places"; }
-        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home", "Gear", "Display", "Files" };   // "open settings" on their pipes (v2.25: Files)
+        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home", "Gear", "Display", "Files", "Net", "Uninstall" };   // "open settings" on their pipes (v2.25: Files; v2.26: Net and Uninstall - Paint and Notes take "invoke settings")
         public static bool HasSettings(string app) { return WithSettings.Contains(app); }
         public static string Icon(string app)
         {
@@ -65,6 +68,7 @@ namespace HallowHub
                 case "VPN": return "lock"; case "Keys": return "key"; case "Assist": return "hand-holding-heart"; case "Tasks": return "gauge-high";
                 case "Torrents": return "magnet"; case "Email": return "envelope"; case "Financials": return "wallet"; case "Home": return "house"; case "Places": return "location-dot";
                 case "Gear": return "keyboard"; case "Capture": return "camera"; case "Display": return "display"; case "Find": return "magnifying-glass"; case "Files": return "folder-open";
+                case "Net": return "gauge-high"; case "Paint": return "tool-brush"; case "Notes": return "file-lines"; case "Uninstall": return "broom";   // v2.26
             }
             return "gamepad";
         }
@@ -81,6 +85,9 @@ namespace HallowHub
                 case "Gear": return "Batteries of your mouse, headset and pads"; case "Capture": return "Screenshots and a private clipboard history";
                 case "Display": return "Brightness, game display profiles and window layouts"; case "Find": return "Instant search for files, apps, sums and settings";
                 case "Files": return "A faster file manager: tabs, dual pane, folder sizes";
+                case "Net": return "Speeds, apps, ping - and whether it's your Wi-Fi, your internet or the game";   // v2.26
+                case "Paint": return "A better Paint: layers, adjustments, quick edits"; case "Notes": return "A fast text and code editor: tabs, highlighting, find in files";
+                case "Uninstall": return "Removes apps completely, leftovers included";
             }
             return "";
         }
@@ -110,6 +117,16 @@ namespace HallowHub
             { "Find", new[] { "running b", "indexState e:starting|loading|building|refreshing|ready|paused|off", "entries n", "files n", "folders n", "progress n", "scanned n", "pausedForGame b", "lastRebuild t",
                 "hotkey s", "hotkeyFallback b" } },   // v2.24: counts and states only - never a file name, folder, path or search (Find has no command that returns them)
             { "Files", new[] { "running b", "windows n", "tabs n", "dualPane n", "operationsRunning n", "defaultFileManager b", "findIndex b" } },   // v2.25: counts only - never a file name, folder or path (Files' pipe has no command that lists any)
+            // v2.26: Hallow Net - numbers and fixed words only: never an IP address, a Wi-Fi name (SSID) or an app / game name. Every text
+            // field is one of Net's own words (e:), so even a status.json that carried an address there would be dropped.
+            { "Net", new[] { "running b", "pingMs n", "pingP95Ms n", "jitterMs n", "lossPct n", "downKBps n", "upKBps n", "pingTarget e:game|public|router|dns", "gameTarget b", "gaming b",
+                "helper b", "helperState e:off|asking|waiting|on|declined|failed", "adapter e:wifi|ethernet|vpn|cellular|other|none", "wifiSignalPct n", "vpn b", "diagnosing b",
+                "verdict e:good|wifi|home|isp|internet|game|vpn|offline|unknown", "alertsToday n" } },
+            // v2.26: Hallow Paint and Hallow Notes - counts and states only, never a file name, folder, path or any of your text / pictures
+            { "Paint", new[] { "running b", "windows n", "images n", "layers n", "unsaved n", "selections n", "undoSteps n", "largestMegapixels n" } },
+            { "Notes", new[] { "running b", "windows n", "tabs n", "unsavedTabs n", "untitledTabs n", "compareTabs n", "largeFiles n", "splitView b", "macroRecording b", "findInFilesRunning b", "findIndex b" } },
+            // v2.26: Hallow Uninstall - counts and states only, never an app name, a folder, a path or a registry key
+            { "Uninstall", new[] { "running b", "installedApps n", "storeApps n", "orphans n", "orphanFolders n", "orphanDriversServices n", "orphanTasksStartup n", "historyEntries n", "scanning b", "busy b" } },
             { "Vault", new[] { "running b", "busy b", "games c" } },
             { "Clips", new[] { "recording b", "seconds n", "clips c" } },
             { "Overlay", new[] { "visible b" } },
@@ -276,10 +293,17 @@ namespace HallowHub
                 case "Display": DisplayCard(c, st); break;
                 case "Find": FindCard(c, st); break;
                 case "Files": FilesCard(c, st); break;
+                case "Net": NetCard(c, st); break;
+                case "Paint": PaintCard(c, st); break;
+                case "Notes": NotesCard(c, st); break;
+                case "Uninstall": UninstallCard(c, st); break;
                 default: OlderCard(c, st); break;
             }
             if (app == "Find") { open.Line = "open settings"; open.Tip = "Open Hallow Find (its settings and index)"; }   // v2.24: Search already opens the search bar
-            if (app != "Files") c.Actions.Add(open);   // v2.25: Files' New window already does what Open would (a new window on Home)
+            if (app == "Uninstall") open.Tip = "Open Hallow Uninstall (your installed apps)";   // v2.26: a bare "open" is its Installed page
+            // v2.25: Files' New window already does what Open would (a new window on Home); v2.26: Paint and Notes have their own
+            // Open... (their open dialog - a bare "open" means "open this file" to them) and Settings ("invoke settings")
+            if (app != "Files" && app != "Paint" && app != "Notes") c.Actions.Add(open);
             if (HasSettings(app)) c.Actions.Add(new CardAction { Label = "Settings", Kind = "pipe", Line = "open settings", IconOnly = true, Tip = "Hallow " + app + "'s settings", OkText = "Opened Hallow " + app + "'s settings.", FailText = "Hallow " + app + " didn't open its settings" });
             return c;
         }
@@ -620,6 +644,147 @@ namespace HallowHub
             c.Actions.Add(new CardAction { Label = "Downloads", Kind = "pipe", Line = "open downloads", IconOnly = true, Tip = "Downloads - a new Hallow Files window on your Downloads folder",
                 OkText = "Opened your Downloads in Hallow Files.", FailText = "Hallow Files didn't open Downloads" });
         }
+
+        // v2.26: Hallow Net - ping, loss and download now, and the last Diagnose verdict as a word. Numbers and Net's own words only:
+        // its status.json and pipe never hold an IP address, a Wi-Fi name or an app / game name, and the filter above drops any that did.
+        static string Num1(double v) { return v.ToString("0.#", CultureInfo.InvariantCulture); }
+        public static string NetVerdictText(string v)
+        {
+            switch (v)
+            {
+                case "good": return "all good"; case "wifi": return "it's your Wi-Fi"; case "home": return "it's your home network (router)";
+                case "isp": return "it's your internet provider"; case "internet": return "it's the internet past your provider"; case "game": return "it's the game's server";
+                case "vpn": return "it's the VPN"; case "offline": return "you're offline"; case "unknown": return "no clear answer";
+            }
+            return null;
+        }
+        static void NetCard(AppCard c, Dictionary<string, object> st)
+        {
+            bool diag = Is(st, "diagnosing"); var verdict = Str(st, "verdict"); var adapter = Str(st, "adapter");
+            double ping = Num(st, "pingMs"), loss = Num(st, "lossPct");
+            if (adapter == "none") { c.Line = "Offline - no network connection"; c.LineLevel = 2; }
+            else if (Has(st, "pingMs"))
+            {
+                var parts = new List<string> { "ping " + Math.Round(ping).ToString(CultureInfo.InvariantCulture) + " ms" };
+                if (Has(st, "lossPct")) parts.Add(Num1(loss) + "% loss");
+                if (Has(st, "downKBps")) parts.Add(Speed(Num(st, "downKBps")) + " down");
+                c.Line = string.Join(" · ", parts);
+                if (loss >= 2 || ping >= 150) c.LineLevel = 2;
+            }
+            else c.Line = Has(st, "lossPct") && loss >= 100 ? "No answer to its pings" : "Measuring...";
+            var target = Str(st, "pingTarget");
+            var to = target == "game" ? "the game's server" : target == "router" ? "your router" : target == "dns" ? "your DNS server" : target == "public" ? "the internet" : null;
+            if (diag) c.Sub = "Diagnosing - about 20 s...";
+            else if (NetVerdictText(verdict) != null) { c.Sub = "Last check: " + NetVerdictText(verdict); c.SubLevel = verdict == "good" ? 1 : verdict == "unknown" ? 0 : 2; }
+            else if (to != null) c.Sub = "Ping to " + to + (Is(st, "gaming") ? " - game running" : "");
+            var tip = new List<string>();
+            if (to != null) tip.Add("Ping to " + to + (Is(st, "gaming") ? " (a game is running)" : ""));
+            if (Has(st, "pingP95Ms") || Has(st, "jitterMs")) tip.Add("Worst 5%: " + Math.Round(Num(st, "pingP95Ms")) + " ms, jitter " + Num1(Num(st, "jitterMs")) + " ms");
+            if (Has(st, "upKBps")) tip.Add("Upload: " + Speed(Num(st, "upKBps")));
+            var conn = adapter == "wifi" ? "Wi-Fi" + (Has(st, "wifiSignalPct") ? " - signal " + Math.Round(Num(st, "wifiSignalPct")) + "%" : "") : adapter == "ethernet" ? "Ethernet" : adapter == "vpn" ? "VPN adapter" : adapter == "cellular" ? "Mobile network" : null;
+            if (conn != null) tip.Add("Connection: " + conn + (Is(st, "vpn") && adapter != "vpn" ? ", Hallow VPN on" : ""));
+            if (Is(st, "helper")) tip.Add("Per-app bandwidth is on (Hallow Net's helper)");
+            int alerts = Int(st, "alertsToday"); if (alerts > 0) tip.Add(Count(alerts, "alert", "alerts") + " today (spikes, loss, slow downloads) - see its Timeline");
+            if (tip.Count > 0) c.Tip = string.Join("\n", tip);
+            c.Actions.Add(new CardAction { Label = "Diagnose", Kind = "pipe", Line = "diagnose", Enabled = !diag,
+                Tip = diag ? "Diagnose - Hallow Net is checking right now" : "Diagnose - is it your Wi-Fi, your home network, your internet or the game? (about 20 s; the details show in Hallow Net)",
+                OkText = "Hallow Net is checking your connection...", FailText = "Hallow Net didn't start a check", OkFrom = NetDiagnoseText, DoneFrom = NetDiagnoseDone });
+        }
+        public static string NetDiagnoseText(string reply)
+        {
+            try
+            {
+                var j = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(reply.Substring(3));
+                if (j.ContainsKey("started") && !Family.Bool(j, "started")) return "Hallow Net is already checking - the answer comes in a moment.";
+                var s = (int)Family.Num(j, "seconds");
+                return "Hallow Net is checking your Wi-Fi, home network, internet and the game" + (s > 0 && s <= 120 ? " (about " + s + " s)..." : "...");
+            }
+            catch { }
+            return null;
+        }
+        // polled after Diagnose: null while it's still checking, then the verdict in words
+        public static string NetDiagnoseDone(Dictionary<string, object> st)
+        {
+            if (st == null || !st.ContainsKey("diagnosing") || Is(st, "diagnosing")) return null;
+            var v = NetVerdictText(Str(st, "verdict"));
+            return v == null ? "Hallow Net's check is done - the details are in Hallow Net." : "Hallow Net's check: " + v + (Str(st, "verdict") == "good" ? "." : " - the details are in Hallow Net.");
+        }
+
+        // v2.26: Hallow Paint - pictures and windows open and how many aren't saved (counts only - never a file name, folder or path)
+        static void PaintCard(AppCard c, Dictionary<string, object> st)
+        {
+            int win = Int(st, "windows"), imgs = Int(st, "images"), uns = Int(st, "unsaved"), layers = Int(st, "layers");
+            if (!Has(st, "images")) c.Line = "Running";
+            else if (imgs == 0) c.Line = "No picture open";
+            else c.Line = Count(imgs, "picture", "pictures") + " open" + (win > 1 ? " in " + Count(win, "window", "windows") : "");
+            if (uns > 0) { c.Sub = Count(uns, "picture", "pictures") + " not saved yet"; c.SubLevel = 2; }
+            else if (imgs > 0 && layers > imgs) c.Sub = Count(layers, "layer", "layers");
+            var tip = new List<string>();
+            if (uns > 0) tip.Add("Unsaved pictures are kept in Hallow Paint's recovery folder when it's asked to quit, and reopen next time - launch checklists never close it");
+            if (Num(st, "largestMegapixels") > 0) tip.Add("Largest picture: " + Num1(Num(st, "largestMegapixels")) + " megapixels");
+            if (tip.Count > 0) c.Tip = string.Join("\n", tip);
+            c.Actions.Add(new CardAction { Label = "New image", Kind = "pipe", Line = "new", Tip = "A new blank picture in a new Hallow Paint window",
+                OkText = "Hallow Paint opened a new picture.", FailText = "Hallow Paint didn't open a new picture" });
+            c.Actions.Add(new CardAction { Label = "Open a picture...", Kind = "pipe", Line = "invoke open", IconOnly = true, Tip = "Open a picture - Hallow Paint's Open dialog (Hub never sees which one)",
+                OkText = "Hallow Paint: pick a picture to open.", FailText = "Hallow Paint didn't show its Open dialog" });
+            c.Actions.Add(new CardAction { Label = "Settings", Kind = "pipe", Line = "invoke settings", IconOnly = true, Tip = "Hallow Paint's settings",
+                OkText = "Opened Hallow Paint's settings.", FailText = "Hallow Paint didn't open its settings" });
+        }
+
+        // v2.26: Hallow Notes - tabs open, how many aren't saved (backed up) and what it's busy with (counts only - never a file name,
+        // a path or any of your text)
+        static void NotesCard(AppCard c, Dictionary<string, object> st)
+        {
+            int tabs = Int(st, "tabs"), uns = Int(st, "unsavedTabs"), cmp = Int(st, "compareTabs"), big = Int(st, "largeFiles");
+            if (!Has(st, "tabs")) c.Line = "Running";
+            else if (tabs == 0) c.Line = "No tab open";
+            else c.Line = Count(tabs, "tab", "tabs") + " open" + (Is(st, "splitView") ? " - split view" : "");
+            var parts = new List<string>();
+            if (uns > 0) parts.Add(Count(uns, "unsaved tab", "unsaved tabs") + " (backed up)");
+            if (Is(st, "findInFilesRunning")) parts.Add("Finding in files");
+            if (Is(st, "macroRecording") && parts.Count < 2) parts.Add("Recording a macro");
+            if (cmp > 0 && parts.Count < 2) parts.Add(Count(cmp, "compare", "compares"));
+            c.Sub = parts.Count > 0 ? string.Join(" · ", parts) : null;
+            var tip = new List<string>();
+            if (uns > 0) tip.Add("Unsaved text is backed up every few seconds and kept when Hallow Notes closes - launch checklists never close it");
+            if (big > 0) tip.Add(Count(big, "large file", "large files") + " open (read in pieces)");
+            if (Is(st, "findIndex")) tip.Add("Find in files can use Hallow Find's index");
+            if (tip.Count > 0) c.Tip = string.Join("\n", tip);
+            c.Actions.Add(new CardAction { Label = "New tab", Kind = "pipe", Line = "invoke new-tab", Tip = "A new empty tab in Hallow Notes",
+                OkText = "Hallow Notes opened a new tab.", FailText = "Hallow Notes didn't open a new tab" });
+            c.Actions.Add(new CardAction { Label = "Open a file...", Kind = "pipe", Line = "invoke open", IconOnly = true, Tip = "Open a file - Hallow Notes' Open dialog (Hub never sees which one)",
+                OkText = "Hallow Notes: pick a file to open.", FailText = "Hallow Notes didn't show its Open dialog" });
+            c.Actions.Add(new CardAction { Label = "Settings", Kind = "pipe", Line = "invoke settings", IconOnly = true, Tip = "Hallow Notes' settings",
+                OkText = "Opened Hallow Notes' settings.", FailText = "Hallow Notes didn't open its settings" });
+        }
+
+        // v2.26: Hallow Uninstall - how many apps are installed and how many orphans (leftovers no installed app owns) it found, and
+        // whether a removal is running. Counts only - never an app name, a folder, a path or a registry key.
+        static void UninstallCard(AppCard c, Dictionary<string, object> st)
+        {
+            int apps = Int(st, "installedApps"), store = Int(st, "storeApps"), orph = Int(st, "orphans");
+            bool busy = Is(st, "busy"), scanning = Is(st, "scanning");
+            if (!Has(st, "installedApps")) c.Line = "Running";
+            else c.Line = Count(apps, "app", "apps") + " installed" + (store > 0 ? " + " + Count(store, "Store app", "Store apps") : "");
+            if (busy) { c.Sub = "Removing an app - let it finish"; c.SubLevel = 2; }
+            else if (scanning) c.Sub = "Looking for leftovers...";
+            else if (Has(st, "orphans")) { c.Sub = orph == 0 ? "No orphans found" : Count(orph, "orphan", "orphans") + " found (leftovers of removed apps)"; c.SubLevel = orph == 0 ? 1 : 2; }
+            var tip = new List<string>();
+            if (orph > 0)
+            {
+                var kinds = new List<string>();
+                int fo = Int(st, "orphanFolders"), ds = Int(st, "orphanDriversServices"), ts = Int(st, "orphanTasksStartup");
+                if (fo > 0) kinds.Add(Count(fo, "folder", "folders")); if (ds > 0) kinds.Add(Count(ds, "driver or service", "drivers and services")); if (ts > 0) kinds.Add(Count(ts, "task or startup entry", "tasks and startup entries"));
+                if (kinds.Count > 0) tip.Add("Orphans: " + string.Join(", ", kinds));
+                tip.Add("Nothing is removed until you tick it in Hallow Uninstall (registry keys are backed up first)");
+            }
+            int hist = Int(st, "historyEntries"); if (hist > 0) tip.Add(Count(hist, "removal", "removals") + " in its History");
+            if (busy) tip.Add("Launch checklists never close it, and Hallow Setup waits while a removal runs");
+            if (tip.Count > 0) c.Tip = string.Join("\n", tip);
+            c.Actions.Add(new CardAction { Label = "Orphans", Kind = "pipe", Line = "open orphans",
+                Tip = "Orphans - folders, drivers, services, tasks and startup entries no installed app owns (opens Hallow Uninstall's Orphans page)",
+                OkText = "Opened the orphans in Hallow Uninstall.", FailText = "Hallow Uninstall didn't open its Orphans page" });
+        }
         static void OlderCard(AppCard c, Dictionary<string, object> st)
         {
             switch (c.App)
@@ -872,6 +1037,7 @@ namespace HallowHub
                             Status(Family.Ok(r) ? (a.OkFrom != null ? a.OkFrom(r) ?? a.OkText : a.OkText) : (a.FailText ?? name + " didn't take that") + (r == null ? " (it isn't answering)" : r.StartsWith("error ") ? " (" + r.Substring(6) + ")" : ""));
                             bt.IsEnabled = true; FillFamily(false);
                             var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) }; t.Tick += (s, e) => { t.Stop(); FillFamily(false); }; t.Start();
+                            if (Family.Ok(r) && a.DoneFrom != null) FollowUp(c.App, a.DoneFrom);   // v2.26
                         }));
                     }) { IsBackground = true }.Start();
                     break;
@@ -884,6 +1050,34 @@ namespace HallowHub
                     break;
                 case "places-set": placesEditing = true; FillFamily(true); break;
             }
+        }
+        // v2.26: after an action that takes a while (Hallow Net's Diagnose), ask the app for "status" every 2 s - one background thread
+        // per app, 90 s at most, ending early when the app stops answering - and put the result on the status line
+        readonly HashSet<string> followUps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        void FollowUp(string app, Func<Dictionary<string, object>, string> done)
+        {
+            if (Snap.On) return;
+            lock (followUps) { if (followUps.Contains(app)) return; followUps.Add(app); }
+            new Thread(() =>
+            {
+                string msg = null; int silent = 0;
+                try
+                {
+                    var until = DateTime.UtcNow.AddSeconds(90);
+                    while (DateTime.UtcNow < until && silent < 3)
+                    {
+                        Thread.Sleep(2000);
+                        var r = Family.Send(app, "status", 1000, 3000);
+                        if (r == null || !r.StartsWith("ok {")) { silent++; continue; }
+                        silent = 0;
+                        Dictionary<string, object> st = null; try { st = FamilyBoard.Safe(app, new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(r.Substring(3))); } catch { }
+                        msg = done(st); if (msg != null) break;
+                    }
+                }
+                catch { }
+                finally { lock (followUps) followUps.Remove(app); }
+                if (msg != null) try { Dispatcher.BeginInvoke(new Action(() => { Status(Family.Pct(msg)); FillFamily(false); })); } catch { }
+            }) { IsBackground = true, Name = "follow-up " + app }.Start();
         }
         // Install: Hallow Setup when it's on this PC (tick the app there), else the app's releases page - nothing is downloaded or run by Hub
         void InstallApp(string app)

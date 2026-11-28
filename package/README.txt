@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.26
+- Four new family members on the Family page: Hallow Net (Play) - ping, packet loss, download speed and the last check's answer (your Wi-Fi, your internet or the game), with Diagnose; Hallow Paint, Hallow Notes and Hallow Uninstall (Everyday) - pictures / tabs open and how many aren't saved, apps installed and orphans found, with New image, New tab, Orphans, Open and Settings.
+- Numbers and counts only - never an IP address, a Wi-Fi name, an app name, a file name or your text. Launch checklists never close any of the four. Paint, Notes and Uninstall are windowed apps (Hub opens their window again after an update and never nags you to start them with Windows); Net starts in the tray.
+
 WHAT'S NEW IN 2.25
 - Hallow Files joins the Family page (Everyday): how many tabs and windows it has open, a copy or move running and whether it opens your folders, with New window, Downloads and Settings.
 - Counts only - never a file name or folder. It has a fixed place in the Hallow icon; it's a windowed app, so Hub reopens its window (with your tabs) after an update, never nags you to start it or start it with Windows, and launch checklists never close it mid-copy.
