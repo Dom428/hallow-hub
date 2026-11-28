@@ -228,37 +228,69 @@ namespace HallowHub
             var list = games.Where(x => !S.For(x.Id).Hidden).OrderByDescending(x => LastOf(x) ?? DateTime.MinValue).ThenByDescending(x => Total(x)).Take(6).ToList();
             quick = new Window { WindowStyle = WindowStyle.None, AllowsTransparency = true, Background = Brushes.Transparent, ShowInTaskbar = false, Topmost = true, ResizeMode = ResizeMode.NoResize,
                 SizeToContent = SizeToContent.WidthAndHeight, FontFamily = new FontFamily("Segoe UI"), Foreground = B("#ECE8F4") };
-            var sp = new StackPanel { Width = 340 };
-            var head = new DockPanel { Margin = new Thickness(2, 0, 0, 10) };
-            var open = new Button { Content = "Open Hallow Hub", Style = (Style)FindResource("Btn"), Padding = new Thickness(10, 4, 10, 4), FontSize = 11.5 };
+            // v2.29: restyled to match 2.28 - follows light/dark; your last game big with one Play button, the rest as quiet rows
+            const double W = 336;
+            var muted = (Brush)FindResource("Muted"); var hi = (Brush)FindResource("PanelHi");
+            quick.Foreground = (Brush)FindResource("Text");
+            var sp = new StackPanel { Width = W };
+            var head = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
+            var openSp = new StackPanel { Orientation = Orientation.Horizontal };
+            var oi = Icons.Make("window-restore", 11, muted); oi.Margin = new Thickness(0, 0, 6, 0); oi.VerticalAlignment = VerticalAlignment.Center; openSp.Children.Add(oi);
+            openSp.Children.Add(new TextBlock { Text = "Open Hub", VerticalAlignment = VerticalAlignment.Center });
+            var open = new Button { Content = openSp, Style = (Style)FindResource("Ghost"), Padding = new Thickness(8, 3, 8, 3), FontSize = 11.5, Foreground = muted };
             open.Click += (s, e) => { quick.Close(); ShowFromTray(); };
             DockPanel.SetDock(open, Dock.Right); head.Children.Add(open);
-            head.Children.Add(new TextBlock { Text = "Play", FontSize = 15, FontWeight = FontWeights.Bold, Foreground = B("#F07820"), VerticalAlignment = VerticalAlignment.Center });
+            head.Children.Add(new TextBlock { Text = "RECENTLY PLAYED", FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = muted, VerticalAlignment = VerticalAlignment.Center });
             sp.Children.Add(head);
-            var grid = new UniformGrid { Columns = 2 };
-            foreach (var g in list)
+            Func<Game, string> sub = x => IsRunning(x) ? "Playing now" : HubSettings.Ago(LastOf(x)) + "  ·  " + HubSettings.Duration(Total(x));
+            if (list.Count > 0)
             {
-                var gg = g;
-                var t = new Border { Height = 82, Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(10), Cursor = Cursors.Hand, BorderThickness = new Thickness(1.5), BorderBrush = B("#2E2639"), ToolTip = "Play " + g.Name };
-                var art = Img(g.Header, 340) ?? Img(g.Cover, 200);
-                var gi = new Grid { Clip = new RectangleGeometry(new Rect(0, 0, 159, 79), 9, 9) };
-                if (art != null) gi.Children.Add(new Image { Source = art, Stretch = Stretch.UniformToFill });
-                else gi.Children.Add(new Rectangle { Fill = B("#2A2333") });
+                var g = list[0]; var running = IsRunning(g);
+                var hero = new Grid { Height = 156, Cursor = Cursors.Hand, ToolTip = running ? g.Name + " is running" : "Play " + g.Name, Clip = new RectangleGeometry(new Rect(0, 0, W, 156), 8, 8) };
+                var art = Img(g.Header, 460) ?? Img(g.Cover, 300);
+                if (art != null) hero.Children.Add(new Image { Source = art, Stretch = Stretch.UniformToFill });
+                else hero.Children.Add(new Rectangle { Fill = new SolidColorBrush(Accent(g)) { Opacity = 0.35 } });
                 var sh = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
-                sh.GradientStops.Add(new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.4)); sh.GradientStops.Add(new GradientStop(Color.FromArgb(220, 0x10, 0x0C, 0x16), 1));
-                gi.Children.Add(new Rectangle { Fill = sh });
-                gi.Children.Add(new TextBlock { Text = IsRunning(g) ? "Playing" : g.Name, FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = IsRunning(g) ? BD("#6ED28C") : Brushes.White, Margin = new Thickness(8, 0, 8, 6), VerticalAlignment = VerticalAlignment.Bottom, TextTrimming = TextTrimming.CharacterEllipsis });
-                t.Child = gi;
-                var ac = Accent(g);
-                t.MouseEnter += (s, e) => t.BorderBrush = new SolidColorBrush(ac);
-                t.MouseLeave += (s, e) => t.BorderBrush = B("#2E2639");
-                t.MouseLeftButtonUp += (s, e) => { quick.Close(); Select(gg); Play(gg); };
-                grid.Children.Add(t);
+                sh.GradientStops.Add(new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.25)); sh.GradientStops.Add(new GradientStop(Color.FromArgb(225, 0x0C, 0x0A, 0x12), 1));
+                hero.Children.Add(new Rectangle { Fill = sh });
+                var bottom = new DockPanel { VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(14, 0, 12, 12) };
+                var play = new Button { Content = running ? "Playing" : "Play", Style = (Style)FindResource("Accent"), FontSize = 13, Padding = new Thickness(20, 6, 20, 6), MinWidth = 92, VerticalAlignment = VerticalAlignment.Bottom, IsEnabled = !running };
+                play.Click += (s, e) => { e.Handled = true; quick.Close(); Select(g); Play(g); };
+                DockPanel.SetDock(play, Dock.Right); bottom.Children.Add(play);
+                var names = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 10, 0) };
+                names.Children.Add(new TextBlock { Text = g.Name, FontSize = 16, FontWeight = FontWeights.Bold, Foreground = Brushes.White, TextTrimming = TextTrimming.CharacterEllipsis });
+                names.Children.Add(new TextBlock { Text = sub(g), FontSize = 11.5, Foreground = running ? BD("#6ED28C") : new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)), Margin = new Thickness(0, 2, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis });
+                bottom.Children.Add(names);
+                hero.Children.Add(bottom);
+                hero.MouseLeftButtonUp += (s, e) => { if (quick == null) return; quick.Close(); Select(g); if (!running) Play(g); };
+                sp.Children.Add(hero);
+                if (list.Count > 1) sp.Children.Add(new Border { Height = 8 });
             }
-            sp.Children.Add(grid);
-            if (list.Count == 0) sp.Children.Add(new TextBlock { Text = "No games yet.", Foreground = B("#8F88A0") });
-            var shell = new Border { Background = B("#1C1724"), BorderBrush = B("#3A3248"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(14, 12, 6, 6), Child = sp, Margin = new Thickness(12),
-                Effect = HallowLook.Shadow(24, 0.6, 3) };
+            foreach (var g in list.Skip(1))
+            {
+                var gg = g; var running = IsRunning(g);
+                var row = new Border { CornerRadius = new CornerRadius(6), Padding = new Thickness(6), Background = Brushes.Transparent, Cursor = Cursors.Hand, ToolTip = running ? g.Name + " is running" : "Play " + g.Name };
+                var dp = new DockPanel();
+                var thumb = new Grid { Width = 72, Height = 34, Margin = new Thickness(0, 0, 10, 0), Clip = new RectangleGeometry(new Rect(0, 0, 72, 34), 4, 4) };
+                var art = Img(g.Header, 160) ?? Img(g.Cover, 100);
+                if (art != null) thumb.Children.Add(new Image { Source = art, Stretch = Stretch.UniformToFill });
+                else thumb.Children.Add(new Rectangle { Fill = new SolidColorBrush(Accent(g)) { Opacity = 0.35 } });
+                DockPanel.SetDock(thumb, Dock.Left); dp.Children.Add(thumb);
+                var pi = Icons.Make("play", 11, (Brush)FindResource("Text")); pi.VerticalAlignment = VerticalAlignment.Center; pi.Margin = new Thickness(8, 0, 6, 0); pi.Opacity = 0;
+                DockPanel.SetDock(pi, Dock.Right); dp.Children.Add(pi);
+                var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+                names.Children.Add(new TextBlock { Text = g.Name, FontSize = 12.5, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
+                names.Children.Add(new TextBlock { Text = sub(g), FontSize = 11, Foreground = running ? BD("#3FB86A") : muted, TextTrimming = TextTrimming.CharacterEllipsis });
+                dp.Children.Add(names);
+                row.Child = dp;
+                row.MouseEnter += (s, e) => { row.Background = hi; if (!running) pi.Opacity = 1; };
+                row.MouseLeave += (s, e) => { row.Background = Brushes.Transparent; pi.Opacity = 0; };
+                row.MouseLeftButtonUp += (s, e) => { quick.Close(); Select(gg); if (!running) Play(gg); };
+                sp.Children.Add(row);
+            }
+            if (list.Count == 0) sp.Children.Add(new TextBlock { Text = "No games yet - add some in Hallow Hub.", Foreground = muted, Margin = new Thickness(0, 4, 0, 8) });
+            var shell = new Border { Background = (Brush)FindResource("Bg"), BorderBrush = (Brush)FindResource("Line"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(12, 10, 12, 8), Child = sp, Margin = new Thickness(12),
+                Effect = HallowLook.Shadow(24, HallowLook.Light ? 0.25 : 0.6, 3) };
             quick.Content = shell;
             quick.Deactivated += (s, e) => { if (quick != null) quick.Close(); };
             quick.Closed += (s, e) => quick = null;
