@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.23.0.0")]
-[assembly: AssemblyFileVersion("2.23.0.0")]
+[assembly: AssemblyVersion("2.24.0.0")]
+[assembly: AssemblyFileVersion("2.24.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.23";
+        public const string Version = "2.24";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -1666,7 +1666,7 @@ namespace HallowHub
             {
                 familyBtn.IsChecked = true;
                 Snap.Save(this, System.IO.Path.Combine(dir, "family.png"), 1180, 900);
-                var keepMax = familyScroll.MaxHeight; familyScroll.MaxHeight = 3000; Snap.Save(this, System.IO.Path.Combine(dir, "family-all.png"), 1180, 1500);   // v2.23: taller - Capture and Display add a row familyScroll.MaxHeight = keepMax;
+                var keepMax = familyScroll.MaxHeight; familyScroll.MaxHeight = 3000; Snap.Save(this, System.IO.Path.Combine(dir, "family-all.png"), 1180, 1500); familyScroll.MaxHeight = keepMax;   // v2.23: taller - Capture and Display add a row (v2.24: the restore had slipped into the comment)
                 familyBtn.IsChecked = false;
                 File.WriteAllText(System.IO.Path.Combine(dir, "family-cards.txt"), FamilyCardsText());
             }

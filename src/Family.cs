@@ -227,7 +227,7 @@ namespace HallowHub
         public static readonly string[] Apps = { "Mixer", "Vault", "Overlay", "Clips", "Remote", "Keys", "Guard", "Assist" };
         // v2.17: the newer apps - in this order after the known ones while they run (so they don't jump around A-Z); the installed ones
         // that aren't running go under one "Start a Hallow app" submenu instead of a Start line each
-        public static readonly string[] Newer = { "VPN", "Torrents", "Browser", "Tasks", "Email", "Financials", "Home", "Capture", "Display" };   // v2.23: Capture, Display
+        public static readonly string[] Newer = { "VPN", "Torrents", "Browser", "Tasks", "Email", "Financials", "Home", "Capture", "Display", "Find" };   // v2.23: Capture, Display; v2.24: Find
         public static bool IsNewer(string app) { return Newer.Contains(app, StringComparer.OrdinalIgnoreCase); }
         public static List<string> Startable() { return Newer.Where(a => Family.Installed(a) && !Family.Running(a)).ToList(); }
         // Browser has no tray icon - it starts with its window; the others start in the tray

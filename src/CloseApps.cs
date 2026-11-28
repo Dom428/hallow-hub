@@ -25,6 +25,8 @@ namespace HallowHub
             "ubisoftconnect", "upc", "uplaywebcore", "galaxyclient", "galaxyclienthelper", "riotclientservices", "riotclientux", "riotclientcrashhandler", "xboxpcapp", "gamingservices", "gamebar",
             "hallowhub", "hallowmixer", "hallowoverlay", "hallowclips", "hallowvault", "hallowkeys", "hallowremote", "hallowsetup", "hallowtoolkit", "hallowguard", "hallowassist",
             "hallowcapture", "hallowdisplay" };   // v2.23 (Display must get "quit" so it puts display changes back - never closed like a window)
+        // v2.24: Hallow Find is deliberately not here - it has nothing a game launch could lose (its index is a cache saved every 10 min
+        // and on quit, its walk already pauses while a game runs, and "close like X" only hides its settings window)
 
         public static bool Allowed(string exeOrName)
         {

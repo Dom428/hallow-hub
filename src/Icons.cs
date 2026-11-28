@@ -28,6 +28,7 @@ namespace HallowHub
             { "Connect fastest", "bolt" }, { "Disconnect", "power-off" }, { "Lock now", "lock" }, { "Set address...", "location-dot" }, { "Change address...", "pen" }, { "How to set up", "circle-info" },
             { "Capture a region", "camera" }, { "Clipboard history", "clock-rotate-left" }, { "Pause history", "pause" }, { "Resume history", "play" },   // v2.23: Hallow Capture's card
             { "Put windows back", "display" }, { "Night mode", "moon" }, { "Stop game profile", "rotate-left" },                                    // v2.23: Hallow Display's card
+            { "Search", "magnifying-glass" }, { "Rebuild index", "arrows-rotate" },                                                                    // v2.24: Hallow Find's card
         };
         // label starts with -> icon
         static readonly string[][] Prefixes = {

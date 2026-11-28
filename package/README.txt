@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.24
+- Hallow Find joins the Family page (Everyday): how many files and folders it has indexed, how far an indexing run has got and whether it's paused for a game, with Search (opens Find's search bar) and Rebuild index.
+- Counts and states only - never a file name, a folder or what you searched for. It has a fixed place in the Hallow icon and starts in the tray from Start a Hallow app.
+
 WHAT'S NEW IN 2.23
 - Hallow Capture and Hallow Display join the Family page (Everyday). Capture: captures today, how many items the clipboard history keeps and whether it's paused, with Capture a region, Clipboard history and Pause / Resume history. Display: the game profile in use and whether these monitors have a saved window layout, with Put windows back, Night mode and Stop game profile.
 - Counts and states only - never what you copied, a file name or a window title. Both have a fixed place in the Hallow icon and start in the tray from Start a Hallow app. Launch checklists never close them (Hallow Display puts its display changes back only when it's asked to quit).

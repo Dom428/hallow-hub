@@ -353,6 +353,9 @@ namespace HallowHub
         }
 
         // ---- 3. Hallow data in Claude's sandbox that's newer than the real copy, or missing from it
+        // v2.24: Local folders that hold only a cache the app rebuilds by itself - never "brought back" from the sandbox (Hallow Find's
+        // index.bin lists every file name the sandboxed copy could see; its settings in Roaming\HallowFind are still checked)
+        static readonly string[] LocalCacheOnly = { "HallowFind" };
         public static List<Leftover> FindLeftovers(CheckEnv env)
         {
             var r = new List<Leftover>();
@@ -366,6 +369,7 @@ namespace HallowHub
                     {
                         var name = Path.GetFileName(d);
                         if (name.StartsWith("HallowBrowser-backup-", StringComparison.OrdinalIgnoreCase) || name.Equals("HallowDev", StringComparison.OrdinalIgnoreCase) || name.Equals("Hallow", StringComparison.OrdinalIgnoreCase)) continue;
+                        if (root == "Local" && LocalCacheOnly.Contains(name, StringComparer.OrdinalIgnoreCase)) continue;   // v2.24: a rebuildable cache, not settings
                         var lo = new Leftover { Name = name, App = name.Substring(6), Root = root, Box = d, Real = Path.Combine(root == "Roaming" ? env.Roaming : env.Local, name) };
                         Compare(lo);
                         r.Add(lo);
@@ -634,7 +638,7 @@ namespace HallowHub
 
         // ---- 8. Start with Windows for the apps you run every day (Hub, Gear and the usual ones)
         // v2.23: apps whose Start with Windows is only Hallow Setup's switch (no Settings switch of their own)
-        static readonly string[] NoOwnStartup = { "Capture", "Display" };
+        static readonly string[] NoOwnStartup = { "Capture", "Display", "Find" };   // v2.24: Find
         public static List<CheckItem> StartupCheck(CheckEnv env, List<KeyValuePair<string, string>> inst)
         {
             var r = new List<CheckItem>();

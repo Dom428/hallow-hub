@@ -50,7 +50,7 @@ namespace HallowHub
         public static readonly string[][] Layout = {
             new[] { "Mixer", "Overlay", "Clips", "Vault", "Remote", "Browser", "Gear" },
             new[] { "Guard", "Shield", "VPN", "Keys", "Assist" },
-            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places", "Capture", "Display" } };   // v2.23: Capture and Display
+            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places", "Capture", "Display", "Find" } };   // v2.23: Capture and Display; v2.24: Find
         public static IEnumerable<string> AllApps { get { return Layout.SelectMany(x => x); } }
         // Shield is a browser extension (its bridge writes status.json) and Places a server on the NAS: no exe, no pipe
         public static bool WindowsApp(string app) { return app != "Shield" && app != "Places"; }
@@ -64,7 +64,7 @@ namespace HallowHub
                 case "Remote": return "mobile-screen"; case "Browser": return "globe"; case "Guard": return "shield-halved"; case "Shield": return "eye-slash";
                 case "VPN": return "lock"; case "Keys": return "key"; case "Assist": return "hand-holding-heart"; case "Tasks": return "gauge-high";
                 case "Torrents": return "magnet"; case "Email": return "envelope"; case "Financials": return "wallet"; case "Home": return "house"; case "Places": return "location-dot";
-                case "Gear": return "keyboard"; case "Capture": return "camera"; case "Display": return "display";
+                case "Gear": return "keyboard"; case "Capture": return "camera"; case "Display": return "display"; case "Find": return "magnifying-glass";
             }
             return "gamepad";
         }
@@ -79,7 +79,7 @@ namespace HallowHub
                 case "Torrents": return "Torrents that only run over your VPN"; case "Email": return "A private email client"; case "Financials": return "Private personal finance";
                 case "Home": return "Pets and smart home through Home Assistant"; case "Places": return "Family location sharing on your NAS";
                 case "Gear": return "Batteries of your mouse, headset and pads"; case "Capture": return "Screenshots and a private clipboard history";
-                case "Display": return "Brightness, game display profiles and window layouts";
+                case "Display": return "Brightness, game display profiles and window layouts"; case "Find": return "Instant search for files, apps, sums and settings";
             }
             return "";
         }
@@ -106,6 +106,8 @@ namespace HallowHub
             { "Gear", new[] { "running b", "game p", "devices gear" } },   // v2.20: model names and batteries only (never a Bluetooth id)
             { "Capture", new[] { "running b", "capturesToday n", "historyCount n", "paused b" } },   // v2.23: counts only - never clipboard content or a file name
             { "Display", new[] { "running b", "profileActive s", "game s", "profileCount n", "layoutKnown b", "testRunning b" } },   // v2.23: never window titles or programs
+            { "Find", new[] { "running b", "indexState e:starting|loading|building|refreshing|ready|paused|off", "entries n", "files n", "folders n", "progress n", "scanned n", "pausedForGame b", "lastRebuild t",
+                "hotkey s", "hotkeyFallback b" } },   // v2.24: counts and states only - never a file name, folder, path or search (Find has no command that returns them)
             { "Vault", new[] { "running b", "busy b", "games c" } },
             { "Clips", new[] { "recording b", "seconds n", "clips c" } },
             { "Overlay", new[] { "visible b" } },
@@ -269,8 +271,10 @@ namespace HallowHub
                 case "Mixer": MixerCard(c, st); break;
                 case "Capture": CaptureCard(c, st); break;
                 case "Display": DisplayCard(c, st); break;
+                case "Find": FindCard(c, st); break;
                 default: OlderCard(c, st); break;
             }
+            if (app == "Find") { open.Line = "open settings"; open.Tip = "Open Hallow Find (its settings and index)"; }   // v2.24: Search already opens the search bar
             c.Actions.Add(open);
             if (HasSettings(app)) c.Actions.Add(new CardAction { Label = "Settings", Kind = "pipe", Line = "open settings", IconOnly = true, Tip = "Hallow " + app + "'s settings", OkText = "Opened Hallow " + app + "'s settings.", FailText = "Hallow " + app + " didn't open its settings" });
             return c;
@@ -544,6 +548,48 @@ namespace HallowHub
                 var j = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(reply.Substring(3)); int moved = (int)Family.Num(j, "moved");
                 return "Hallow Display put " + (moved == 0 ? "nothing to move - your windows were already in place." : Count(moved, "window", "windows") + " back.");
             }
+            catch { }
+            return null;
+        }
+        // v2.24: Hallow Find - how many files and folders it has indexed, a walk's progress and a pause for a game (counts and states only:
+        // there's no pipe command that returns a file name or a search, so Hub never asks for or shows results)
+        static void FindCard(AppCard c, Dictionary<string, object> st)
+        {
+            var state = Str(st, "indexState"); int entries = Int(st, "entries"), pct = Has(st, "progress") ? Int(st, "progress") : -1; long scanned = (long)Num(st, "scanned");
+            bool walking = state == "building" || state == "refreshing" || state == "paused", paused = Is(st, "pausedForGame") || state == "paused";
+            var pctText = pct >= 0 && pct <= 100 ? " - " + pct + "%" : "";
+            var indexed = Count(entries, "file or folder", "files and folders") + " indexed";
+            if (paused && walking)
+            {
+                var soFar = scanned > 0 ? Count((int)Math.Min(int.MaxValue, scanned), "found", "found") + " so far" : null;
+                if (entries > 0) { c.Line = indexed; c.Sub = "Indexing paused for a game" + (soFar != null ? " - " + soFar : ""); }
+                else { c.Line = "Indexing paused for a game"; c.Sub = (soFar != null ? soFar + " - it" : "It") + " carries on when the game closes"; }
+            }
+            else if (state == "building")
+            {
+                c.Line = "Indexing your drives" + pctText;
+                c.Sub = (scanned > 0 ? Count((int)Math.Min(int.MaxValue, scanned), "found", "found") + " so far" : "Just started") + " - search works meanwhile";
+            }
+            else if (state == "refreshing") { c.Line = indexed; c.Sub = "Catching up with changes" + pctText; }
+            else if (state == "loading" || state == "starting") { c.Line = "Loading the index..."; c.Sub = entries > 0 ? indexed : null; }
+            else if (state == "off") { c.Line = entries > 0 ? indexed : "File index off"; c.Sub = "File search is switched off in Hallow Find"; }
+            else
+            {
+                c.Line = Has(st, "entries") ? (entries == 0 ? "Nothing indexed yet" : indexed) : "Running"; if (entries > 0) c.LineLevel = 1;
+                var hk = Str(st, "hotkey"); var last = When(st, "lastRebuild");
+                c.Sub = string.Join(" · ", new[] { hk != null ? hk + " to search" : null, last != null ? "rebuilt " + Ago(last.Value, DateTime.Now) : null }.Where(s => s != null));
+                if (c.Sub.Length == 0) c.Sub = null;
+                if (hk != null) c.Tip = hk + " opens Hallow Find's search bar" + (Is(st, "hotkeyFallback") ? " - Alt+Space was already taken by another app" : "");
+            }
+            c.Actions.Add(new CardAction { Label = "Search", Kind = "pipe", Line = "open", Tip = "Open Hallow Find's search bar on this PC (results stay in Hallow Find - Hub never sees them)",
+                OkText = "Hallow Find: type to search.", FailText = "Hallow Find didn't open its search bar" });
+            c.Actions.Add(new CardAction { Label = "Rebuild index", Kind = "pipe", Line = "rebuild", IconOnly = true, Enabled = !walking && state != "loading" && state != "starting",
+                Tip = walking ? "Rebuild index - Hallow Find is indexing right now" : "Rebuild index - walk every drive again from scratch (search keeps working meanwhile)",
+                OkText = "Hallow Find is rebuilding its index.", FailText = "Hallow Find didn't start a rebuild", OkFrom = FindRebuildText });
+        }
+        public static string FindRebuildText(string reply)
+        {
+            try { var j = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(reply.Substring(3)); if (j.ContainsKey("started")) return Family.Bool(j, "started") ? "Hallow Find is rebuilding its index - search keeps working meanwhile." : "Hallow Find is already indexing."; }
             catch { }
             return null;
         }
