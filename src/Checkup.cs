@@ -341,7 +341,7 @@ namespace HallowHub
         // ---- 2. the apps you usually run (Hub 2.19's list) that aren't running now
         public static List<CheckItem> RunningCheck(CheckEnv env, List<KeyValuePair<string, string>> inst)
         {
-            var usual = (env.Usual() ?? new List<string>()).Where(a => Has(inst, a) && !FamilyRestarter.NoteOnly.Contains(a, StringComparer.OrdinalIgnoreCase) && !string.Equals(a, "Gear", StringComparison.OrdinalIgnoreCase))
+            var usual = (env.Usual() ?? new List<string>()).Where(a => Has(inst, a) && !FamilyRestarter.NoteOnly.Contains(a, StringComparer.OrdinalIgnoreCase) && !FamilyRestarter.NotUsual(a) && !string.Equals(a, "Gear", StringComparison.OrdinalIgnoreCase))   // v2.25: not Files (a window you open when you need it)
                 .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(a => a).ToList();
             var r = new List<CheckItem>();
             if (usual.Count == 0) { r.Add(new CheckItem("running", "Running", -1, "Hub hasn't learned which apps you usually run yet", "It remembers the Hallow apps that are running when it stops.")); return r; }
@@ -645,7 +645,8 @@ namespace HallowHub
             if (env.StartsWithWindows == null) return new List<CheckItem> { new CheckItem("startup", "Start with Windows", -1, "Couldn't read the startup list", null) };
             var daily = new List<string> { "Hub" };
             if (Has(inst, "Gear")) daily.Add("Gear");
-            foreach (var a in env.Usual() ?? new List<string>()) if (Has(inst, a) && !FamilyRestarter.NoteOnly.Contains(a, StringComparer.OrdinalIgnoreCase) && !daily.Contains(a, StringComparer.OrdinalIgnoreCase)) daily.Add(a);
+            // v2.25: never Hallow Files - it has no Start with Windows at all (not in its settings, not in Hallow Setup), so there's nothing to nag about
+            foreach (var a in env.Usual() ?? new List<string>()) if (Has(inst, a) && !FamilyRestarter.NoteOnly.Contains(a, StringComparer.OrdinalIgnoreCase) && !FamilyRestarter.NotUsual(a) && !daily.Contains(a, StringComparer.OrdinalIgnoreCase)) daily.Add(a);
             var off = new List<string>();
             foreach (var a in daily)
             {

@@ -29,6 +29,7 @@ namespace HallowHub
             { "Capture a region", "camera" }, { "Clipboard history", "clock-rotate-left" }, { "Pause history", "pause" }, { "Resume history", "play" },   // v2.23: Hallow Capture's card
             { "Put windows back", "display" }, { "Night mode", "moon" }, { "Stop game profile", "rotate-left" },                                    // v2.23: Hallow Display's card
             { "Search", "magnifying-glass" }, { "Rebuild index", "arrows-rotate" },                                                                    // v2.24: Hallow Find's card
+            { "New window", "plus" }, { "Downloads", "download" },                                                                                    // v2.25: Hallow Files' card
         };
         // label starts with -> icon
         static readonly string[][] Prefixes = {

@@ -1,4 +1,4 @@
-﻿// Hallow Hub - all your games in one place. Play starts the game; while it runs, Hub can switch your Hallow Mixer preset
+// Hallow Hub - all your games in one place. Play starts the game; while it runs, Hub can switch your Hallow Mixer preset
 // and turn on a Hallow Toolkit game session, and it counts your playtime. WPF built in code (C# 5 / .NET Framework 4.8).
 using System;
 using System.Collections.Generic;
@@ -26,14 +26,14 @@ using WF = System.Windows.Forms;
 [assembly: AssemblyTitle("Hallow Hub")]
 [assembly: AssemblyProduct("Hallow Hub")]
 [assembly: AssemblyDescription("All your games in one place, with playtime, Hallow Mixer presets and Hallow Toolkit game sessions")]
-[assembly: AssemblyVersion("2.24.0.0")]
-[assembly: AssemblyFileVersion("2.24.0.0")]
+[assembly: AssemblyVersion("2.25.0.0")]
+[assembly: AssemblyFileVersion("2.25.0.0")]
 
 namespace HallowHub
 {
     public static class Program
     {
-        public const string Version = "2.24";
+        public const string Version = "2.25";
         [STAThread]
         public static void Main(string[] args)
         {
@@ -1679,7 +1679,7 @@ namespace HallowHub
                 var outer = (Grid)Content; outer.Children.Remove(settingsPanel); settingsPanel = BuildSettings(); outer.Children.Add(settingsPanel);
                 settingsPanel.Visibility = Visibility.Visible; Snap.Save(this, System.IO.Path.Combine(dir, "settings-restart.png"), 1180, 1300); settingsPanel.Visibility = Visibility.Collapsed;
                 var lines = new List<string> { "installed (watched): " + string.Join(", ", inst.Select(i => i.Key)), "opted out: " + string.Join(", ", S.RestartOptOut) };
-                usualForSnap = inst.Select(i => i.Key).Where(a => !FamilyRestarter.NoteOnly.Contains(a)).Take(3).ToList();
+                usualForSnap = inst.Select(i => i.Key).Where(a => !FamilyRestarter.NoteOnly.Contains(a) && !FamilyRestarter.NotUsual(a)).Take(3).ToList();
                 familyBtn.IsChecked = true; Snap.Save(this, System.IO.Path.Combine(dir, "family-restart.png"), 1180, 900);
                 lines.Add("usual button: " + (usualBtn != null ? usualBtn.Visibility + " | " + usualBtn.Content + " | " + usualBtn.ToolTip : "missing").Replace("\n", " / "));
                 familyBtn.IsChecked = false; usualForSnap = null;

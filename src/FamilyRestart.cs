@@ -1,4 +1,4 @@
-﻿// Hallow Hub v2.19 - keep the family running after updates: the window's side of FamilyRestarter (Restarter.cs). Hub runs on your
+// Hallow Hub v2.19 - keep the family running after updates: the window's side of FamilyRestarter (Restarter.cs). Hub runs on your
 // PC as you started it, so the apps it starts again run there too. The note ("Updated and restarted: Hallow Gear 1.3.1") is one
 // tray balloon, held while a game runs or a full-screen app is in front, like Hub's other notes.
 using System;
@@ -62,7 +62,8 @@ namespace HallowHub
             {
                 var app = kv.Key; bool on; lock (S.RestartOptOut) on = !S.RestartOptOut.Contains(app, StringComparer.OrdinalIgnoreCase);
                 var t = new ToggleButton { Content = app, IsChecked = on, Style = (Style)FindResource("Chip"), Margin = new Thickness(0, 0, 5, 5), Padding = new Thickness(9, 3, 9, 3), FontSize = 11,
-                    ToolTip = FamilyRestarter.NoteOnly.Contains(app) ? "Hallow " + app + " is never reopened by itself - Hub only tells you it was updated (off: not even that)" : "Start Hallow " + app + " again after an update (off: leave it closed)" };
+                    ToolTip = FamilyRestarter.NoteOnly.Contains(app) ? "Hallow " + app + " is never reopened by itself - Hub only tells you it was updated (off: not even that)" :
+                        FamilyTray.IsWindowed(app) ? "Open Hallow " + app + " again after an update, with the tabs it saved (off: leave it closed)" : "Start Hallow " + app + " again after an update (off: leave it closed)" };   // v2.25: Files
                 t.Click += (s, e) =>
                 {
                     lock (S.RestartOptOut) { S.RestartOptOut.RemoveAll(x => string.Equals(x, app, StringComparison.OrdinalIgnoreCase)); if (t.IsChecked != true) S.RestartOptOut.Add(app); }
@@ -98,7 +99,7 @@ namespace HallowHub
             if (usualBtn == null) return;
             List<string> list; try { list = usualForSnap ?? (restarter == null ? new List<string>() : restarter.UsualToStart()); } catch { list = new List<string>(); }
             usualBtn.Visibility = list.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            usualBtn.ToolTip = "Running when Hub last stopped, closed now: " + string.Join(", ", list.Select(a => "Hallow " + a)) + "\nThey start in the tray. (Hallow Browser opens a window, so open it yourself.)";
+            usualBtn.ToolTip = "Running when Hub last stopped, closed now: " + string.Join(", ", list.Select(a => "Hallow " + a)) + "\nThey start in the tray. (Hallow Browser and Hallow Files open a window, so open them yourself.)";
         }
 
         // pipe "family-watch": what Hub remembers - app, state (running / gone / quit), version, last seen running

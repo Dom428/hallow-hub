@@ -1,7 +1,8 @@
 ﻿// Hallow Hub v2.19 - keep the family running after updates. Hub remembers which Hallow apps are running (app, exe, when it last
 // saw them). When one that was running disappears and its installed exe changes within a few minutes (a new file version, size
 // or write time - it was updated), Hub waits until the new exe has stayed the same for 5 s and starts it again with --tray, once
-// more if it exits straight away. Hallow Browser is never reopened (it has no tray): Hub only says it was updated.
+// more if it exits straight away. Hallow Browser is never reopened (it has no tray): Hub only says it was updated. v2.25: Hallow
+// Files (no tray either) is started again WITHOUT --tray - a plain start opens its windows with the tabs it saved when it quit.
 // It never starts an app you quit yourself (it went away and the exe didn't change), nor one that wasn't running. Settings >
 // "Restart family apps after updates" (on by default) and a per-app opt-out. The note waits while you play.
 using System;
@@ -92,6 +93,9 @@ namespace HallowHub
         public readonly string StatePath;
         public List<string> Usual = new List<string>();             // the apps that were running when Hub last stopped (sign-out / shutdown included)
         public static readonly string[] NoteOnly = { "Browser" };   // no tray: never reopened, only "it was updated"
+        // v2.25: not one of "the apps you usually run" (Start the apps I usually run, the checkup's Running and Start with Windows):
+        // Hallow Browser and Hallow Files are windows you open when you need them, and neither has a start-with-Windows switch
+        public static bool NotUsual(string app) { return FamilyTray.IsWindowed(app); }
         // Hub never force-stops a family app: Bring settings back asks it to "quit" over its pipe first (Hallow Display then puts its display changes back)
         static readonly string[] NotWatched = { "Hub", "Setup", "Toolkit" };
 
@@ -266,8 +270,9 @@ namespace HallowHub
             for (int attempt = 1; attempt <= 2; attempt++)
             {
                 if (IsRunning(w.Exe)) { Log(w.App + ": already running again"); MarkRunning(w); return; }
-                Log(w.App + ": updated to " + Pretty(p.Version) + " - starting it with --tray" + (attempt == 2 ? " (again)" : ""));
-                if (Starter(w.Exe, "--tray"))
+                var args = FamilyTray.StartArgs(w.App);   // v2.25: "" for Hallow Files (windowed - it reopens its saved tabs)
+                Log(w.App + ": updated to " + Pretty(p.Version) + " - starting it " + (args.Length > 0 ? "with " + args : "with its window") + (attempt == 2 ? " (again)" : ""));
+                if (Starter(w.Exe, args))
                 {
                     Thread.Sleep(CheckAfterStart);
                     if (IsRunning(w.Exe)) { MarkRunning(w); Notes.Restarted(name); Fire(); return; }
@@ -281,19 +286,19 @@ namespace HallowHub
         void Fire() { var n = Noted; if (n != null) try { n(); } catch { } }
 
         // Family page: "Start the apps I usually run" - the ones running when Hub last stopped that are installed and closed now
-        // (not Hallow Browser: it opens a window)
+        // (not Hallow Browser or Hallow Files: they open a window)
         public List<string> UsualToStart()
         {
             HashSet<string> running; try { running = Running(); } catch { running = new HashSet<string>(); }
             var inst = Installed();
-            return Usual.Where(a => !NoteOnly.Contains(a, StringComparer.OrdinalIgnoreCase))
+            return Usual.Where(a => !NoteOnly.Contains(a, StringComparer.OrdinalIgnoreCase) && !NotUsual(a))
                 .Select(a => inst.FirstOrDefault(i => string.Equals(i.Key, a, StringComparison.OrdinalIgnoreCase)))
                 .Where(i => i.Key != null && !running.Contains(Key(i.Value))).Select(i => i.Key).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
         public List<string> StartUsual()
         {
             var started = new List<string>();
-            foreach (var a in UsualToStart()) if (Starter(Family.Exe(a), "--tray")) started.Add(a);
+            foreach (var a in UsualToStart()) if (Starter(Family.Exe(a), FamilyTray.StartArgs(a))) started.Add(a);
             return started;
         }
     }

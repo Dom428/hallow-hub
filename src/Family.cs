@@ -1,4 +1,4 @@
-﻿// Hallow Hub v2.2 - the Hallow family link (v1): reads Vault, Clips and Overlay's status.json, sends them one-line commands
+// Hallow Hub v2.2 - the Hallow family link (v1): reads Vault, Clips and Overlay's status.json, sends them one-line commands
 // over their named pipes, and answers ping / status on Hub's own pipe. Everything here fails quietly: a missing, old or
 // broken app just hides its card.
 using System;
@@ -227,11 +227,13 @@ namespace HallowHub
         public static readonly string[] Apps = { "Mixer", "Vault", "Overlay", "Clips", "Remote", "Keys", "Guard", "Assist" };
         // v2.17: the newer apps - in this order after the known ones while they run (so they don't jump around A-Z); the installed ones
         // that aren't running go under one "Start a Hallow app" submenu instead of a Start line each
-        public static readonly string[] Newer = { "VPN", "Torrents", "Browser", "Tasks", "Email", "Financials", "Home", "Capture", "Display", "Find" };   // v2.23: Capture, Display; v2.24: Find
+        public static readonly string[] Newer = { "VPN", "Torrents", "Browser", "Tasks", "Email", "Financials", "Home", "Capture", "Display", "Find", "Files" };   // v2.23: Capture, Display; v2.24: Find; v2.25: Files
         public static bool IsNewer(string app) { return Newer.Contains(app, StringComparer.OrdinalIgnoreCase); }
         public static List<string> Startable() { return Newer.Where(a => Family.Installed(a) && !Family.Running(a)).ToList(); }
-        // Browser has no tray icon - it starts with its window; the others start in the tray
-        public static string StartArgs(string app) { return string.Equals(app, "Browser", StringComparison.OrdinalIgnoreCase) ? "" : "--tray"; }
+        // Browser and Files (v2.25) have no tray icon - they start with their window (Files restores its last tabs); the others start in the tray
+        public static readonly string[] Windowed = { "Browser", "Files" };
+        public static bool IsWindowed(string app) { return Windowed.Contains(app, StringComparer.OrdinalIgnoreCase); }
+        public static string StartArgs(string app) { return IsWindowed(app) ? "" : "--tray"; }
         // v2.13: never a submenu of their own - Hub itself, Setup (an installer) and Toolkit (it has "Open Hallow Toolkit")
         static readonly string[] NotHosted = { "Hub", "Setup", "Toolkit" };
         public static bool Hostable(string app) { return !NotHosted.Contains(app, StringComparer.OrdinalIgnoreCase); }

@@ -6,6 +6,10 @@ HOW TO INSTALL
 3. Double-click INSTALL.bat (no admin needed - it installs to your user folder)
 4. Hallow Hub opens. It's in your Start menu and on your Desktop.
 
+WHAT'S NEW IN 2.25
+- Hallow Files joins the Family page (Everyday): how many tabs and windows it has open, a copy or move running and whether it opens your folders, with New window, Downloads and Settings.
+- Counts only - never a file name or folder. It has a fixed place in the Hallow icon; it's a windowed app, so Hub reopens its window (with your tabs) after an update, never nags you to start it or start it with Windows, and launch checklists never close it mid-copy.
+
 WHAT'S NEW IN 2.24
 - Hallow Find joins the Family page (Everyday): how many files and folders it has indexed, how far an indexing run has got and whether it's paused for a game, with Search (opens Find's search bar) and Rebuild index.
 - Counts and states only - never a file name, a folder or what you searched for. It has a fixed place in the Hallow icon and starts in the tray from Start a Hallow app.

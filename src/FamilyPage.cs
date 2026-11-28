@@ -1,4 +1,4 @@
-﻿// Hallow Hub v2.17 - the whole family: a Family page (the people button next to Stats) with a card for every Hallow app -
+// Hallow Hub v2.17 - the whole family: a Family page (the people button next to Stats) with a card for every Hallow app -
 // installed / running / not installed, its version, a live line from its status.json, and a few quick actions over its pipe.
 // Privacy: an app's status.json goes through Safe() first - only the counts and states listed there are ever read, so an email
 // subject or sender, a torrent name, a place, an amount or an address can't reach a card even if an app put one in its file.
@@ -50,11 +50,11 @@ namespace HallowHub
         public static readonly string[][] Layout = {
             new[] { "Mixer", "Overlay", "Clips", "Vault", "Remote", "Browser", "Gear" },
             new[] { "Guard", "Shield", "VPN", "Keys", "Assist" },
-            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places", "Capture", "Display", "Find" } };   // v2.23: Capture and Display; v2.24: Find
+            new[] { "Tasks", "Torrents", "Email", "Financials", "Home", "Places", "Capture", "Display", "Find", "Files" } };   // v2.23: Capture and Display; v2.24: Find; v2.25: Files
         public static IEnumerable<string> AllApps { get { return Layout.SelectMany(x => x); } }
         // Shield is a browser extension (its bridge writes status.json) and Places a server on the NAS: no exe, no pipe
         public static bool WindowsApp(string app) { return app != "Shield" && app != "Places"; }
-        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home", "Gear", "Display" };   // "open settings" on their pipes
+        static readonly string[] WithSettings = { "Tasks", "VPN", "Torrents", "Financials", "Email", "Home", "Gear", "Display", "Files" };   // "open settings" on their pipes (v2.25: Files)
         public static bool HasSettings(string app) { return WithSettings.Contains(app); }
         public static string Icon(string app)
         {
@@ -64,7 +64,7 @@ namespace HallowHub
                 case "Remote": return "mobile-screen"; case "Browser": return "globe"; case "Guard": return "shield-halved"; case "Shield": return "eye-slash";
                 case "VPN": return "lock"; case "Keys": return "key"; case "Assist": return "hand-holding-heart"; case "Tasks": return "gauge-high";
                 case "Torrents": return "magnet"; case "Email": return "envelope"; case "Financials": return "wallet"; case "Home": return "house"; case "Places": return "location-dot";
-                case "Gear": return "keyboard"; case "Capture": return "camera"; case "Display": return "display"; case "Find": return "magnifying-glass";
+                case "Gear": return "keyboard"; case "Capture": return "camera"; case "Display": return "display"; case "Find": return "magnifying-glass"; case "Files": return "folder-open";
             }
             return "gamepad";
         }
@@ -80,6 +80,7 @@ namespace HallowHub
                 case "Home": return "Pets and smart home through Home Assistant"; case "Places": return "Family location sharing on your NAS";
                 case "Gear": return "Batteries of your mouse, headset and pads"; case "Capture": return "Screenshots and a private clipboard history";
                 case "Display": return "Brightness, game display profiles and window layouts"; case "Find": return "Instant search for files, apps, sums and settings";
+                case "Files": return "A faster file manager: tabs, dual pane, folder sizes";
             }
             return "";
         }
@@ -108,6 +109,7 @@ namespace HallowHub
             { "Display", new[] { "running b", "profileActive s", "game s", "profileCount n", "layoutKnown b", "testRunning b" } },   // v2.23: never window titles or programs
             { "Find", new[] { "running b", "indexState e:starting|loading|building|refreshing|ready|paused|off", "entries n", "files n", "folders n", "progress n", "scanned n", "pausedForGame b", "lastRebuild t",
                 "hotkey s", "hotkeyFallback b" } },   // v2.24: counts and states only - never a file name, folder, path or search (Find has no command that returns them)
+            { "Files", new[] { "running b", "windows n", "tabs n", "dualPane n", "operationsRunning n", "defaultFileManager b", "findIndex b" } },   // v2.25: counts only - never a file name, folder or path (Files' pipe has no command that lists any)
             { "Vault", new[] { "running b", "busy b", "games c" } },
             { "Clips", new[] { "recording b", "seconds n", "clips c" } },
             { "Overlay", new[] { "visible b" } },
@@ -250,9 +252,10 @@ namespace HallowHub
                 OkText = "Opened Hallow " + app + ".", FailText = "Hallow " + app + " didn't open" };
             if (!running)
             {
-                c.State = "stopped"; c.StateText = app == "Browser" ? "Closed" : "Not running";
-                c.Line = app == "Browser" ? "Not open" : "Not running";
-                c.Sub = app == "Browser" ? "It runs while its window is open" : "Start it to see how it's doing";
+                bool windowed = FamilyTray.IsWindowed(app);   // v2.25: Browser and Files run while a window is open
+                c.State = "stopped"; c.StateText = windowed ? "Closed" : "Not running";
+                c.Line = windowed ? "Not open" : "Not running";
+                c.Sub = windowed ? "It runs while its window is open" : "Start it to see how it's doing";
                 c.Actions.Add(open);
                 return c;
             }
@@ -272,10 +275,11 @@ namespace HallowHub
                 case "Capture": CaptureCard(c, st); break;
                 case "Display": DisplayCard(c, st); break;
                 case "Find": FindCard(c, st); break;
+                case "Files": FilesCard(c, st); break;
                 default: OlderCard(c, st); break;
             }
             if (app == "Find") { open.Line = "open settings"; open.Tip = "Open Hallow Find (its settings and index)"; }   // v2.24: Search already opens the search bar
-            c.Actions.Add(open);
+            if (app != "Files") c.Actions.Add(open);   // v2.25: Files' New window already does what Open would (a new window on Home)
             if (HasSettings(app)) c.Actions.Add(new CardAction { Label = "Settings", Kind = "pipe", Line = "open settings", IconOnly = true, Tip = "Hallow " + app + "'s settings", OkText = "Opened Hallow " + app + "'s settings.", FailText = "Hallow " + app + " didn't open its settings" });
             return c;
         }
@@ -592,6 +596,29 @@ namespace HallowHub
             try { var j = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(reply.Substring(3)); if (j.ContainsKey("started")) return Family.Bool(j, "started") ? "Hallow Find is rebuilding its index - search keeps working meanwhile." : "Hallow Find is already indexing."; }
             catch { }
             return null;
+        }
+        // v2.25: Hallow Files - windows and tabs open, a copy / move running and whether it opens your folders (counts only: Files' pipe
+        // has no command that returns a file name or a folder, so Hub never asks for or shows one)
+        static void FilesCard(AppCard c, Dictionary<string, object> st)
+        {
+            int win = Int(st, "windows"), tabs = Int(st, "tabs"), dual = Int(st, "dualPane"), ops = Int(st, "operationsRunning");
+            if (!Has(st, "windows")) c.Line = "Running";
+            else if (win == 0) c.Line = ops > 0 ? "Finishing a file operation" : "No window open";
+            else c.Line = Count(tabs, "tab", "tabs") + " in " + Count(win, "window", "windows");
+            var parts = new List<string>();
+            if (ops > 0) parts.Add(Count(ops, "file operation", "file operations") + " running");
+            if (Is(st, "defaultFileManager")) parts.Add("Opens your folders");
+            if (dual > 0 && parts.Count < 2) parts.Add("Dual pane");   // two at most, so the line fits the card
+            c.Sub = parts.Count > 0 ? string.Join(" · ", parts) : null;
+            var tip = new List<string>();
+            if (ops > 0) tip.Add("A copy, move or delete is running in Windows' own copy engine - quitting Hallow Files waits for it");
+            if (Is(st, "defaultFileManager")) tip.Add("Folders you open in Windows open in Hallow Files (undo it in Hallow Files' settings)");
+            if (Is(st, "findIndex")) tip.Add("Search below a folder uses Hallow Find's index");
+            if (tip.Count > 0) c.Tip = string.Join("\n", tip);
+            c.Actions.Add(new CardAction { Label = "New window", Kind = "pipe", Line = "open", Tip = "Open a new Hallow Files window (Home)",
+                OkText = "Opened a new Hallow Files window.", FailText = "Hallow Files didn't open a window" });
+            c.Actions.Add(new CardAction { Label = "Downloads", Kind = "pipe", Line = "open downloads", IconOnly = true, Tip = "Downloads - a new Hallow Files window on your Downloads folder",
+                OkText = "Opened your Downloads in Hallow Files.", FailText = "Hallow Files didn't open Downloads" });
         }
         static void OlderCard(AppCard c, Dictionary<string, object> st)
         {
